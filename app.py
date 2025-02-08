@@ -1,5 +1,6 @@
 # -----------------------------------------------------------------------
-# admin.py
+# app.py
+# Entry point for the application.
 # Contains Flask App Routing
 # -----------------------------------------------------------------------
 
@@ -7,11 +8,13 @@
 import flask
 from flask import Flask
 import os
-from CAS import auth
 import dotenv
-import random
+from sys import path
+
 
 # Tiger Spot files
+path.append("src")
+from CAS import auth
 from Databases import challenges_database
 from Databases import matches_database
 from Databases import versus_database
@@ -23,13 +26,16 @@ import distance_func
 import points
 
 # -----------------------------------------------------------------------
-app = Flask(__name__, template_folder="../templates", static_folder="../static")
+
 dotenv.load_dotenv()
+app = Flask(__name__, template_folder="./templates", static_folder="./static")
 app.secret_key = os.environ["APP_SECRET_KEY"]
 
 # -----------------------------------------------------------------------
+
 # default value for id needed for daily reset
 id = 1
+
 # -----------------------------------------------------------------------
 
 
@@ -787,3 +793,7 @@ def versus_stats():
 
     response = flask.make_response(html_code)
     return response
+
+
+if __name__ == "__main__":
+    app.run()
