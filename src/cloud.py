@@ -3,6 +3,14 @@
 # -----------------------------------------------------------------------
 
 import cloudinary.api
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+cloud_name = os.environ["CLOUDINARY_CLOUD_NAME"]
+api_key = os.environ["CLOUDINARY_API_KEY"]
+api_secret = os.environ["CLOUDINARY_API_SECRET"]
+
 
 # -----------------------------------------------------------------------
 
@@ -22,12 +30,10 @@ def image_data(resource):
 
 
 def main():
-
-    # configures and connects to cloudinary account
     cloudinary.config(
-        cloud_name="dmiaxw4rr",
-        api_key="678414952824331",
-        api_secret="wt-aWFLd0n-CelO5kN8h1NCYFzY",
+        cloud_name=cloud_name,
+        api_key=api_key,
+        api_secret=api_secret,
     )
 
     # name of folder to extract resources from
