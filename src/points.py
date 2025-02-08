@@ -20,7 +20,8 @@ def calculate_today_points(distance):
         points = max(0, 1 - (distance / 100)) * 1000
     # rounding due to Python's floating point arithmetic precision error
     # https://python.plainenglish.io/floating-point-arithmetic-precision-error-in-python-decimal-comes-for-rescue-8803d1290601
-    # due to the nature of our point system, we found that it would be easier to round rather than use the Decimal library as that could cause type errors
+    # due to the nature of our point system, we found that it would be
+    # easier to round rather than use the Decimal library as that could cause type errors
     return round(points)
 
 
