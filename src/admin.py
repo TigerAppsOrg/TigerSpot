@@ -25,7 +25,6 @@ import points
 # -----------------------------------------------------------------------
 app = Flask(__name__, template_folder="../templates", static_folder="../static")
 dotenv.load_dotenv()
-# used for CAS login
 app.secret_key = os.environ["APP_SECRET_KEY"]
 
 # -----------------------------------------------------------------------

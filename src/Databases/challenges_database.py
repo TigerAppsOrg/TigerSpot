@@ -6,6 +6,12 @@ import psycopg2
 import random
 from Databases import database
 from Databases import versus_database
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+DATABASE_URL = os.environ["DATABASE_URL"]
+
 
 # -----------------------------------------------------------------------
 

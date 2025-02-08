@@ -9,6 +9,11 @@ import cloudinary.api
 import cloud
 from Databases import database
 import pytz
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+DATABASE_URL = os.environ["DATABASE_URL"]
 
 # -----------------------------------------------------------------------
 

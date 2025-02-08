@@ -4,6 +4,11 @@
 # Tables in Tiger Spot: pictures, users, usersDaily, challenges, matches
 # -----------------------------------------------------------------------
 import psycopg2
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+DATABASE_URL = os.environ["DATABASE_URL"]
 
 # -----------------------------------------------------------------------
 
