@@ -34,7 +34,7 @@ app.secret_key = os.environ["APP_SECRET_KEY"]
 # -----------------------------------------------------------------------
 
 # default value for id needed for daily reset
-id = 1
+# id = 1
 
 # -----------------------------------------------------------------------
 
@@ -78,7 +78,6 @@ def index():
 # Home page after user logs in through Princeton's CAS
 @app.route("/menu", methods=["GET"])
 def menu():
-    global id
     username = auth.authenticate()
     user_insert = user_database.insert_player(username)
     daily_insert = daily_user_database.insert_player_daily(username)
@@ -155,7 +154,7 @@ def requests():
 @app.route("/game", methods=["GET"])
 def game():
 
-    global id
+    id = pictures_database.pic_of_day()
 
     username = auth.authenticate()
 
@@ -197,7 +196,7 @@ def game():
 # Then loads the results page which displays the correct location, the distance from guess to acutal location, points earned, place where picture was taken
 @app.route("/submit", methods=["POST"])
 def submit():
-
+    id = pictures_database.pic_of_day()
     username = auth.authenticate()
 
     user_played = daily_user_database.player_played(username)
