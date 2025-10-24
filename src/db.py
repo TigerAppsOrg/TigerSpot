@@ -18,7 +18,9 @@ DATABASE_URL = os.environ["DATABASE_URL"]
 engine = create_engine(DATABASE_URL, echo=False, pool_pre_ping=True)
 
 # Create session factory
-SessionLocal = scoped_session(sessionmaker(autocommit=False, autoflush=False, bind=engine))
+SessionLocal = scoped_session(
+    sessionmaker(autocommit=False, autoflush=False, bind=engine)
+)
 
 # -----------------------------------------------------------------------
 
