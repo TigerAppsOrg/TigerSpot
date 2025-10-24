@@ -47,10 +47,10 @@ Set up the database schema using Alembic migrations:
 
 ```bash
 # Run database migrations
-uv run alembic upgrade head
+alembic upgrade head
 
 # Seed the database with pictures from Cloudinary
-uv run python seed_pictures.py
+python seed_pictures.py
 ```
 
 To stop the database container, run `docker-compose down`. If you want to completely clear and reset the database, you can run `docker-compose down -v`. To view logs, use `docker-compose logs -f`.
@@ -58,8 +58,8 @@ To stop the database container, run `docker-compose down`. If you want to comple
 **Note**: The project now uses SQLAlchemy with Alembic for database migrations. To create a new migration after modifying models, run:
 
 ```bash
-uv run alembic revision --autogenerate -m "Description of changes"
-uv run alembic upgrade head
+alembic revision --autogenerate -m "Description of changes"
+alembic upgrade head
 ```
 
 ### Development Server

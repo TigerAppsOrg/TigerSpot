@@ -1,10 +1,9 @@
-from logging.config import fileConfig
 import os
 import sys
-from dotenv import load_dotenv
+from logging.config import fileConfig
 
-from sqlalchemy import engine_from_config
-from sqlalchemy import pool
+from dotenv import load_dotenv
+from sqlalchemy import engine_from_config, pool
 
 from alembic import context
 
@@ -12,7 +11,7 @@ from alembic import context
 load_dotenv()
 
 # Add src directory to path for imports
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 # Import models
 from src.models import Base
@@ -22,7 +21,7 @@ from src.models import Base
 config = context.config
 
 # Set sqlalchemy.url from environment variable
-config.set_main_option('sqlalchemy.url', os.environ['DATABASE_URL'])
+config.set_main_option("sqlalchemy.url", os.environ["DATABASE_URL"])
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
@@ -77,9 +76,7 @@ def run_migrations_online() -> None:
     )
 
     with connectable.connect() as connection:
-        context.configure(
-            connection=connection, target_metadata=target_metadata
-        )
+        context.configure(connection=connection, target_metadata=target_metadata)
 
         with context.begin_transaction():
             context.run_migrations()
