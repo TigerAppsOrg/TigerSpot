@@ -3,48 +3,11 @@
 # This file is for general actions with tables
 # Tables in Tiger Spot: pictures, users, usersDaily, challenges, matches
 # -----------------------------------------------------------------------
-import psycopg2
-from dotenv import load_dotenv
-import os
 
-load_dotenv()
-DATABASE_URL = os.environ["DATABASE_URL"]
+from sqlalchemy import func
 
-# -----------------------------------------------------------------------
-
-
-# drops a specified table
-def drop_table(table):
-    try:
-        with psycopg2.connect(DATABASE_URL) as conn:
-            with conn.cursor() as cur:
-                cur.execute("DROP TABLE %s;" % (table))
-                conn.commit()
-                print(f"{table} has been dropped")
-    except (Exception, psycopg2.DatabaseError) as error:
-        print(error)
-        return "database error"
-
-
-# -----------------------------------------------------------------------
-
-
-# updates a specific row in a table
-# id_type can be pictureID or challenge_id for example
-def update(table, col, value, id_type, id_num):
-    try:
-        with psycopg2.connect(DATABASE_URL) as conn:
-            with conn.cursor() as cur:
-                cur.execute(
-                    "UPDATE %s SET %s = %s WHERE %s = %s;"
-                    % (table, col, value, id_type, id_num)
-                )
-                print(f"Updated with value as {value}")
-                conn.commit()
-    except (Exception, psycopg2.DatabaseError) as error:
-        print(error)
-        return "database error"
-
+from src.db import get_session
+from src.models import Challenge, Match, Picture, User, UserDaily
 
 # -----------------------------------------------------------------------
 
@@ -52,13 +15,32 @@ def update(table, col, value, id_type, id_num):
 # returns all the values from a specified column in a table in the form of an array of tuples
 def query(column, table):
     try:
-        with psycopg2.connect(DATABASE_URL) as conn:
-            with conn.cursor() as cur:
-                cur.execute("SELECT %s FROM %s" % (column, table))
-                rows = cur.fetchall()
-                print(f"Returning values in column '{column}' from table '{table}'")
+        # Map table names to models
+        model_map = {
+            "users": User,
+            "usersdaily": UserDaily,
+            "pictures": Picture,
+            "challenges": Challenge,
+            "matches": Match,
+        }
+
+        model = model_map.get(table.lower())
+
+        if model is None:
+            print(f"Unknown table: {table}")
+            return "database error"
+
+        with get_session() as session:
+            if column == "*":
+                # Return all columns
+                rows = session.query(model).all()
+                return [(row,) for row in rows]
+            else:
+                # Return specific column
+                rows = session.query(getattr(model, column)).all()
                 return rows
-    except (Exception, psycopg2.DatabaseError) as error:
+
+    except Exception as error:
         print(error)
         return "database error"
 
@@ -69,14 +51,27 @@ def query(column, table):
 # Returns the number of rows in a table
 def get_table_size(table):
     try:
-        with psycopg2.connect(DATABASE_URL) as conn:
-            with conn.cursor() as cur:
-                cur.execute("SELECT COUNT(*) FROM %s;" % (table))
-                print(f"Returning number of rows in table '{table}'")
-                result = cur.fetchone()
-                pic_num = result[0]
-                return pic_num
-    except (Exception, psycopg2.DatabaseError) as error:
+        # Map table names to models
+        model_map = {
+            "users": User,
+            "usersdaily": UserDaily,
+            "pictures": Picture,
+            "challenges": Challenge,
+            "matches": Match,
+        }
+
+        model = model_map.get(table.lower())
+
+        if model is None:
+            print(f"Unknown table: {table}")
+            return "database error"
+
+        with get_session() as session:
+            count = session.query(func.count()).select_from(model).scalar()
+            print(f"Returning number of rows in table '{table}'")
+            return count
+
+    except Exception as error:
         print(error)
         return "database error"
 
@@ -110,10 +105,8 @@ def show_rows():
 # -----------------------------------------------------------------------
 # tests the above functions that do not commit changes to the tables
 def testing():
-    # drop_table('pictures')
-    # update('pictures', 'place', 'Princeton', 'pictureID', '1')
     print("-----Testing query()-----")
-    print(query("pictureID", "pictures"))
+    print(query("pictureid", "pictures"))
     print(query("place", "pictures"))
     print()
     print("-----Testing get_table_size()-----")

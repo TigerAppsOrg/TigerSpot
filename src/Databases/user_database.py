@@ -2,34 +2,10 @@
 # user_database.py
 # -----------------------------------------------------------------------
 
-import psycopg2
-from dotenv import load_dotenv
-import os
+from sqlalchemy import func
 
-load_dotenv()
-DATABASE_URL = os.environ["DATABASE_URL"]
-
-# -----------------------------------------------------------------------
-
-# Creates users table with columns username and points.
-
-
-def create_user_table():
-
-    try:
-        with psycopg2.connect(DATABASE_URL) as conn:
-            with conn.cursor() as cur:
-                cur.execute(
-                    """CREATE TABLE IF NOT EXISTS users (
-                username varchar(255),
-                points int);"""
-                )
-                conn.commit()
-
-    except (Exception, psycopg2.DatabaseError) as error:
-        print(error)
-        return "database error"
-
+from src.db import get_session
+from src.models import User
 
 # -----------------------------------------------------------------------
 
@@ -37,27 +13,18 @@ def create_user_table():
 
 
 def insert_player(username):
-
     try:
-        with psycopg2.connect(DATABASE_URL) as conn:
-            with conn.cursor() as cur:
-                # Check if username exists
-                cur.execute("SELECT points FROM users WHERE username=%s;", (username,))
-                result = cur.fetchone()
+        with get_session() as session:
+            # Check if username exists
+            existing = session.query(User).filter_by(username=username).first()
 
-                if result is None:
-                    cur.execute(
-                        "INSERT INTO users (username, points) VALUES (%s, %s);",
-                        (
-                            username,
-                            0,
-                        ),
-                    )
-                conn.commit()
+            if existing is None:
+                new_user = User(username=username, points=0)
+                session.add(new_user)
 
         return "success"
 
-    except (Exception, psycopg2.DatabaseError) as error:
+    except Exception as error:
         print(error)
         return "database error"
 
@@ -68,25 +35,18 @@ def insert_player(username):
 
 
 def reset_player_total_points(username):
-
     try:
-        with psycopg2.connect(DATABASE_URL) as conn:
-            with conn.cursor() as cur:
-                # Check if username exists
-                cur.execute("SELECT points FROM users WHERE username=%s;", (username,))
-                result = cur.fetchone()
+        with get_session() as session:
+            user = session.query(User).filter_by(username=username).first()
 
-                if result is None:
-                    return
-                else:
-                    cur.execute(
-                        "UPDATE users SET points=%s WHERE username=%s;", (0, username)
-                    )
-                conn.commit()
+            if user is None:
+                return
+
+            user.points = 0
 
         return "success"
 
-    except (Exception, psycopg2.DatabaseError) as error:
+    except Exception as error:
         print(error)
         return "database error"
 
@@ -97,17 +57,13 @@ def reset_player_total_points(username):
 
 
 def reset_all_players_total_points():
-
     try:
-        with psycopg2.connect(DATABASE_URL) as conn:
-            with conn.cursor() as cur:
-
-                cur.execute("UPDATE users SET points=%s;", (0,))
-                conn.commit()
+        with get_session() as session:
+            session.query(User).update({User.points: 0})
 
         return "success"
 
-    except (Exception, psycopg2.DatabaseError) as error:
+    except Exception as error:
         print(error)
         return "database error"
 
@@ -118,18 +74,15 @@ def reset_all_players_total_points():
 
 
 def update_player(username, points):
-
     try:
-        with psycopg2.connect(DATABASE_URL) as conn:
-            with conn.cursor() as cur:
-                cur.execute(
-                    "UPDATE users SET points=%s WHERE username=%s;", (points, username)
-                )
-                conn.commit()
+        with get_session() as session:
+            session.query(User).filter_by(username=username).update(
+                {User.points: points}
+            )
 
         return "success"
 
-    except (Exception, psycopg2.DatabaseError) as error:
+    except Exception as error:
         print(error)
         return "database error"
 
@@ -140,18 +93,16 @@ def update_player(username, points):
 
 
 def get_points(username):
-
     try:
-        with psycopg2.connect(DATABASE_URL) as conn:
-            with conn.cursor() as cur:
-                cur.execute(
-                    """SELECT points FROM users WHERE username=%s;""", (username,)
-                )
-                points = cur.fetchone()
+        with get_session() as session:
+            user = session.query(User).filter_by(username=username).first()
 
-        return points[0]
+            if user is None:
+                return 0
 
-    except (Exception, psycopg2.DatabaseError) as error:
+            return user.points
+
+    except Exception as error:
         print(error)
         return "database error"
 
@@ -162,21 +113,24 @@ def get_points(username):
 
 
 def get_rank(username):
-
     try:
-        with psycopg2.connect(DATABASE_URL) as conn:
-            with conn.cursor() as cur:
-                cur.execute(
-                    "SELECT username, points, DENSE_RANK() OVER (ORDER BY points DESC, username ASC) as rank FROM users;"
-                )
-                players = cur.fetchall()
+        with get_session() as session:
+            # Use window function to calculate rank
+            ranked_query = session.query(
+                User.username,
+                User.points,
+                func.dense_rank()
+                .over(order_by=(User.points.desc(), User.username.asc()))
+                .label("rank"),
+            ).all()
 
-        for player in players:
-            if player[0] == username:
-                return player[2]
-        return "Player not found"
+            for player in ranked_query:
+                if player.username == username:
+                    return player.rank
 
-    except (Exception, psycopg2.DatabaseError) as error:
+            return "Player not found"
+
+    except Exception as error:
         print(error)
         return "database error"
 
@@ -188,24 +142,23 @@ def get_rank(username):
 
 
 def get_top_players():
-
     try:
-        with psycopg2.connect(DATABASE_URL) as conn:
-            with conn.cursor() as cur:
+        with get_session() as session:
+            top_players = []
+            users = (
+                session.query(User)
+                .order_by(User.points.desc(), User.username.asc())
+                .limit(10)
+                .all()
+            )
 
-                top_players = []
-                cur.execute(
-                    "SELECT username, points FROM users ORDER BY points DESC,  username ASC LIMIT 10;"
-                )
-                table = cur.fetchall()
-                for row in table:
-                    username, points = row
-                    player_stats = {"username": username, "points": points}
-                    top_players.append(player_stats)
+            for user in users:
+                player_stats = {"username": user.username, "points": user.points}
+                top_players.append(player_stats)
 
         return top_players
 
-    except (Exception, psycopg2.DatabaseError) as error:
+    except Exception as error:
         print(error)
         return "database error"
 
@@ -216,16 +169,13 @@ def get_top_players():
 
 
 def remove_from_user_table(username):
-
     try:
-        with psycopg2.connect(DATABASE_URL) as conn:
-            with conn.cursor() as cur:
-                cur.execute("DELETE FROM users WHERE username=%s;", (username,))
-                conn.commit()
+        with get_session() as session:
+            session.query(User).filter_by(username=username).delete()
 
         return "success"
 
-    except (Exception, psycopg2.DatabaseError) as error:
+    except Exception as error:
         print(error)
         return "database error"
 
@@ -236,16 +186,14 @@ def remove_from_user_table(username):
 
 
 def get_players():
-
     try:
-        with psycopg2.connect(DATABASE_URL) as conn:
-            with conn.cursor() as cur:
-                cur.execute("SELECT username FROM users;")
-                table = cur.fetchall()
-                user_ids = [row[0] for row in table]
+        with get_session() as session:
+            users = session.query(User.username).all()
+            user_ids = [user.username for user in users]
+
         return user_ids
 
-    except (Exception, psycopg2.DatabaseError) as error:
+    except Exception as error:
         print(error)
         return "database error"
 
@@ -256,32 +204,30 @@ def get_players():
 
 
 def get_top_player():
-
     try:
-        with psycopg2.connect(DATABASE_URL) as conn:
-            with conn.cursor() as cur:
+        with get_session() as session:
+            user = (
+                session.query(User)
+                .order_by(User.points.desc(), User.username.asc())
+                .limit(1)
+                .first()
+            )
 
-                cur.execute(
-                    "SELECT username, points FROM users ORDER BY points DESC,  username ASC LIMIT 1;"
-                )
-                table = cur.fetchall()
-                for row in table:
-                    username, points = row
-                    player_stats = {"username": username, "points": points}
+            if user is None:
+                return {"username": None, "points": 0}
+
+            player_stats = {"username": user.username, "points": user.points}
 
         return player_stats
 
-    except (Exception, psycopg2.DatabaseError) as error:
+    except Exception as error:
         print(error)
         return "database error"
 
 
 # -----------------------------------------------------------------------
 
-
-def main():
-    create_user_table()
-    # reset_all_players_total_points()
+if __name__ == "__main__":
     print(get_top_players())
     print(get_top_player())
     print(get_players())
@@ -295,9 +241,3 @@ def main():
     print(get_rank("test"))
     print(remove_from_user_table("test"))
     print(get_players())
-
-
-# -----------------------------------------------------------------------
-
-if __name__ == "__main__":
-    main()

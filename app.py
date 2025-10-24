@@ -11,9 +11,10 @@ import os
 import dotenv
 from sys import path
 
-
 # Tiger Spot files
 path.append("src")
+
+from db import get_session
 from CAS import auth
 from Databases import challenges_database
 from Databases import matches_database
@@ -792,6 +793,19 @@ def versus_stats():
 
     response = flask.make_response(html_code)
     return response
+
+
+# -----------------------------------------------------------------------
+
+
+@app.route("/health", methods=["GET"])
+def health_check():
+    try:
+        with get_session() as session:
+            session.execute("SELECT 1")
+        return "OK", 200
+    except Exception as e:
+        return f"Database connection error: {e}", 500
 
 
 if __name__ == "__main__":

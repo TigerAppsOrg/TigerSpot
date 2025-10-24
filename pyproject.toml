@@ -5,11 +5,13 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
+    "alembic==1.14.0",
     "blinker==1.7.0",
     "certifi==2025.1.31",
     "click==8.1.7",
     "cloudinary==1.39.1",
     "flask==3.0.2",
+    "flask-sqlalchemy==3.1.1",
     "geographiclib==2.0",
     "geopy==2.4.1",
     "gunicorn==23.0.0",
@@ -21,6 +23,7 @@ dependencies = [
     "python-dotenv==1.0.1",
     "pytz==2024.1",
     "six==1.17.0",
+    "sqlalchemy==2.0.36",
     "urllib3==2.3.0",
     "werkzeug==3.0.6",
 ]
