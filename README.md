@@ -47,8 +47,6 @@ Set up the database schema by running `python3 init_database.py`.
 
 To stop the database container, run `docker-compose down`. If you want to completely clear and reset the database, you can run `docker-compose down -v`. To view logs, use `docker-compose logs -f`.
 
-### Cloud Image Storage
-
 ### Development Server
 
 Run the development server with `python3 dev.py`. You can access the web app at `http://localhost:5173`.
