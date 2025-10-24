@@ -2,7 +2,9 @@
 # runserver.py
 # Runs Tiger Spot application
 # -----------------------------------------------------------------------
+
 import sys
+
 import app
 
 
