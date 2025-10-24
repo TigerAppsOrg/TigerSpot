@@ -1,3 +1,34 @@
+"""
+DEPRECATED: This file is no longer used.
+
+The project has been migrated to use SQLAlchemy with Alembic for database management.
+
+Instead of running this script, use:
+1. uv run alembic upgrade head  (to create/update database schema)
+2. uv run python seed_pictures.py  (to load pictures from Cloudinary)
+
+See README.md for more details.
+"""
+
+import sys
+
+print("=" * 70)
+print("WARNING: init_database.py is DEPRECATED")
+print("=" * 70)
+print()
+print("This project now uses SQLAlchemy with Alembic for database management.")
+print()
+print("To set up the database, run:")
+print("  1. uv run alembic upgrade head")
+print("  2. uv run python seed_pictures.py")
+print()
+print("See README.md for more details.")
+print("=" * 70)
+sys.exit(1)
+
+# Old code below - kept for reference but will not execute
+# --------------------------------------------------------------------
+
 from dotenv import load_dotenv
 import psycopg2
 import cloudinary

@@ -28,8 +28,7 @@ def image_data(resource):
 
 # -----------------------------------------------------------------------
 
-
-def main():
+if __name__ == "__main__":
     cloudinary.config(
         cloud_name=cloud_name,
         api_key=api_key,
@@ -53,9 +52,3 @@ def main():
             f.write(url + "\n\n")
 
     print("TigerSpot's image data saved to picturedata.txt")
-
-
-# -----------------------------------------------------------------------
-
-if __name__ == "__main__":
-    main()

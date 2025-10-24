@@ -43,9 +43,24 @@ Ensure that environment variables are set in accordance with the `.env.example` 
 
 To set up the local PostgreSQL database using Docker, run `docker-compose up -d` in the root directory. The connection string in `.env.example` for DATABASE_URL is already configured to connect to the Docker container.
 
-Set up the database schema by running `python3 init_database.py`.
+Set up the database schema using Alembic migrations:
+
+```bash
+# Run database migrations
+uv run alembic upgrade head
+
+# Seed the database with pictures from Cloudinary
+uv run python seed_pictures.py
+```
 
 To stop the database container, run `docker-compose down`. If you want to completely clear and reset the database, you can run `docker-compose down -v`. To view logs, use `docker-compose logs -f`.
+
+**Note**: The project now uses SQLAlchemy with Alembic for database migrations. To create a new migration after modifying models, run:
+
+```bash
+uv run alembic revision --autogenerate -m "Description of changes"
+uv run alembic upgrade head
+```
 
 ### Development Server
 
