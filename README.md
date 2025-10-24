@@ -13,17 +13,41 @@ However, users can also play the Versus mode where users can compete one on one 
 
 ## Getting Started
 
-Set up a virtual environment and install the required packages by running the following commands:
+Ensure that you have the following installed on your machine:
+
+- Python 3.10 or higher
+- [Docker](https://www.docker.com/products/docker-desktop/)
+
+Set up a virtual environment and install the required packages using `uv`:
 
 ```bash
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
+# Install uv if not already installed
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Sync dependencies and create virtual environment
+uv sync
+
+# Activate the virtual environment (optional - uv run works without activation)
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+```
+
+Alternatively, run commands directly without activating:
+
+```bash
+uv run python your_script.py
 ```
 
 Ensure that environment variables are set in accordance with the `.env.example` file. You can create a `.env` file in the root directory and set the environment variables there. **IMPORTANT**: Do not commit the `.env` file to the repository and do not place actual secrets in the `.env.example` file.
 
+### Database Setup
+
+To set up the local PostgreSQL database using Docker, run `docker-compose up -d` in the root directory. The connection string in `.env.example` for DATABASE_URL is already configured to connect to the Docker container.
+
 Set up the database schema by running `python3 init_database.py`.
+
+To stop the database container, run `docker-compose down`. If you want to completely clear and reset the database, you can run `docker-compose down -v`. To view logs, use `docker-compose logs -f`.
+
+### Development Server
 
 Run the development server with `python3 dev.py`. You can access the web app at `http://localhost:5173`.
 
