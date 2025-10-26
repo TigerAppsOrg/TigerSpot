@@ -11,15 +11,15 @@ from src.models import User
 
 # Inserts username into users table.
 
-
-def insert_player(username):
+# YUBI: update function to enable addition of displayName and year as well
+def insert_player(username, display_name, year):
     try:
         with get_session() as session:
             # Check if username exists
             existing = session.query(User).filter_by(username=username).first()
 
             if existing is None:
-                new_user = User(username=username, points=0)
+                new_user = User(username=username, points=0, display_name=display_name, year=year)
                 session.add(new_user)
 
         return "success"
@@ -71,7 +71,6 @@ def reset_all_players_total_points():
 # -----------------------------------------------------------------------
 
 # Updates username's total points with points.
-
 
 def update_player(username, points):
     try:
@@ -151,9 +150,11 @@ def get_top_players():
                 .limit(10)
                 .all()
             )
+            # YUBI, ASK: does users return the whole row of information including display name and year?
 
             for user in users:
-                player_stats = {"username": user.username, "points": user.points}
+                # YUBI: add display name and year to player stats
+                player_stats = {"Name": user.display_name + " (" + user.year + ")", "points": user.points}
                 top_players.append(player_stats)
 
         return top_players
