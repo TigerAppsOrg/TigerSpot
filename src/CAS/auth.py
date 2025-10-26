@@ -32,24 +32,53 @@ def strip_ticket(url):
 
 
 def validate(ticket):
+    
+    # YUBI: updated using v3
     val_url = (
         _CAS_URL
-        + "validate"
+        + "p3/serviceValidate"
         + "?service="
         + urllib.parse.quote(strip_ticket(flask.request.url))
         + "&ticket="
         + urllib.parse.quote(ticket)
+        + "&format=json"
     )
-    lines = []
-    with urllib.request.urlopen(val_url) as flo:
-        lines = flo.readlines()  # Should return 2 lines.
-    if len(lines) != 2:
+
+    with urllib.request.urlopen(val_url) as response:
+        data = json.load(response)
+
+    # Check if authentication was successful
+    service_response = data.get("serviceResponse", {})
+    auth_success = service_response.get("authenticationSuccess")
+    if not auth_success:
         return None
-    first_line = lines[0].decode("utf-8")
-    second_line = lines[1].decode("utf-8")
-    if not first_line.startswith("yes"):
-        return None
-    return second_line
+
+    username = auth_success.get("user", "").strip()
+    attributes = auth_success.get("attributes", {})
+    
+    # Extract displayName
+    display_name = ""
+    if "displayName" in attributes:
+        # Could be a list
+        if isinstance(attributes["displayName"], list):
+            display_name = attributes["displayName"][0]
+        else:
+            display_name = attributes["displayName"]
+            
+    # Extract class year from grouperGroups
+    year = "Graduate"
+    grouper_groups = attributes.get("grouperGroups", [])
+    if isinstance(grouper_groups, list):
+        for g in grouper_groups:
+            if "PU:basis:classyear:" in g:
+                year = g.split(":")[-1]
+                break
+            
+    return {
+        "username": username,
+        "displayName": display_name or username,
+        "year": year
+    }
 
 
 # -----------------------------------------------------------------------
@@ -59,35 +88,27 @@ def validate(ticket):
 
 
 def authenticate():
+    # If already authenticated, return cached info
+    if "user_info" in flask.session:
+        return flask.session.get("user_info")
 
-    # If the username is in the session, then the user was
-    # authenticated previously.  So return the username.
-    if "username" in flask.session:
-        return flask.session.get("username")
-
-    # If the request does not contain a login ticket, then redirect
-    # the browser to the login page to get one.
+    # If no ticket, redirect to CAS login
     ticket = flask.request.args.get("ticket")
     if ticket is None:
         login_url = _CAS_URL + "login?service=" + urllib.parse.quote(flask.request.url)
         flask.abort(flask.redirect(login_url))
 
-    # If the login ticket is invalid, then redirect the browser
-    # to the login page to get a new one.
-    username = validate(ticket)
-    if username is None:
+    # Validate ticket
+    user_info = validate(ticket)
+    if user_info is None:
         login_url = (
-            _CAS_URL
-            + "login?service="
-            + urllib.parse.quote(strip_ticket(flask.request.url))
+            _CAS_URL + "login?service=" + urllib.parse.quote(strip_ticket(flask.request.url))
         )
         flask.abort(flask.redirect(login_url))
 
-    # The user is authenticated, so store the username in
-    # the session.
-    username = username.strip()
-    flask.session["username"] = username
-    return username
+    # Store in session
+    flask.session["user_info"] = user_info
+    return user_info
 
 
 # -----------------------------------------------------------------------
@@ -107,6 +128,7 @@ def logoutapp():
 
 def logoutcas():
 
+    # YUBI: ASK, does this correctly logout of cas?
     # Log out of the CAS session, and then the application.
     logout_url = (
         _CAS_URL

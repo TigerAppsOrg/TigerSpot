@@ -79,7 +79,14 @@ def index():
 # Home page after user logs in through Princeton's CAS
 @app.route("/menu", methods=["GET"])
 def menu():
-    username = auth.authenticate()
+    
+    # YUBI: update authenticate to return dictionary of user information
+    user_info = auth.authenticate()
+    username = user_info["username"]
+    display_name = user_info["displayName"]
+    year = user_info["year"]
+
+    # YUBI: update database functions!!!
     user_insert = user_database.insert_player(username)
     daily_insert = daily_user_database.insert_player_daily(username)
     played_date = daily_user_database.get_last_played_date(username)
@@ -111,7 +118,11 @@ def menu():
 @app.route("/requests", methods=["GET"])
 def requests():
     username = flask.request.args.get("username")
-    username_auth = auth.authenticate()
+    user_info = auth.authenticate()
+    username_auth = user_info["username"]
+    display_name = user_info["displayName"]
+    year = user_info["year"]
+
     last_date = daily_user_database.get_last_versus_date(username_auth)
     current_date = pictures_database.get_current_date()
 
@@ -157,7 +168,10 @@ def game():
 
     id = pictures_database.pic_of_day()
 
-    username = auth.authenticate()
+    user_info = auth.authenticate()
+    username = user_info["username"]
+    display_name = user_info["displayName"]
+    year = user_info["year"]
 
     user_played = daily_user_database.player_played(username)
     today_points = daily_user_database.get_daily_points(username)
@@ -198,7 +212,10 @@ def game():
 @app.route("/submit", methods=["POST"])
 def submit():
     id = pictures_database.pic_of_day()
-    username = auth.authenticate()
+    user_info = auth.authenticate()
+    username = user_info["username"]
+    display_name = user_info["displayName"]
+    year = user_info["year"]
 
     user_played = daily_user_database.player_played(username)
     today_points = daily_user_database.get_daily_points(username)
@@ -262,7 +279,10 @@ def submit():
 @app.route("/rules", methods=["GET"])
 def rules():
     # user must be logged in to access page
-    auth.authenticate()
+    user_info = auth.authenticate()
+    username = user_info["username"]
+    display_name = user_info["displayName"]
+    year = user_info["year"]
     html_code = flask.render_template("rules.html")
     response = flask.make_response(html_code)
     return response
@@ -274,7 +294,10 @@ def rules():
 # Congratulations page easter egg
 @app.route("/congrats", methods=["GET"])
 def congrats():
-    username = auth.authenticate()
+    user_info = auth.authenticate()
+    username = user_info["username"]
+    display_name = user_info["displayName"]
+    year = user_info["year"]
     top_player = user_database.get_top_player()
 
     check = database_check([top_player])
@@ -309,7 +332,10 @@ def congrats():
 @app.route("/team", methods=["GET"])
 def team():
     # user must be logged in to access page
-    username = auth.authenticate()
+    user_info = auth.authenticate()
+    username = user_info["username"]
+    display_name = user_info["displayName"]
+    year = user_info["year"]
     top_player = user_database.get_top_player()
 
     check = database_check([top_player])
@@ -333,7 +359,11 @@ def team():
 @app.route("/totalboard", methods=["GET"])
 def leaderboard():
     top_players = user_database.get_top_players()
-    username = auth.authenticate()
+    user_info = auth.authenticate()
+    username = user_info["username"]
+    display_name = user_info["displayName"]
+    year = user_info["year"]
+    
     points = user_database.get_points(username)
     daily_points = daily_user_database.get_daily_points(username)
     rank = user_database.get_rank(username)
@@ -368,7 +398,11 @@ def leaderboard():
 @app.route("/leaderboard", methods=["GET"])
 def totalleaderboard():
     top_players = daily_user_database.get_daily_top_players()
-    username = auth.authenticate()
+    user_info = auth.authenticate()
+    username = user_info["username"]
+    display_name = user_info["displayName"]
+    year = user_info["year"]
+    
     points = user_database.get_points(username)
     daily_points = daily_user_database.get_daily_points(username)
     rank = user_database.get_rank(username)
@@ -434,7 +468,7 @@ def create_challenge_route():
     if (
         challengee_id == None
         or challengee_id not in users
-        or challengee_id == auth.authenticate()
+        or challengee_id == (auth.authenticate()["username"])
     ):
         response = {
             "status": "error",
@@ -442,8 +476,10 @@ def create_challenge_route():
         }
         return flask.jsonify(response), 400  # Including a 400 Bad Request status code
     else:
+        user_info = auth.authenticate()
+        username = user_info["username"]
         result = challenges_database.create_challenge(
-            auth.authenticate(), challengee_id
+            username, challengee_id
         )
 
     check = database_check([result])
@@ -521,7 +557,9 @@ def decline_challenge_route():
 @app.route("/play_button", methods=["POST"])
 def play_button():
     challenge_id = flask.request.form.get("challenge_id")
-    user = auth.authenticate()
+    user_info = auth.authenticate()
+    user = user_info["username"]
+    
     status = challenges_database.get_playbutton_status(challenge_id, user)
     check = database_check([status])
     if check is False:
@@ -625,7 +663,9 @@ def start_challenge(challenge_id=None, index=None):
 @app.route("/end_challenge", methods=["POST"])
 def end_challenge():
     challenge_id = flask.request.form.get("challenge_id")
-    user = auth.authenticate()
+    user_info = auth.authenticate()
+    user = user_info["username"]
+    
     finish = challenges_database.update_finish_status(challenge_id, user)
     check = database_check([finish])
     if check is False:
@@ -675,7 +715,7 @@ def submit2():
         return flask.make_response(html_code)
     if not currLat or not currLon:
         pic_status = versus_database.get_versus_pic_status(
-            challenge_id, auth.authenticate(), index + 1
+            challenge_id, (auth.authenticate()["username"]), index + 1
         )
         check = database_check([pic_status])
         if check is False:
@@ -685,17 +725,17 @@ def submit2():
             return flask.redirect(flask.url_for("requests"))
         if pic_status is False:
             fin1 = versus_database.update_versus_pic_status(
-                challenge_id, auth.authenticate(), index + 1
+                challenge_id, (auth.authenticate()["username"]), index + 1
             )
             if fin1 is None:
                 return flask.redirect(flask.url_for("requests"))
             fin2 = versus_database.store_versus_pic_points(
-                challenge_id, auth.authenticate(), index + 1, points
+                challenge_id, (auth.authenticate()["username"]), index + 1, points
             )
             if fin2 is None:
                 return flask.redirect(flask.url_for("requests"))
             fin3 = versus_database.update_versus_points(
-                challenge_id, auth.authenticate(), points
+                challenge_id, (auth.authenticate()["username"]), points
             )
             if fin3 is None:
                 return flask.redirect(flask.url_for("requests"))
@@ -725,7 +765,7 @@ def submit2():
         return flask.redirect(flask.url_for("requests"))
     distance = round(distance_func.calc_distance(currLat, currLon, coor))
     pic_status = versus_database.get_versus_pic_status(
-        challenge_id, auth.authenticate(), index + 1
+        challenge_id, (auth.authenticate()["username"]), index + 1
     )
     check = database_check([pic_status])
     if check is False:
@@ -736,17 +776,17 @@ def submit2():
     if pic_status is False:
         points = round(versus_database.calculate_versus(distance, time))
         fin1 = versus_database.store_versus_pic_points(
-            challenge_id, auth.authenticate(), index + 1, points
+            challenge_id, (auth.authenticate()["username"]), index + 1, points
         )
         if fin1 is None:
             return flask.redirect(flask.url_for("requests"))
         fin2 = versus_database.update_versus_points(
-            challenge_id, auth.authenticate(), points
+            challenge_id, (auth.authenticate()["username"]), points
         )
         if fin2 is None:
             return flask.redirect(flask.url_for("requests"))
         fin3 = versus_database.update_versus_pic_status(
-            challenge_id, auth.authenticate(), index + 1
+            challenge_id, (auth.authenticate()["username"]), index + 1
         )
         if fin3 is None:
             return flask.redirect(flask.url_for("requests"))
