@@ -12,7 +12,7 @@ from src.models import UserDaily
 # Inserts username into usersDaily table.
 
 
-def insert_player_daily(username):
+def insert_player_daily(username, display_name, year):
     try:
         with get_session() as session:
             existing = session.query(UserDaily).filter_by(username=username).first()
@@ -21,6 +21,8 @@ def insert_player_daily(username):
                 new_user = UserDaily(
                     username=username,
                     points=0,
+                    display_name=display_name,
+                    year=year,
                     distance=0,
                     played=False,
                     last_played=None,
@@ -287,7 +289,9 @@ def get_daily_top_players():
             )
 
             for user in users:
-                player_stats = {"username": user.username, "points": user.points}
+                # YUBI: update player_stats to show display_name concatenated with year
+                # I have replaced username with the name, but kept the json reference as username for now
+                player_stats = {"username": user.display_name + " (" + user.year + ")", "points": user.points}
                 daily_top_players.append(player_stats)
 
         return daily_top_players

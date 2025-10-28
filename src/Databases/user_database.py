@@ -71,7 +71,8 @@ def reset_all_players_total_points():
 # -----------------------------------------------------------------------
 
 # Updates username's total points with points.
-
+# YUBI ASK: in this function, do I need to update the full user table or just the points?
+# I don't want to lose the other columns in the user table when I update points
 def update_player(username, points):
     try:
         with get_session() as session:
@@ -153,8 +154,9 @@ def get_top_players():
             # YUBI, ASK: does users return the whole row of information including display name and year?
 
             for user in users:
-                # YUBI: add display name and year to player stats
-                player_stats = {"Name": user.display_name + " (" + user.year + ")", "points": user.points}
+                # YUBI: replace username with display name and year
+                # Keep reference as username, but want to change this to name later
+                player_stats = {"username": user.display_name + " (" + user.year + ")", "points": user.points}
                 top_players.append(player_stats)
 
         return top_players
@@ -217,7 +219,8 @@ def get_top_player():
             if user is None:
                 return {"username": None, "points": 0}
 
-            player_stats = {"username": user.username, "points": user.points}
+            # YUBI: replace username with display name and year
+            player_stats = {"username": user.display_name + " (" + user.year + ")", "points": user.points}
 
         return player_stats
 

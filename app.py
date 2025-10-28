@@ -87,8 +87,8 @@ def menu():
     year = user_info["year"]
 
     # YUBI: update database functions!!!
-    user_insert = user_database.insert_player(username)
-    daily_insert = daily_user_database.insert_player_daily(username)
+    user_insert = user_database.insert_player(username, display_name, year)
+    daily_insert = daily_user_database.insert_player_daily(username, display_name, year)
     played_date = daily_user_database.get_last_played_date(username)
     current_date = pictures_database.get_current_date()
 

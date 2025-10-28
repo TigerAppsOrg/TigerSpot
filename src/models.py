@@ -104,7 +104,7 @@ class Challenge(Base):
 
 # -----------------------------------------------------------------------
 
-
+# YUBI ASK: do we want to show displayName instead of netID in matches as well?
 class Match(Base):
     """Model for matches table - stores completed versus mode match results"""
 
