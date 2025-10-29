@@ -1,6 +1,6 @@
 /* Website-Wide Styles */
 body {
-  font-family: sans-serif;
+  font-family: 'Nunito', sans-serif;
   margin: 0;
   padding: 0;
   background-color: orange;
@@ -21,12 +21,13 @@ button {
 
 .button {
   background-color: orange;
-  border: 0.6vw solid black;
-  border-radius: 1vw;
-  font-size: 4vw;
-  padding: 1vh 1vw;
+  border: 5px solid black;
+  border-radius: 12px;
+  font-size: 3rem;
+  padding: 1.5rem 4rem;
   transition-duration: 0.2s;
   cursor: pointer;
+  min-width: 250px;
 }
 
 .home {
@@ -35,8 +36,8 @@ button {
   text-align: center;
   align-items: center;
   justify-content: center;
-  border: 0.6vw solid black;
-  border-radius: 1vh;
+  border: 8px solid black;
+  border-radius: 8px;
   background: white;
   padding: 7vh 1vw;
 }
@@ -57,12 +58,27 @@ main {
   align-items: center;
 }
 
+body.login main {
+  margin-top: 0;
+  padding: 0;
+  min-height: 100vh;
+}
+
+body.login .page {
+  margin-top: 0;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
 .main-content {
   display: flex;
   flex-direction: row;
   justify-content: space-evenly;
   align-items: center;
-  width: 100%; /* Ensure the container takes up the full width */
+  width: 100%;
+  /* Ensure the container takes up the full width */
   max-height: 90%;
   padding: 4vh 0vw;
 }
@@ -72,16 +88,17 @@ main {
   flex-direction: column;
   justify-content: space-evenly;
   align-items: center;
-  width: 100%; /* Ensure the container takes up the full width */
+  width: 100%;
+  /* Ensure the container takes up the full width */
   max-height: 90%;
   padding: 3vh 0vw;
   margin-top: 0vh;
 }
 
-.main-content.game, 
-.main.game, 
-.game.page, 
-.mainmenu, 
+.main-content.game,
+.main.game,
+.game.page,
+.mainmenu,
 .main-content.vs-results {
   margin-top: 0;
 }
@@ -118,14 +135,17 @@ main {
 }
 
 .clear:hover,
-.submit:hover, 
+.submit:hover,
 .submit.decline:hover {
   background-color: rgb(255, 255, 255);
 }
 
 /* Show darker orange when hovering over orange buttons */
-.button:hover, .rules-button:hover, #share:hover, 
-#share-submit:hover, .game.result-btn:hover {
+.button:hover,
+.rules-button:hover,
+#share:hover,
+#share-submit:hover,
+.game.result-btn:hover {
   background-color: rgb(219, 128, 16);
 }
 
@@ -135,9 +155,9 @@ main {
   color: white;
   text-align: center;
   box-shadow: 0 1vw 1vw rgba(0, 0, 0, 0.1);
-  border: 0.6vw solid black;
+  border: 0.5vw solid black;
   margin-bottom: 0;
-} 
+}
 
 header {
   margin-bottom: 9vh;
@@ -160,11 +180,13 @@ nav {
   align-items: center;
   position: fixed;
   top: 0;
-  width: 97%; /* Adjusted width to accommodate border */
+  width: 97%;
+  /* Adjusted width to accommodate border */
   background-color: white;
   border: 0.6vw solid black;
   padding: 1vh 1vw;
-  z-index: 1000; /* Ensure the navbar is on top of other content */
+  z-index: 1000;
+  /* Ensure the navbar is on top of other content */
   margin-bottom: 2vh 0vw;
 }
 
@@ -202,31 +224,31 @@ nav {
 /* Leaderboard Styles */
 
 .duo-leaderboard {
-    position: relative;
-    display: inline-block;
-    padding-left: 1vw;
+  position: relative;
+  display: inline-block;
+  padding-left: 1vw;
 }
 
 .leaderboard-content {
-    background-color: white;
-    min-width: 120px;
-    box-shadow: 0 0.2vw 0.5vw rgba(0, 0, 0, 0.2);
-    border: 0.2vw solid black;
-    margin: 1vh 1vw;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+  background-color: white;
+  min-width: 120px;
+  box-shadow: 0 0.2vw 0.5vw rgba(0, 0, 0, 0.2);
+  border: 0.2vw solid black;
+  margin: 1vh 1vw;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .leaderboard-content a {
-    color: black;
-    padding: 1vh 1vw;
-    text-decoration: none;
-    border-right: 0.2vw solid black; 
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
+  color: black;
+  padding: 1vh 1vw;
+  text-decoration: none;
+  border-right: 0.2vw solid black;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
 }
 
 .center {
@@ -239,14 +261,15 @@ nav {
 }
 
 .leaderboard-content a:last-child {
-    border-right: none; /* Remove border from last child to reduce border size */
+  border-right: none;
+  /* Remove border from last child to reduce border size */
 }
 
 /* Login/Menu Page Styles */
 .logo {
   width: 40vw;
-  max-height: 60vh; 
-  padding: 1vh 1vw; 
+  max-height: 60vh;
+  padding: 1vh 1vw;
 }
 
 /* Rules Page CSS*/
@@ -305,8 +328,10 @@ nav {
   text-align: center;
   margin: 0;
   position: absolute;
-  left: 50%; /* Move the text to the middle horizontally */
-  transform: translateX(-50%); /* Center the text exactly in the middle */
+  left: 50%;
+  /* Move the text to the middle horizontally */
+  transform: translateX(-50%);
+  /* Center the text exactly in the middle */
 }
 
 .result-btn {
@@ -342,20 +367,21 @@ header .game-text {
 }
 
 .game-image {
-  width: 35vw; /* Adjusted width */
+  width: 35vw;
+  /* Adjusted width */
   height: 65vh;
   padding: 1vh 1vw;
 }
 
 .map {
-  width: 40vw; 
-  height: 65vh; 
+  width: 40vw;
+  height: 65vh;
   padding: 1vh 0vw;
-  position: relative; 
+  position: relative;
 }
 
 /* Versus Page Styles */
-.submit.versus, 
+.submit.versus,
 .clear.versus {
   margin-top: 2vh;
 }
@@ -502,10 +528,11 @@ table {
 .top-players.challenges {
   max-height: calc(45vh - 6vh);
   width: 65vw;
-  overflow: auto; /* Add scroll when more than 5 user challenges */
+  overflow: auto;
+  /* Add scroll when more than 5 user challenges */
 }
 
-.no-challenges, 
+.no-challenges,
 .challenges-list {
   font-size: 2vh;
   text-align: center;
@@ -531,7 +558,7 @@ table {
   align-items: center;
 }
 
-.submit.challenge, 
+.submit.challenge,
 .submit.decline {
   margin-right: 0vw;
 }
@@ -554,11 +581,11 @@ table {
 .link-style {
   align-items: center;
   justify-content: center;
-  text-decoration: none; 
+  text-decoration: none;
   padding-right: 0.5vw;
 }
 
-.score, 
+.score,
 .score2 {
   text-align: right;
 }
@@ -622,7 +649,7 @@ table {
 
 /* Add some shadows to create a card effect */
 .card {
-  width: 100%; 
+  width: 100%;
   height: 100%;
   display: flex;
   flex-direction: column;
@@ -658,17 +685,18 @@ table {
 
 /* Adjusted Styles for when screen has shrunk on mobile */
 @media screen and (max-width: 1000px) {
+
   /* Styles Across Pages */
   .main-content {
     flex-direction: column;
     align-items: center;
   }
 
-  b.text { 
+  b.text {
     font-size: 4vw;
   }
 
-  .home, 
+  .home,
   .page {
     width: 100%;
   }
@@ -695,18 +723,20 @@ table {
 
   /* Shrink home icon */
   .home-icon img {
-    width: 15vw; 
+    width: 15vw;
     height: auto;
   }
-  
+
   /* Shrink nav items */
-  .nav-item img, 
+  .nav-item img,
   .nav-item span {
     font-size: 1.5vw;
     text-align: center;
-    max-width: 6vw; /* Adjust width as needed */
+    max-width: 6vw;
+    /* Adjust width as needed */
     height: auto;
-    margin-left: 2vw; /* Adjust spacing */
+    margin-left: 2vw;
+    /* Adjust spacing */
   }
 
   /* Rules Page Styles */
@@ -725,7 +755,7 @@ table {
 
   /* Game Page/Results Styles */
   .game-image {
-    width: 80vw; 
+    width: 80vw;
     height: 50vh;
   }
 
@@ -735,7 +765,7 @@ table {
   }
 
   .map {
-    width: 85vw; 
+    width: 85vw;
     height: auto;
     padding-left: 4vw;
     padding-bottom: 4vh;
@@ -758,15 +788,15 @@ table {
   .submit.this {
     margin-right: 10vw;
   }
-  
+
   .form-group {
     margin-left: 5vw;
   }
-  
+
   /* Leaderboard Styles */
   /* When screen shrinks, change "leaderboard"to 
   "leader board" to fit screen better */
-  [data-alttext] > span {
+  [data-alttext]>span {
     display: none;
   }
 
@@ -781,12 +811,14 @@ table {
   }
 
   .user-stats {
-    min-width: 80vw; /* Adjust as needed */
+    min-width: 80vw;
+    /* Adjust as needed */
     height: 50vh;
   }
 
   .top-players {
-    min-width: 80vw; /* Adjust as needed */
+    min-width: 80vw;
+    /* Adjust as needed */
     height: 50vh;
   }
 
@@ -795,9 +827,8 @@ table {
     height: auto;
   }
 
-  .user-stats h2, 
-  .duo-leaderboard h2 
-  {
+  .user-stats h2,
+  .duo-leaderboard h2 {
     font-size: 10vw;
   }
 
@@ -848,10 +879,10 @@ table {
 
   /* Versus Results Page Styles */
   #exampleCarousel {
-    width: 100%;  
+    width: 100%;
     max-width: 80vw;
-    height: auto; 
-    margin: 0vh 2vw 2vh 2vw; 
+    height: auto;
+    margin: 0vh 2vw 2vh 2vw;
   }
 
   /* Team Page Styles */
@@ -862,6 +893,7 @@ table {
 
 /* Display the columns below each other instead of side by side on small screens */
 @media screen and (max-width: 700px) {
+
   /* Team Page Styles */
   .team-row {
     display: flex;
@@ -881,6 +913,7 @@ table {
 }
 
 @media screen and (max-height: 770px) {
+
   /* Header Styles */
   .board-header {
     margin-bottom: 5vh;
@@ -916,6 +949,7 @@ table {
 }
 
 @media screen and (max-height: 600px) {
+
   /* Header Styles */
   .rules-header {
     margin-bottom: 29vh;
@@ -948,19 +982,19 @@ table {
   }
 
   /* Team Page Styles */
-  
+
   .team-row:nth-child(even) {
     margin-top: 25vh;
   }
 
   /* Instructions/Rules Styles */
-  .rules-button, 
+  .rules-button,
   .instructions .title {
     font-size: 1.5vw;
   }
 
   /* Leaderboard Styles */
-  .top-players h2  {
+  .top-players h2 {
     font-size: 2vw;
   }
 }
