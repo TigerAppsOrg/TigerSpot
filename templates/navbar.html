@@ -12,28 +12,44 @@
         <div class="nav-icons">
         </button>
         </a>
+          <div class="nav-item" id="theme-toggle">
+            <img src="static\styles\palette.svg" alt="Theme Selector" />
+            <span>Palettes</span>
+            <div id="theme-selector-modal" class="theme-modal" style="display: none;">
+              <div class="theme-grid">
+                <div class="theme-option" data-theme="orange"></div>
+                <div class="theme-option" data-theme="green"></div>
+                <div class="theme-option" data-theme="beige"></div>
+                <div class="theme-option" data-theme="purple"></div>
+                <div class="theme-option" data-theme="gray"></div>
+                <div class="theme-option" data-theme="blue"></div>
+                <div class="theme-option" data-theme="cream"></div>
+                <div class="theme-option" data-theme="pink"></div>
+              </div>
+            </div>
+          </div>
           <a href="/rules">
             <div class="nav-item">
               <img src="static\styles\key.svg" alt="Rules" class="key-icon" />
-              <span id="orange-rules">Rules</span>
+              <span>Rules</span>
             </div>
           </a>
           <a href="/requests">
             <div class="nav-item">
               <img src="static\styles\lightning.svg" alt="Requests" />
-              <span id="orange-vs">Versus</span>
+              <span>Versus</span>
             </div>
           </a>
           <a href="/leaderboard">
             <div class="nav-item">
               <img src="static\styles\trophy.svg" alt="Leaderboard" />
-              <span data-alttext="Leader board"><span id="orange-board">Leaderboard</span></span>
+              <span data-alttext="Leader board"><span>Leaderboard</span></span>
             </div>
           </a>
           <a href="/team">
             <div class="nav-item">
               <img src="static\styles\people.svg" alt="About Us" />
-              <span id="orange-team">About Us</span>
+              <span>About Us</span>
             </div>
           </a>
           <a href="logoutcas">
@@ -44,3 +60,39 @@
           </a>
         </div>
     </nav>
+    <script>
+      // Theme Switcher JavaScript
+      const themeToggle = document.getElementById('theme-toggle');
+      const themeModal = document.getElementById('theme-selector-modal');
+      const themeOptions = document.querySelectorAll('.theme-option');
+
+      // Toggle modal visibility
+      themeToggle.addEventListener('click', function(e) {
+        e.stopPropagation();
+        const isVisible = themeModal.style.display === 'block';
+        themeModal.style.display = isVisible ? 'none' : 'block';
+      });
+
+      // Close modal when clicking outside
+      document.addEventListener('click', function(e) {
+        if (!themeToggle.contains(e.target) && !themeModal.contains(e.target)) {
+          themeModal.style.display = 'none';
+        }
+      });
+
+      // Handle theme selection
+      themeOptions.forEach(option => {
+        option.addEventListener('click', function() {
+          const selectedTheme = this.getAttribute('data-theme');
+          document.body.setAttribute('data-theme', selectedTheme);
+          localStorage.setItem('theme', selectedTheme);
+          themeModal.style.display = 'none';
+        });
+      });
+
+      // Load saved theme on page load
+      window.addEventListener('DOMContentLoaded', function() {
+        const savedTheme = localStorage.getItem('theme') || 'orange';
+        document.body.setAttribute('data-theme', savedTheme);
+      });
+    </script>
