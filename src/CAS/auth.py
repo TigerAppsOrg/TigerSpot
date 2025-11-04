@@ -6,6 +6,7 @@ import urllib.request
 import urllib.parse
 import re
 import flask
+import json
 
 # -----------------------------------------------------------------------
 
@@ -32,7 +33,7 @@ def strip_ticket(url):
 
 
 def validate(ticket):
-    
+
     # YUBI: updated using v3
     val_url = (
         _CAS_URL
@@ -55,7 +56,7 @@ def validate(ticket):
 
     username = auth_success.get("user", "").strip()
     attributes = auth_success.get("attributes", {})
-    
+
     # Extract displayName
     display_name = ""
     if "displayName" in attributes:
@@ -64,7 +65,7 @@ def validate(ticket):
             display_name = attributes["displayName"][0]
         else:
             display_name = attributes["displayName"]
-            
+
     # Extract class year from grouperGroups
     year = "Graduate"
     grouper_groups = attributes.get("grouperGroups", [])
@@ -73,12 +74,8 @@ def validate(ticket):
             if "PU:basis:classyear:" in g:
                 year = g.split(":")[-1]
                 break
-            
-    return {
-        "username": username,
-        "displayName": display_name or username,
-        "year": year
-    }
+
+    return {"username": username, "displayName": display_name or username, "year": year}
 
 
 # -----------------------------------------------------------------------
@@ -102,7 +99,9 @@ def authenticate():
     user_info = validate(ticket)
     if user_info is None:
         login_url = (
-            _CAS_URL + "login?service=" + urllib.parse.quote(strip_ticket(flask.request.url))
+            _CAS_URL
+            + "login?service="
+            + urllib.parse.quote(strip_ticket(flask.request.url))
         )
         flask.abort(flask.redirect(login_url))
 
