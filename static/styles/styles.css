@@ -245,8 +245,15 @@ body.login main {
 }
 
 .clear {
-  background-color: rgb(228, 34, 34);
-  color: white;
+  background-color: white;
+  color: var(--border-color);
+  border-color: var(--border-color);
+}
+
+body[data-theme="orange"] .submit {
+  background-color: black;
+  color: #ffffff;
+  border-color: black;
 }
 
 
@@ -308,11 +315,11 @@ nav {
   align-items: center;
   position: fixed;
   top: 0;
-  width: 97%;
-  /* Adjusted width to accommodate border */
+  width: calc(100% - 16px);
+  /* Adjusted width to accommodate body border */
   background-color: white;
   border-left: 8px solid var(--border-color);
-  border-right: 8px solid var(--border-color);
+  border-right: none;
   border-top: 12px solid var(--border-color);
   border-bottom: 8px solid var(--border-color);
   padding: 1vh 1vw;
@@ -332,7 +339,7 @@ nav {
   max-width: 100%;
   height: auto;
   float: right;
-  margin-right: 1vw;
+  margin-right: 2.5vw;
 }
 
 .nav-icons a:hover {
@@ -642,6 +649,7 @@ nav {
   border-radius: 8px;
   font-size: 18px;
   padding: 12px 30px;
+  margin-top: 3vh;
   transition-duration: 0.2s;
   cursor: pointer;
 }
@@ -981,7 +989,7 @@ table {
   border-radius: 1vw;
   font-size: 2vw;
   padding: 1.5vh 2vw;
-  margin-top: 2vh;
+  margin-top: 4vh;
   transition-duration: 0.2s;
   cursor: pointer;
 }
