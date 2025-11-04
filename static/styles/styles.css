@@ -582,6 +582,7 @@ nav {
 .rules-container {
   display: flex;
   flex-direction: row;
+  padding: 2vh 0vw;
 }
 
 .instructions {
