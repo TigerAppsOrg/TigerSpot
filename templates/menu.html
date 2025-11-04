@@ -47,18 +47,4 @@
 </html>
 <script>
   document.getElementById("username").value = "{{username}}";
-
-window.addEventListener('scroll', function() {
-    var navbar = document.getElementById('navbar');
-    var sticky = navbar.offsetTop;
-
-    if (window.pageYOffset >= sticky) {
-        navbar.classList.add('sticky');
-        document.body.style.paddingTop = (navbar.offsetHeight - 70) + 'px'; // Add padding after scrolling past offset
-    } else {
-        navbar.classList.remove('sticky');
-        document.body.style.paddingTop = '0'; // Reset padding
-    }
-});
-
 </script>

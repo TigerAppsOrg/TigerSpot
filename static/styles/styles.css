@@ -81,12 +81,21 @@ body[data-theme="pink"] {
 }
 
 /* Website-Wide Styles */
+html {
+  overflow-x: hidden;
+  overscroll-behavior-y: none;
+  height: 100%;
+}
+
 body {
   font-family: 'Nunito', sans-serif;
   margin: 0;
   padding: 0;
   background-color: var(--bg-color);
   box-sizing: border-box;
+  overflow-x: hidden;
+  overscroll-behavior-y: none;
+  min-height: 100%;
 }
 
 /* Text Selection Color */
@@ -146,7 +155,7 @@ button {
   border: 8px solid var(--border-color);
   border-radius: 8px;
   background: white;
-  padding: 7vh 1vw;
+  padding: 4vh 1vw;
   margin-left: 50px;
   margin-right: 50px;
 }
@@ -156,7 +165,7 @@ button {
 }
 
 .page {
-  margin-top: 12vh;
+  margin-top: 10vh;
 }
 
 body.login .page {
@@ -176,8 +185,8 @@ body.login .page {
 /* Styling for Main of Each Page */
 
 main {
-  margin-top: 15vh;
-  padding: 4vh 4vw;
+  margin-top: 11vh;
+  padding: 2vh 4vw;
   background-color: var(--bg-color);
   display: flex;
   flex-direction: row;
@@ -299,7 +308,7 @@ header {
 }
 
 .board-header {
-  margin-bottom: -8vh;
+  margin-bottom: 0vh;
 }
 
 .daily-result-header {
@@ -586,10 +595,10 @@ nav {
   border: 8px solid var(--border-color);
   border-radius: 1vh;
   background: white;
-  padding: 4vh 1vw 3vh 1vw;
+  padding: 3vh 1vw 2vh 1vw;
   margin: 1vh 2vw;
   max-width: 50vw;
-  min-height: 50vh;
+  min-height: 45vh;
 }
 
 .instructions .title {
@@ -672,8 +681,8 @@ header .game-text {
   color: black;
   font-size: 2.5vh;
   text-align: center;
-  margin: 3vh 5vw 0vh 5vw;
-  padding: 6vh 5vw 0vh 5vw;
+  margin: 2vh 5vw 0vh 5vw;
+  padding: 3vh 5vw 0vh 5vw;
 }
 
 .game-instructions p {
@@ -809,7 +818,7 @@ table {
   display: flex;
   justify-content: space-between;
   padding: 1vh 4vw 1vh 4vw;
-  margin-top: 3vh;
+  margin-top: 1vh;
 }
 
 .board {
@@ -831,7 +840,7 @@ table {
   display: flex;
   flex-direction: column;
   margin-right: 1.5vh;
-  max-height: calc(100vh - 6vh);
+  max-height: calc(100vh - 20vh);
   width: 50vw;
   padding-bottom: 1vh;
 }
@@ -844,10 +853,12 @@ table {
 #container {
   display: flex;
   flex-direction: column;
-  max-height: calc(80vh - 6vh);
+  max-height: calc(100vh - 35vh);
   border-right: 0.25vw solid var(--border-color);
   border-left: 0.25vw solid var(--border-color);
   border-top: 0.25vw solid var(--border-color);
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 /* Versus Invites/Challenges Styles */

@@ -147,21 +147,6 @@
             </button>
         </div>
     </main>
-    
-    <script>
-    window.addEventListener('scroll', function() {
-        var navbar = document.getElementById('navbar');
-        var sticky = navbar.offsetTop;
-
-        if (window.pageYOffset >= sticky) {
-            navbar.classList.add('sticky');
-            document.body.style.paddingTop = (navbar.offsetHeight - 100) + 'px'; // Add padding if extends beyond offset for sticky navbar
-        } else {
-            navbar.classList.remove('sticky');
-            document.body.style.paddingTop = '0'; // Reset padding
-        }
-    });
-    </script>
   </body>
 </html>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
