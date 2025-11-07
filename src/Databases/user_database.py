@@ -188,8 +188,10 @@ def remove_from_user_table(username):
 def get_players():
     try:
         with get_session() as session:
+            # SQLAlchemy 2.x returns Row objects/tuples for column queries;
+            # unwrap first column to plain strings for robustness
             users = session.query(User.username).all()
-            user_ids = [user.username for user in users]
+            user_ids = [row[0] for row in users]
 
         return user_ids
 

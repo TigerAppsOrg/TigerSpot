@@ -7,6 +7,7 @@ import random
 from sqlalchemy import text
 
 from src.db import get_session
+import sys, traceback
 from src.models import Challenge, Match
 
 
@@ -186,24 +187,35 @@ def get_user_challenges(user_id):
             # Initialize dictionaries to hold the two types of challenges
             user_challenges = {"initiated": [], "received": []}
 
-            # Import get_winner from versus_database to avoid circular imports
-            from Databases import versus_database
-
             # Iterate through the results and categorize each challenge
             for challenge in challenges:
-                winner_id = versus_database.get_winner(challenge.id)
+                try:
+                    cid = challenge.id
+                    challenger_id = challenge.challenger_id
+                    challengee_id = challenge.challengee_id
+                    status = challenge.status
+                    challenger_finished = challenge.challenger_finished
+                    challengee_finished = challenge.challengee_finished
+                except Exception as ex:
+                    print(f"get_user_challenges attr error: {type(ex).__name__}: {ex}", file=sys.stderr)
+                    traceback.print_exc()
+                    raise
+
+                # compute winner using the same session to avoid detaching current objects
+                winner_row = session.query(Match).filter_by(challenge_id=cid).first()
+                winner_id = winner_row.winner_id if winner_row is not None else None
 
                 challenge_dict = {
-                    "id": challenge.id,
-                    "challenger_id": challenge.challenger_id,
-                    "challengee_id": challenge.challengee_id,
-                    "status": challenge.status,
-                    "challenger_finished": challenge.challenger_finished,
-                    "challengee_finished": challenge.challengee_finished,
+                    "id": cid,
+                    "challenger_id": challenger_id,
+                    "challengee_id": challengee_id,
+                    "status": status,
+                    "challenger_finished": challenger_finished,
+                    "challengee_finished": challengee_finished,
                     "winner_id": winner_id,
                 }
 
-                if challenge.challenger_id == user_id:  # User is the challenger
+                if challenger_id == user_id:  # User is the challenger
                     user_challenges["initiated"].append(challenge_dict)
                 else:  # User is the challengee
                     user_challenges["received"].append(challenge_dict)
@@ -211,7 +223,8 @@ def get_user_challenges(user_id):
         return user_challenges
 
     except Exception as error:
-        print(f"Error getting user challenges: {error}")
+        print(f"Error getting user challenges: {type(error).__name__}: {error}", file=sys.stderr)
+        traceback.print_exc()
         return "database error"
 
 
