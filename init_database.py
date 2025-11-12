@@ -71,6 +71,7 @@ def create_daily_user_table():
                                 points int,
                                 distance int,
                                 played boolean,
+                                first_played date,
                                 last_played date,
                                 last_versus date,
                                 current_streak int);"""

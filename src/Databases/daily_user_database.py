@@ -15,6 +15,7 @@ from src.models import UserDaily
 def insert_player_daily(username):
     try:
         with get_session() as session:
+            session.execute(text("SET TIME ZONE 'America/New_York'"))
             existing = session.query(UserDaily).filter_by(username=username).first()
 
             if existing is None:
@@ -23,6 +24,7 @@ def insert_player_daily(username):
                     points=0,
                     distance=0,
                     played=False,
+                    first_played=func.current_date(),
                     last_played=None,
                     last_versus=None,
                     current_streak=0,
@@ -53,7 +55,7 @@ def update_player_daily(username, points, distance):
             if user is None:
                 return "database error"
 
-            # Calculate new streak
+            # Calculate new streak and record first play date when needed
             if user.last_played is None:
                 new_streak = 1
             elif user.last_played == func.date(
