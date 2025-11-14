@@ -18,9 +18,12 @@ class User(Base):
 
     username = Column(String(255), primary_key=True)
     points = Column(Integer, default=0)
+    display_name = Column(String(255), default="")
+    year = Column(String(255), default="")
 
     def __repr__(self):
-        return f"<User(username={self.username}, points={self.points})>"
+        # YUBI: add display name and year to user table
+        return f"<User(username={self.username}, points={self.points}, display_name={self.display_name}, year={self.year})>"
 
 
 # -----------------------------------------------------------------------
@@ -31,8 +34,11 @@ class UserDaily(Base):
 
     __tablename__ = "usersdaily"
 
+    # YUBI: add display name and year to user table
     username = Column(String(255), primary_key=True)
     points = Column(Integer, default=0)
+    display_name = Column(String(255), default="")
+    year = Column(String(255), default="")
     distance = Column(Integer, default=0)
     played = Column(Boolean, default=False)
     first_played = Column(Date, nullable=True)
@@ -41,7 +47,7 @@ class UserDaily(Base):
     current_streak = Column(Integer, default=0)
 
     def __repr__(self):
-        return f"<UserDaily(username={self.username}, points={self.points}, streak={self.current_streak})>"
+        return f"<UserDaily(username={self.username}, points={self.points}, display_name={self.display_name}, year={self.year}, streak={self.current_streak})>"
 
 
 # -----------------------------------------------------------------------
@@ -99,7 +105,7 @@ class Challenge(Base):
 
 # -----------------------------------------------------------------------
 
-
+# YUBI ASK: do we want to show displayName instead of netID in matches as well?
 class Match(Base):
     """Model for matches table - stores completed versus mode match results"""
 
