@@ -18,6 +18,7 @@ class User(Base):
 
     username = Column(String(255), primary_key=True)
     points = Column(Integer, default=0)
+    admin = Column(Boolean, default=False)
 
     def __repr__(self):
         return f"<User(username={self.username}, points={self.points})>"
@@ -35,7 +36,6 @@ class UserDaily(Base):
     points = Column(Integer, default=0)
     distance = Column(Integer, default=0)
     played = Column(Boolean, default=False)
-    first_played = Column(Date, nullable=True)
     last_played = Column(Date, nullable=True)
     last_versus = Column(Date, nullable=True)
     current_streak = Column(Integer, default=0)
