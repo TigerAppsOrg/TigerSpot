@@ -765,6 +765,16 @@ header .game-text {
   justify-content: center;
 }
 
+.versus-components .map-container {
+  position: relative;
+}
+
+.versus-components .game-btns {
+  position: absolute;
+  bottom: -5vh;
+  right: 0;
+}
+
 
 
 
