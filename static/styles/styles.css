@@ -1161,11 +1161,19 @@ table {
     height: 100%;
   }
 
+  .map-container {
+    padding-bottom: calc(16px + env(safe-area-inset-bottom, 8px));
+    margin-bottom: 2vh;
+  }
+
   .game-btns {
     width: 80vw;
     position: relative;
     bottom: auto;
-    margin-top: 1vh;
+    margin-top: 1.2vh;
+    margin-bottom: calc(3vh + env(safe-area-inset-bottom, 10px));
+    padding-bottom: env(safe-area-inset-bottom, 6px);
+    align-items: center;
   }
 
   .versus-components {
