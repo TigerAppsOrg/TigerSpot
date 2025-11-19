@@ -605,6 +605,12 @@ def start_challenge(challenge_id=None, index=None):
     index = int(index)
     if index < len(versusList):
         link = pictures_database.get_pic_info("link", versusList[index])
+        
+        # Fallback if link is None (e.g. invalid picture ID from old challenge)
+        if link is None:
+            print(f"Warning: Image link not found for ID {versusList[index]}. Using fallback.")
+            link = pictures_database.get_pic_info("link", 1)
+
         check = database_check([link])
         if check is False:
             html_code = flask.render_template("contact_admin.html")
@@ -669,6 +675,13 @@ def submit2():
     versusList = challenges_database.get_random_versus(challenge_id)
     coor = pictures_database.get_pic_info("coordinates", versusList[index])
     place = pictures_database.get_pic_info("place", versusList[index])
+    
+    # Fallback if coor/place is None
+    if coor is None or place is None:
+         print(f"Warning: Coordinates/Place not found for ID {versusList[index]}. Using fallback.")
+         coor = pictures_database.get_pic_info("coordinates", 1)
+         place = pictures_database.get_pic_info("place", 1)
+
     check = database_check([versusList, coor, place])
     if check is False:
         html_code = flask.render_template("contact_admin.html")

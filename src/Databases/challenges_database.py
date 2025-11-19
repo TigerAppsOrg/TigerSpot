@@ -346,21 +346,30 @@ def get_challenge_results(challenge_id):
 def create_random_versus():
     random.seed()
 
-    # Get table size using SQLAlchemy
+    # Get all picture IDs using SQLAlchemy
     try:
-        from sqlalchemy import func
-
         from src.models import Picture
 
         with get_session() as session:
-            row_count = session.query(func.count(Picture.pictureid)).scalar()
-    except Exception:
-        row_count = 100  # Fallback value
+            # Query all picture IDs
+            picture_ids = [p.pictureid for p in session.query(Picture.pictureid).all()]
 
-    # Generate 5 unique pseudo-random integers from 1 to row_count
-    random_indices = random.sample(range(1, row_count + 1), 5)
+        if not picture_ids:
+            print("No pictures found in database.")
+            return [1] * 5
 
-    return random_indices
+        # Generate 5 unique pseudo-random IDs from the available IDs
+        # If fewer than 5 pictures exist, sample with replacement or just take all
+        if len(picture_ids) < 5:
+             random_indices = random.choices(picture_ids, k=5)
+        else:
+             random_indices = random.sample(picture_ids, 5)
+
+        return random_indices
+
+    except Exception as error:
+        print(f"Error creating random versus list: {error}")
+        return [1, 2, 3, 4, 5]  # Fallback values
 
 
 # -----------------------------------------------------------------------
