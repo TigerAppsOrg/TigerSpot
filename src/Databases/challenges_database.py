@@ -354,7 +354,10 @@ def create_random_versus(session):
         # USE the passed 'session' variable directly
         
         # Query all picture IDs using the passed session
-        picture_ids = [p.pictureid for p in session.query(Picture.pictureid).all()]
+        # picture_ids = [p.pictureid for p in session.query(Picture.pictureid).all()]
+
+        # Access p[0] because query(Column) returns a list of tuples [(1,), (2,)...]
+        picture_ids = [p[0] for p in session.query(Picture.pictureid).all()]
 
         if not picture_ids:
             print("No pictures found in database.")
@@ -460,7 +463,6 @@ if __name__ == "__main__":
     print(check_finish_status("1"))
     print(get_challenge_participants("1"))
     print(get_challenge_results("1"))
-    print(create_random_versus())
 
     # create_random_versus now needs a session passed to it
     with get_session() as session:
