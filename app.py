@@ -919,3 +919,17 @@ def versus_stats():
 
 
 # -----------------------------------------------------------------------
+
+
+# Lightweight health check endpoint for ops/monitoring
+@app.route("/health", methods=["GET"])
+def health_check():
+    try:
+        with get_session() as session:
+            session.execute("SELECT 1")
+        return "OK", 200
+    except Exception as e:
+        return f"Database connection error: {e}", 500
+
+
+# -----------------------------------------------------------------------
