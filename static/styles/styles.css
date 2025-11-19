@@ -765,6 +765,14 @@ header .game-text {
   justify-content: center;
 }
 
+.versus-components .game-btns {
+  position: static;
+  margin-top: 1vh;
+  justify-content: flex-end;
+}
+
+
+
 .nav-versus {
   width: 100%;
 }

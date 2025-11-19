@@ -18,15 +18,6 @@
       z-index: 0;
     }
 
-    .map {
-      position: relative;
-      height: 60vh;
-      width: 35vw;
-      /* Match game-image width */
-      border: 8px solid var(--border-color);
-      box-sizing: border-box;
-    }
-
     #coordinates {
       font-size: 1em;
       height: 4vh;
@@ -41,11 +32,8 @@
     #distance {
       height: 5vh;
       width: 50%;
-      /* New container takes up remaining space */
       float: right;
-      /* Align to the right */
       padding: 2vh 2vw;
-      /* Add some padding */
     }
 
     #timer {
@@ -81,9 +69,11 @@
     </div>
 
     <div class="versus-components"> <img class="game-image" src="{{link}}">
-      <div class="map">
-        <div id="map"></div>
-        <div id="distance"></div>
+      <div class="map-container">
+        <div class="map">
+          <div id="map"></div>
+          <div id="distance"></div>
+        </div>
         <form id="versusgame" method="post" action="/submit2" onsubmit="return checkCoordinates()">
           <input type="hidden" id="currLat" name="currLat" value="">
           <input type="hidden" id="currLon" name="currLon" value="">
@@ -92,8 +82,8 @@
           <input type="hidden" id="challenge_id" name="challenge_id" value="{{challenge_id}}">
           <input type="hidden" id="time" name="time" value="">
           <div class="game-btns">
-            <button type="submit" class="submit versus"><b>Submit</b></button>
             <button type="button" class="clear versus" onclick="clearForm()"><b>Clear</b></button>
+            <button type="submit" class="submit versus"><b>Submit</b></button>
           </div>
         </form>
       </div>
