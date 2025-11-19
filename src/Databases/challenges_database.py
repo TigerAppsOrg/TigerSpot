@@ -9,6 +9,7 @@ from sqlalchemy import text
 from src.db import get_session
 import sys, traceback
 from src.models import Challenge, Match
+from src.models import Picture
 
 
 # -----------------------------------------------------------------------
@@ -136,8 +137,11 @@ def accept_challenge(challenge_id):
 
             if challenge:
                 challenge.status = "accepted"
-                challenge.versuslist = create_random_versus()
+                # FIX: Pass the current session to the helper function
+                challenge.versuslist = create_random_versus(session)
                 status = "accepted"
+            
+            # The commit happens automatically when this 'with' block exits successfully
 
         return status
 
@@ -343,16 +347,14 @@ def get_challenge_results(challenge_id):
 
 
 # pseudo randomly create a list of 5 picture IDs for a challenge
-def create_random_versus():
+def create_random_versus(session):
     random.seed()
 
-    # Get all picture IDs using SQLAlchemy
     try:
-        from src.models import Picture
-
-        with get_session() as session:
-            # Query all picture IDs
-            picture_ids = [p.pictureid for p in session.query(Picture.pictureid).all()]
+        # USE the passed 'session' variable directly
+        
+        # Query all picture IDs using the passed session
+        picture_ids = [p.pictureid for p in session.query(Picture.pictureid).all()]
 
         if not picture_ids:
             print("No pictures found in database.")
@@ -369,7 +371,7 @@ def create_random_versus():
 
     except Exception as error:
         print(f"Error creating random versus list: {error}")
-        return [1, 2, 3, 4, 5]  # Fallback values
+        return [1, 2, 3, 4, 5]
 
 
 # -----------------------------------------------------------------------
