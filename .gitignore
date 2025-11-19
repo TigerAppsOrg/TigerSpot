@@ -1,7 +1,53 @@
-*.pyc
+# --- Security (CRITICAL) ---
 .env
-.venv
-__pycache__
-.DS_Store
+.env.*
+*.key
+secrets.json
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+
+# --- Virtual Environments ---
+.venv/
+venv/
+ENV/
+env/
+
+# --- Distribution / Build ---
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# --- Testing & Coverage (The "Ugly" Folders) ---
+htmlcov/
 .coverage
+.coverage.*
+.tox/
+.pytest_cache/
+nosetests.xml
+coverage.xml
+
+# --- Flask ---
+instance/
+.webassets-cache
+
+# --- IDEs & Editors ---
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# --- OS Specific ---
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# --- Project Specific ---
 picturedata.txt
