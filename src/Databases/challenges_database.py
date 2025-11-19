@@ -363,9 +363,9 @@ def create_random_versus(session):
         # Generate 5 unique pseudo-random IDs from the available IDs
         # If fewer than 5 pictures exist, sample with replacement or just take all
         if len(picture_ids) < 5:
-             random_indices = random.choices(picture_ids, k=5)
+            random_indices = random.choices(picture_ids, k=5)
         else:
-             random_indices = random.sample(picture_ids, 5)
+            random_indices = random.sample(picture_ids, 5)
 
         return random_indices
 
@@ -461,6 +461,11 @@ if __name__ == "__main__":
     print(get_challenge_participants("1"))
     print(get_challenge_results("1"))
     print(create_random_versus())
+
+    # create_random_versus now needs a session passed to it
+    with get_session() as session:
+        print(create_random_versus(session))
+
     print(get_random_versus("1"))
     print(update_playbutton_status("1", "123"))
     print(get_playbutton_status("1", "123"))

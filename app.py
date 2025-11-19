@@ -678,9 +678,9 @@ def submit2():
     
     # Fallback if coor/place is None
     if coor is None or place is None:
-         print(f"Warning: Coordinates/Place not found for ID {versusList[index]}. Using fallback.")
-         coor = pictures_database.get_pic_info("coordinates", 1)
-         place = pictures_database.get_pic_info("place", 1)
+        print(f"Warning: Coordinates/Place not found for ID {versusList[index]}. Using fallback.")
+        coor = pictures_database.get_pic_info("coordinates", 1)
+        place = pictures_database.get_pic_info("place", 1)
 
     check = database_check([versusList, coor, place])
     if check is False:
