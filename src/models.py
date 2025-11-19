@@ -36,6 +36,7 @@ class UserDaily(Base):
     points = Column(Integer, default=0)
     distance = Column(Integer, default=0)
     played = Column(Boolean, default=False)
+    first_played = Column(Date, nullable=True)
     last_played = Column(Date, nullable=True)
     last_versus = Column(Date, nullable=True)
     current_streak = Column(Integer, default=0)
