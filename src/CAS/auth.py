@@ -41,7 +41,12 @@ def validate(ticket):
         + urllib.parse.quote(ticket)
     )
     lines = []
-    with urllib.request.urlopen(val_url) as flo:
+    import ssl
+    import os
+    context = None
+    if os.environ.get("FLASK_ENV") == "development":
+        context = ssl._create_unverified_context()
+    with urllib.request.urlopen(val_url, context=context) as flo:
         lines = flo.readlines()  # Should return 2 lines.
     if len(lines) != 2:
         return None

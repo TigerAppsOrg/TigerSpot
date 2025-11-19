@@ -9,6 +9,7 @@ from sqlalchemy import text
 from src.db import get_session
 import sys, traceback
 from src.models import Challenge, Match
+from src.models import Picture
 
 
 # -----------------------------------------------------------------------
@@ -136,8 +137,11 @@ def accept_challenge(challenge_id):
 
             if challenge:
                 challenge.status = "accepted"
-                challenge.versuslist = create_random_versus()
+                # FIX: Pass the current session to the helper function
+                challenge.versuslist = create_random_versus(session)
                 status = "accepted"
+            
+            # The commit happens automatically when this 'with' block exits successfully
 
         return status
 
@@ -343,24 +347,34 @@ def get_challenge_results(challenge_id):
 
 
 # pseudo randomly create a list of 5 picture IDs for a challenge
-def create_random_versus():
+def create_random_versus(session):
     random.seed()
 
-    # Get table size using SQLAlchemy
     try:
-        from sqlalchemy import func
+        # USE the passed 'session' variable directly
+        
+        # Query all picture IDs using the passed session
+        # picture_ids = [p.pictureid for p in session.query(Picture.pictureid).all()]
 
-        from src.models import Picture
+        # Access p[0] because query(Column) returns a list of tuples [(1,), (2,)...]
+        picture_ids = [p[0] for p in session.query(Picture.pictureid).all()]
 
-        with get_session() as session:
-            row_count = session.query(func.count(Picture.pictureid)).scalar()
-    except Exception:
-        row_count = 100  # Fallback value
+        if not picture_ids:
+            print("No pictures found in database.")
+            return [1] * 5
 
-    # Generate 5 unique pseudo-random integers from 1 to row_count
-    random_indices = random.sample(range(1, row_count + 1), 5)
+        # Generate 5 unique pseudo-random IDs from the available IDs
+        # If fewer than 5 pictures exist, sample with replacement or just take all
+        if len(picture_ids) < 5:
+            random_indices = random.choices(picture_ids, k=5)
+        else:
+            random_indices = random.sample(picture_ids, 5)
 
-    return random_indices
+        return random_indices
+
+    except Exception as error:
+        print(f"Error creating random versus list: {error}")
+        return [1, 2, 3, 4, 5]
 
 
 # -----------------------------------------------------------------------
@@ -449,7 +463,11 @@ if __name__ == "__main__":
     print(check_finish_status("1"))
     print(get_challenge_participants("1"))
     print(get_challenge_results("1"))
-    print(create_random_versus())
+
+    # create_random_versus now needs a session passed to it
+    with get_session() as session:
+        print(create_random_versus(session))
+
     print(get_random_versus("1"))
     print(update_playbutton_status("1", "123"))
     print(get_playbutton_status("1", "123"))

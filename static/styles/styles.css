@@ -698,11 +698,13 @@ header .game-text {
 }
 
 .game-image {
-  width: 35vw;
-  /* Adjusted width */
-  height: 60vh;
+  max-width: 35vw;
+  max-height: 60vh;
+  width: auto;
+  height: auto;
   border: 8px solid var(--border-color);
   box-sizing: border-box;
+  display: block;
 }
 
 .map {
@@ -759,6 +761,18 @@ header .game-text {
 .versus-components {
   display: flex;
   flex-direction: row;
+  gap: 2vw;
+  justify-content: center;
+}
+
+.versus-components .map-container {
+  position: relative;
+}
+
+.versus-components .game-btns {
+  position: absolute;
+  bottom: -5vh;
+  right: 0;
 }
 
 .nav-versus {
@@ -1115,8 +1129,10 @@ table {
 
   /* Game Page/Results Styles */
   .game-image {
-    width: 80vw;
-    height: 50vh;
+    max-width: 80vw;
+    max-height: 50vh;
+    width: auto;
+    height: auto;
   }
 
   .logo {
@@ -1145,11 +1161,19 @@ table {
     height: 100%;
   }
 
+  .map-container {
+    padding-bottom: calc(16px + env(safe-area-inset-bottom, 8px));
+    margin-bottom: 2vh;
+  }
+
   .game-btns {
     width: 80vw;
     position: relative;
     bottom: auto;
-    margin-top: 1vh;
+    margin-top: 1.2vh;
+    margin-bottom: calc(3vh + env(safe-area-inset-bottom, 10px));
+    padding-bottom: env(safe-area-inset-bottom, 6px);
+    align-items: center;
   }
 
   .versus-components {
