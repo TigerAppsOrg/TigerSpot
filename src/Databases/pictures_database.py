@@ -7,7 +7,7 @@ import datetime
 import pytz
 from src.db import get_session
 from src.models import Picture
-from sqlalchemy import func
+from sqlalchemy import func, text
 
 # -----------------------------------------------------------------------
 
@@ -92,7 +92,10 @@ def create_picture(coordinates, link, place):
     """
     try:
         with get_session() as session:
-            # Determine next id (contiguous allocation)
+            # Serialize writers to avoid race on MAX(pictureid) + 1
+            # Locking the table is acceptable here since admin uploads are infrequent.
+            session.execute(text("LOCK TABLE pictures IN EXCLUSIVE MODE"))
+
             current_max = session.query(func.max(Picture.pictureid)).scalar()
             next_id = 1 if current_max is None else int(current_max) + 1
 
