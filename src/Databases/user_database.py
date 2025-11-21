@@ -229,6 +229,26 @@ def get_top_player():
 
 # -----------------------------------------------------------------------
 
+# Returns whether the given username is an admin.
+
+
+def is_admin(username):
+    try:
+        with get_session() as session:
+            user = session.query(User).filter_by(username=username).first()
+
+            if user is None:
+                return False
+
+            return bool(getattr(user, "admin", False))
+
+    except Exception as error:
+        print(error)
+        return False
+
+
+# -----------------------------------------------------------------------
+
 if __name__ == "__main__":
     print(get_top_players())
     print(get_top_player())
