@@ -6,7 +6,7 @@ Rebuild the Princeton campus geolocation guessing game with modern stack, fixing
 
 **Tech Stack**:
 
-- Frontend/Backend: SvelteKit (SSR + API routes)
+- Frontend/Backend: SvelteKit (SSR + API routes) - Svelte 5
 - Deployment: SST v3 on AWS (Lambda, S3, RDS PostgreSQL)
 - Database: RDS PostgreSQL (via SST)
 - Auth: Princeton CAS
@@ -16,7 +16,7 @@ Rebuild the Princeton campus geolocation guessing game with modern stack, fixing
 
 **Data Migration**: Full migration from legacy PostgreSQL (users, scores, streaks, match history)
 
-Make sure to use `pnpm` for package management.
+Make sure to use `pnpm` for package management. Be sure to do web searches to get up to date information when utilizing libraries since they may have changed since your knowledge cutoff.
 
 ---
 
