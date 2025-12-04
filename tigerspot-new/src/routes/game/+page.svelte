@@ -6,6 +6,7 @@
 	import Map from '$lib/components/Map.svelte';
 	import { dummyPictures } from '$lib/data/dummy';
 	import { calculateDistance, calculateDailyPoints } from '$lib/utils/distance';
+	import { gameResults } from '$lib/stores/gameResults';
 
 	// Use first dummy picture for the daily challenge
 	const picture = dummyPictures[0];
@@ -14,7 +15,6 @@
 	const MAPBOX_TOKEN = import.meta.env.PUBLIC_MAPBOX_TOKEN || 'YOUR_MAPBOX_TOKEN';
 
 	let guessCoords = $state<{ lat: number; lng: number } | null>(null);
-	let showFullImage = $state(false);
 
 	function handleMapSelect(coords: { lat: number; lng: number }) {
 		guessCoords = coords;
@@ -32,18 +32,17 @@
 		);
 		const points = calculateDailyPoints(distance);
 
-		// Store in session/URL for results page
-		const params = new URLSearchParams({
-			lat: guessCoords.lat.toString(),
-			lng: guessCoords.lng.toString(),
-			actualLat: picture.latitude.toString(),
-			actualLng: picture.longitude.toString(),
-			distance: distance.toString(),
-			points: points.toString(),
-			place: picture.placeName
+		// Store results in store
+		gameResults.set({
+			guessLat: guessCoords.lat,
+			guessLng: guessCoords.lng,
+			actualLat: picture.latitude,
+			actualLng: picture.longitude,
+			distance,
+			points
 		});
 
-		goto(`/game/results?${params.toString()}`);
+		goto('/game/results');
 	}
 
 	function handleTimeUp() {
@@ -61,60 +60,44 @@
 	<!-- Fixed Header -->
 	<header class="header-fixed bg-white brutal-border">
 		<div class="w-full h-full px-6 flex items-center justify-between">
-			<a href="/menu" class="text-2xl font-black tracking-tight"> TIGERSPOT </a>
+			<a href="/menu">
+				<img src="/logo.png" alt="TigerSpot Logo" class="inline-block w-40" />
+			</a>
 			<Timer duration={120} onComplete={handleTimeUp} />
 		</div>
 	</header>
 
 	<!-- Game Area with padding for fixed header -->
-	<main class="grow pt-24 pb-6 px-4">
-		<div class="container-brutal h-full flex flex-col lg:flex-row gap-6">
+	<main class="grow pt-24 pb-6 px-4 flex items-center justify-center">
+		<div class="w-full max-w-6xl flex flex-col lg:flex-row gap-6">
 			<!-- Image Panel -->
 			<div class="lg:w-1/2 flex flex-col">
 				<Card class="grow flex flex-col p-0 overflow-hidden">
-					<div class="p-5 border-b-4 border-black flex items-center justify-between">
+					<div class="p-5 flex items-center justify-between">
 						<h2 class="text-xl font-black uppercase">Where is this?</h2>
-						<button
-							onclick={() => (showFullImage = !showFullImage)}
-							class="brutal-border brutal-shadow-sm bg-white px-4 py-2 text-sm font-bold hover:bg-gray transition-colors"
-						>
-							{showFullImage ? 'Minimize' : 'Expand'}
-						</button>
 					</div>
-					<button
-						type="button"
-						class="relative grow bg-gray cursor-zoom-in w-full block min-h-[300px]"
-						class:fixed={showFullImage}
-						class:inset-6={showFullImage}
-						class:z-50={showFullImage}
-						onclick={() => (showFullImage = !showFullImage)}
-					>
+					<div class="relative grow bg-gray w-full block min-h-[300px]">
 						<img
 							src={picture.imageUrl}
 							alt="Where is this location?"
 							class="w-full h-full object-cover"
 						/>
-						{#if showFullImage}
-							<span
-								class="absolute top-6 right-6 brutal-border brutal-shadow bg-white px-6 py-3 font-bold"
-							>
-								Click to Close
-							</span>
-						{/if}
-					</button>
+					</div>
 				</Card>
 			</div>
 
 			<!-- Map Panel -->
 			<div class="lg:w-1/2 flex flex-col">
 				<Card class="grow flex flex-col p-0 overflow-hidden">
-					<div class="p-5 border-b-4 border-black flex items-center justify-between">
+					<div class="p-5 flex items-center justify-between">
 						<h2 class="text-xl font-black uppercase">Click to guess</h2>
-						{#if guessCoords}
-							<span class="brutal-border brutal-shadow-sm bg-lime px-4 py-2 text-sm font-bold">
-								Location selected
-							</span>
-						{/if}
+						<span
+							class="brutal-border brutal-shadow-sm bg-lime px-4 py-2 text-sm font-bold {guessCoords
+								? 'visible'
+								: 'invisible'}"
+						>
+							Location selected
+						</span>
 					</div>
 					<div class="grow min-h-[300px] lg:min-h-0">
 						{#if MAPBOX_TOKEN && MAPBOX_TOKEN !== 'YOUR_MAPBOX_TOKEN'}
