@@ -13,10 +13,13 @@
 	<title>Leaderboard - TigerSpot</title>
 </svelte:head>
 
-<div class="min-h-screen bg-primary">
+<div class="min-h-screen bg-primary relative overflow-hidden">
+	<!-- Grid pattern overlay -->
+	<div class="absolute inset-0 bg-grid opacity-10"></div>
+
 	<Header />
 
-	<main class="pt-24 pb-12 px-4">
+	<main class="relative pt-24 pb-12 px-4">
 		<div class="container-brutal">
 			<h1 class="text-4xl md:text-5xl font-black text-center mt-8 mb-10">&#x1F3C6; Leaderboard</h1>
 

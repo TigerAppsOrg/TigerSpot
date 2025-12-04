@@ -9,11 +9,14 @@
 	<title>Menu - TigerSpot</title>
 </svelte:head>
 
-<div class="min-h-screen bg-primary">
+<div class="min-h-screen bg-primary relative overflow-hidden">
+	<!-- Dots pattern overlay -->
+	<div class="absolute inset-0 bg-dots opacity-20"></div>
+
 	<Header />
 
 	<!-- Main content with padding for fixed header -->
-	<main class="pt-24 pb-12 px-4">
+	<main class="relative pt-24 pb-12 px-4">
 		<div class="container-brutal">
 			<!-- Stats Bar -->
 			<div class="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-12">

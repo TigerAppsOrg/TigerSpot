@@ -26,10 +26,13 @@
 	<title>Profile & Settings - TigerSpot</title>
 </svelte:head>
 
-<div class="min-h-screen bg-primary">
+<div class="min-h-screen bg-primary relative overflow-hidden">
+	<!-- Crosses pattern overlay -->
+	<div class="absolute inset-0 bg-crosses opacity-40"></div>
+
 	<Header />
 
-	<main class="pt-24 pb-12 px-4">
+	<main class="relative pt-24 pb-12 px-4">
 		<div class="container-brutal max-w-4xl">
 			<h1 class="text-4xl font-black mb-10 mt-8">Profile & Settings</h1>
 
