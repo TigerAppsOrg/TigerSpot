@@ -1,1 +1,419 @@
 @import 'tailwindcss';
+
+/* Neobrutalist Design System for TigerSpot */
+@theme {
+	/* Primary Colors - matching original app */
+	--color-primary: #F5A623;
+	--color-primary-dark: #E89314;
+	--color-cyan: #00FFFF;
+	--color-magenta: #FF00FF;
+	--color-lime: #BFFF00;
+	--color-orange: #FF6600;
+
+	/* Neutrals */
+	--color-black: #000000;
+	--color-white: #FFFFFF;
+	--color-gray: #E5E5E5;
+
+	/* Shadows */
+	--shadow-brutal: 4px 4px 0 var(--color-black);
+	--shadow-brutal-sm: 2px 2px 0 var(--color-black);
+	--shadow-brutal-lg: 6px 6px 0 var(--color-black);
+	--shadow-brutal-hover: 2px 2px 0 var(--color-black);
+
+	/* Borders */
+	--border-brutal: 4px solid var(--color-black);
+	--border-brutal-sm: 3px solid var(--color-black);
+
+	/* Font */
+	--font-display: 'Nunito', system-ui, sans-serif;
+	--font-body: 'Nunito', system-ui, sans-serif;
+}
+
+/* Import Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&display=swap');
+
+/* Base Styles */
+html {
+	font-family: var(--font-body);
+	background-color: var(--color-primary);
+	color: var(--color-black);
+}
+
+body {
+	min-height: 100vh;
+	overflow-x: hidden;
+}
+
+/* Page border effect like original app */
+body::before {
+	content: '';
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	border: 8px solid var(--color-black);
+	pointer-events: none;
+	z-index: 9999;
+	box-sizing: border-box;
+}
+
+/* Utility Classes */
+.brutal-border {
+	border: var(--border-brutal);
+}
+
+.brutal-shadow {
+	box-shadow: var(--shadow-brutal);
+}
+
+.brutal-shadow-sm {
+	box-shadow: var(--shadow-brutal-sm);
+}
+
+.brutal-shadow-lg {
+	box-shadow: var(--shadow-brutal-lg);
+}
+
+/* Neobrutalist Button Base */
+.btn-brutal {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.5rem;
+	padding: 1rem 2rem;
+	font-family: var(--font-display);
+	font-weight: 800;
+	font-size: 1rem;
+	text-transform: uppercase;
+	letter-spacing: 0.02em;
+	border: var(--border-brutal);
+	box-shadow: var(--shadow-brutal);
+	transition: transform 0.15s ease, box-shadow 0.15s ease;
+	cursor: pointer;
+	text-decoration: none;
+}
+
+.btn-brutal:hover {
+	transform: translate(2px, 2px);
+	box-shadow: var(--shadow-brutal-hover);
+}
+
+.btn-brutal:active {
+	transform: translate(4px, 4px);
+	box-shadow: none;
+}
+
+/* Button Colors */
+.btn-cyan {
+	background-color: var(--color-cyan);
+	color: var(--color-black);
+}
+
+.btn-magenta {
+	background-color: var(--color-magenta);
+	color: var(--color-white);
+}
+
+.btn-lime {
+	background-color: var(--color-lime);
+	color: var(--color-black);
+}
+
+.btn-orange {
+	background-color: var(--color-orange);
+	color: var(--color-white);
+}
+
+.btn-white {
+	background-color: var(--color-white);
+	color: var(--color-black);
+}
+
+.btn-black {
+	background-color: var(--color-black);
+	color: var(--color-white);
+}
+
+/* Card Base */
+.card-brutal {
+	background-color: var(--color-white);
+	border: var(--border-brutal);
+	box-shadow: var(--shadow-brutal);
+	padding: 2rem;
+}
+
+.card-brutal-hover {
+	transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card-brutal-hover:hover {
+	transform: translate(-3px, -3px);
+	box-shadow: var(--shadow-brutal-lg);
+}
+
+/* Headings */
+h1, h2, h3, h4, h5, h6, .heading {
+	font-family: var(--font-display);
+	font-weight: 800;
+	letter-spacing: -0.01em;
+}
+
+/* Fixed Header */
+.header-fixed {
+	position: fixed;
+	top: 8px;
+	left: 8px;
+	right: 8px;
+	height: 70px;
+	z-index: 1000;
+	display: flex;
+	align-items: center;
+}
+
+/* Background Patterns */
+.bg-dots {
+	background-image: radial-gradient(var(--color-black) 2px, transparent 2px);
+	background-size: 24px 24px;
+}
+
+.bg-grid {
+	background-image:
+		linear-gradient(var(--color-black) 1px, transparent 1px),
+		linear-gradient(90deg, var(--color-black) 1px, transparent 1px);
+	background-size: 40px 40px;
+}
+
+.bg-stripes {
+	background-image: repeating-linear-gradient(
+		-45deg,
+		transparent,
+		transparent 8px,
+		rgba(0, 0, 0, 0.1) 8px,
+		rgba(0, 0, 0, 0.1) 16px
+	);
+}
+
+/* Animated Background */
+@keyframes gradient-shift {
+	0%, 100% {
+		background-position: 0% 50%;
+	}
+	50% {
+		background-position: 100% 50%;
+	}
+}
+
+.bg-gradient-animated {
+	background: linear-gradient(
+		-45deg,
+		var(--color-cyan),
+		var(--color-magenta),
+		var(--color-lime),
+		var(--color-orange)
+	);
+	background-size: 400% 400%;
+	animation: gradient-shift 8s ease infinite;
+}
+
+/* Floating animation for decorative shapes */
+@keyframes float {
+	0%, 100% {
+		transform: translateY(0) rotate(var(--rotate, 0deg));
+	}
+	50% {
+		transform: translateY(-20px) rotate(var(--rotate, 0deg));
+	}
+}
+
+@keyframes float-delayed {
+	0%, 100% {
+		transform: translateY(0) rotate(var(--rotate, 0deg));
+	}
+	50% {
+		transform: translateY(-15px) rotate(var(--rotate, 0deg));
+	}
+}
+
+@keyframes bounce-in {
+	0% {
+		opacity: 0;
+		transform: scale(0.3) translateY(50px);
+	}
+	50% {
+		transform: scale(1.05) translateY(-10px);
+	}
+	70% {
+		transform: scale(0.95) translateY(5px);
+	}
+	100% {
+		opacity: 1;
+		transform: scale(1) translateY(0);
+	}
+}
+
+@keyframes slide-up {
+	0% {
+		opacity: 0;
+		transform: translateY(30px);
+	}
+	100% {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+@keyframes wiggle {
+	0%, 100% {
+		transform: rotate(-3deg);
+	}
+	50% {
+		transform: rotate(3deg);
+	}
+}
+
+.animate-float {
+	animation: float 4s ease-in-out infinite;
+}
+
+.animate-float-delayed {
+	animation: float-delayed 5s ease-in-out infinite;
+	animation-delay: 0.5s;
+}
+
+.animate-bounce-in {
+	animation: bounce-in 0.8s ease-out forwards;
+}
+
+.animate-slide-up {
+	animation: slide-up 0.6s ease-out forwards;
+}
+
+.animate-wiggle {
+	animation: wiggle 0.5s ease-in-out;
+}
+
+/* Staggered animation delays */
+.delay-100 { animation-delay: 0.1s; }
+.delay-200 { animation-delay: 0.2s; }
+.delay-300 { animation-delay: 0.3s; }
+.delay-400 { animation-delay: 0.4s; }
+.delay-500 { animation-delay: 0.5s; }
+
+/* Timer urgency animation */
+@keyframes pulse-urgent {
+	0%, 100% {
+		transform: scale(1);
+	}
+	50% {
+		transform: scale(1.05);
+	}
+}
+
+.timer-urgent {
+	animation: pulse-urgent 0.5s ease-in-out infinite;
+	background-color: var(--color-orange) !important;
+	color: var(--color-white) !important;
+}
+
+/* Mapbox Override Styles */
+.mapboxgl-map {
+	border: var(--border-brutal);
+}
+
+.mapboxgl-ctrl-group {
+	border: var(--border-brutal-sm) !important;
+	border-radius: 0 !important;
+	box-shadow: var(--shadow-brutal-sm) !important;
+}
+
+.mapboxgl-ctrl-group button {
+	border-radius: 0 !important;
+}
+
+/* Score Counter Animation */
+@keyframes count-up-glow {
+	0% {
+		text-shadow: 0 0 10px var(--color-cyan);
+	}
+	50% {
+		text-shadow: 0 0 30px var(--color-magenta);
+	}
+	100% {
+		text-shadow: 0 0 10px var(--color-lime);
+	}
+}
+
+.score-glow {
+	animation: count-up-glow 1.5s ease-in-out;
+}
+
+/* Responsive container with more padding */
+.container-brutal {
+	width: 100%;
+	max-width: 1200px;
+	margin: 0 auto;
+	padding: 0 2rem;
+}
+
+@media (min-width: 640px) {
+	.container-brutal {
+		padding: 0 3rem;
+	}
+}
+
+@media (min-width: 1024px) {
+	.container-brutal {
+		padding: 0 4rem;
+	}
+}
+
+/* Selection styling */
+::selection {
+	background-color: var(--color-primary-dark);
+	color: var(--color-white);
+}
+
+/* Focus styles for accessibility */
+:focus-visible {
+	outline: 3px solid var(--color-black);
+	outline-offset: 2px;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+	width: 14px;
+	height: 14px;
+}
+
+::-webkit-scrollbar-track {
+	background: var(--color-primary);
+	border: 2px solid var(--color-black);
+}
+
+::-webkit-scrollbar-thumb {
+	background: var(--color-black);
+}
+
+::-webkit-scrollbar-thumb:hover {
+	background: var(--color-primary-dark);
+}
+
+/* Spacing utility - for fixing "too close together" issue */
+.space-y-brutal > * + * {
+	margin-top: 1.5rem;
+}
+
+.space-y-brutal-lg > * + * {
+	margin-top: 2.5rem;
+}
+
+/* Gap utilities */
+.gap-brutal {
+	gap: 1.5rem;
+}
+
+.gap-brutal-lg {
+	gap: 2.5rem;
+}
