@@ -3,7 +3,7 @@
 	import Header from '$lib/components/Header.svelte';
 	import { dummyLeaderboard, dummyUser } from '$lib/data/dummy';
 
-	let activeTab = $state<'daily' | 'alltime'>('daily');
+	let activeTab = $state<'daily' | 'alltime'>('alltime');
 
 	// Find current user's rank
 	const userRank = dummyLeaderboard.findIndex((u) => u.username === dummyUser.username) + 1;
@@ -23,16 +23,16 @@
 			<!-- Tab Switcher -->
 			<div class="flex justify-center gap-6 mb-10">
 				<button
-					class="btn-brutal {activeTab === 'daily' ? 'btn-black' : 'btn-white'}"
-					onclick={() => (activeTab = 'daily')}
-				>
-					Today
-				</button>
-				<button
 					class="btn-brutal {activeTab === 'alltime' ? 'btn-black' : 'btn-white'}"
 					onclick={() => (activeTab = 'alltime')}
 				>
 					All Time
+				</button>
+				<button
+					class="btn-brutal {activeTab === 'daily' ? 'btn-black' : 'btn-white'}"
+					onclick={() => (activeTab = 'daily')}
+				>
+					Today
 				</button>
 			</div>
 
