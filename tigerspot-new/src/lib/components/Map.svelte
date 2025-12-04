@@ -1,11 +1,10 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
-	import mapboxgl from 'mapbox-gl';
-	import 'mapbox-gl/dist/mapbox-gl.css';
+	import L from 'leaflet';
+	import 'leaflet/dist/leaflet.css';
 	import { PRINCETON_BOUNDS } from '$lib/data/dummy';
 
 	interface Props {
-		accessToken: string;
 		readonly?: boolean;
 		showActualLocation?: { lat: number; lng: number };
 		guessLocation?: { lat: number; lng: number };
@@ -14,7 +13,6 @@
 	}
 
 	let {
-		accessToken,
 		readonly = false,
 		showActualLocation,
 		guessLocation,
@@ -23,151 +21,120 @@
 	}: Props = $props();
 
 	let mapContainer: HTMLDivElement;
-	let map: mapboxgl.Map;
-	let marker: mapboxgl.Marker | null = null;
-	let actualMarker: mapboxgl.Marker | null = null;
-	let lineLayer = false;
+	let map: L.Map;
+	let guessMarker: L.Marker | null = null;
+	let actualMarker: L.Marker | null = null;
+	let connectingLine: L.Polyline | null = null;
+
+	// Custom marker icons
+	const guessIcon = L.divIcon({
+		className: 'guess-marker',
+		html: `<div class="w-8 h-8 bg-magenta brutal-border brutal-shadow-sm flex items-center justify-center">
+			<span class="text-white font-bold">?</span>
+		</div>`,
+		iconSize: [32, 32],
+		iconAnchor: [16, 16]
+	});
+
+	const actualIcon = L.divIcon({
+		className: 'actual-marker',
+		html: `<div class="w-8 h-8 bg-lime brutal-border brutal-shadow-sm flex items-center justify-center">
+			<span class="text-black font-bold">✓</span>
+		</div>`,
+		iconSize: [32, 32],
+		iconAnchor: [16, 16]
+	});
 
 	onMount(() => {
-		mapboxgl.accessToken = accessToken;
-
-		map = new mapboxgl.Map({
-			container: mapContainer,
-			style: 'mapbox://styles/mapbox/satellite-streets-v12',
-			center: [PRINCETON_BOUNDS.center.lng, PRINCETON_BOUNDS.center.lat],
+		// Initialize map
+		map = L.map(mapContainer, {
+			center: [PRINCETON_BOUNDS.center.lat, PRINCETON_BOUNDS.center.lng],
 			zoom: PRINCETON_BOUNDS.zoom,
 			minZoom: PRINCETON_BOUNDS.minZoom,
 			maxZoom: PRINCETON_BOUNDS.maxZoom,
-			maxBounds: PRINCETON_BOUNDS.bounds
+			maxBounds: L.latLngBounds(
+				L.latLng(PRINCETON_BOUNDS.bounds[0][1], PRINCETON_BOUNDS.bounds[0][0]),
+				L.latLng(PRINCETON_BOUNDS.bounds[1][1], PRINCETON_BOUNDS.bounds[1][0])
+			)
 		});
 
-		map.addControl(new mapboxgl.NavigationControl(), 'top-right');
+		// Use OpenStreetMap tiles (free, no API key needed)
+		L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+			attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+			maxZoom: 19
+		}).addTo(map);
 
 		// Handle click to place marker
 		if (!readonly) {
-			map.on('click', (e) => {
-				const { lng, lat } = e.lngLat;
-				setGuessMarker(lng, lat);
+			map.on('click', (e: L.LeafletMouseEvent) => {
+				const { lat, lng } = e.latlng;
+				setGuessMarker(lat, lng);
 				onSelect?.({ lat, lng });
 			});
 		}
 
 		// Show existing markers if provided
-		map.on('load', () => {
+		if (guessLocation) {
+			setGuessMarker(guessLocation.lat, guessLocation.lng);
+		}
+		if (showActualLocation) {
+			setActualMarker(showActualLocation.lat, showActualLocation.lng);
 			if (guessLocation) {
-				setGuessMarker(guessLocation.lng, guessLocation.lat);
+				drawLine(guessLocation, showActualLocation);
 			}
-			if (showActualLocation) {
-				setActualMarker(showActualLocation.lng, showActualLocation.lat);
-				if (guessLocation) {
-					drawLine(guessLocation, showActualLocation);
-				}
-			}
-		});
+		}
 	});
 
-	function setGuessMarker(lng: number, lat: number) {
-		if (marker) marker.remove();
+	function setGuessMarker(lat: number, lng: number) {
+		if (guessMarker) {
+			map.removeLayer(guessMarker);
+		}
 
-		// Create custom marker element
-		const el = document.createElement('div');
-		el.className = 'guess-marker';
-		el.innerHTML = `
-			<div class="w-8 h-8 bg-magenta brutal-border brutal-shadow-sm flex items-center justify-center">
-				<span class="text-white font-bold">?</span>
-			</div>
-		`;
-
-		marker = new mapboxgl.Marker({
-			element: el,
-			anchor: 'center'
-		})
-			.setLngLat([lng, lat])
-			.addTo(map);
+		guessMarker = L.marker([lat, lng], { icon: guessIcon }).addTo(map);
 	}
 
-	function setActualMarker(lng: number, lat: number) {
-		if (actualMarker) actualMarker.remove();
+	function setActualMarker(lat: number, lng: number) {
+		if (actualMarker) {
+			map.removeLayer(actualMarker);
+		}
 
-		// Create custom marker element
-		const el = document.createElement('div');
-		el.className = 'actual-marker';
-		el.innerHTML = `
-			<div class="w-8 h-8 bg-lime brutal-border brutal-shadow-sm flex items-center justify-center">
-				<span class="text-black font-bold">&#x2713;</span>
-			</div>
-		`;
-
-		actualMarker = new mapboxgl.Marker({
-			element: el,
-			anchor: 'center'
-		})
-			.setLngLat([lng, lat])
-			.addTo(map);
+		actualMarker = L.marker([lat, lng], { icon: actualIcon }).addTo(map);
 	}
 
-	function drawLine(
-		from: { lat: number; lng: number },
-		to: { lat: number; lng: number }
-	) {
-		if (!map || lineLayer) return;
+	function drawLine(from: { lat: number; lng: number }, to: { lat: number; lng: number }) {
+		if (connectingLine) {
+			map.removeLayer(connectingLine);
+		}
 
-		map.addSource('route', {
-			type: 'geojson',
-			data: {
-				type: 'Feature',
-				properties: {},
-				geometry: {
-					type: 'LineString',
-					coordinates: [
-						[from.lng, from.lat],
-						[to.lng, to.lat]
-					]
-				}
+		connectingLine = L.polyline(
+			[
+				[from.lat, from.lng],
+				[to.lat, to.lng]
+			],
+			{
+				color: '#FF6600',
+				weight: 4,
+				dashArray: '8, 8'
 			}
-		});
-
-		map.addLayer({
-			id: 'route',
-			type: 'line',
-			source: 'route',
-			layout: {
-				'line-join': 'round',
-				'line-cap': 'round'
-			},
-			paint: {
-				'line-color': '#FF6600',
-				'line-width': 4,
-				'line-dasharray': [2, 2]
-			}
-		});
-
-		lineLayer = true;
+		).addTo(map);
 
 		// Fit bounds to show both markers
-		const bounds = new mapboxgl.LngLatBounds()
-			.extend([from.lng, from.lat])
-			.extend([to.lng, to.lat]);
-
-		map.fitBounds(bounds, {
-			padding: 80,
-			maxZoom: 17
-		});
+		const bounds = L.latLngBounds([
+			[from.lat, from.lng],
+			[to.lat, to.lng]
+		]);
+		map.fitBounds(bounds, { padding: [80, 80], maxZoom: 17 });
 	}
 
 	export function clearMarker() {
-		if (marker) {
-			marker.remove();
-			marker = null;
+		if (guessMarker) {
+			map.removeLayer(guessMarker);
+			guessMarker = null;
 		}
 	}
 
-	export function flyTo(lng: number, lat: number, zoom?: number) {
-		map?.flyTo({
-			center: [lng, lat],
-			zoom: zoom || PRINCETON_BOUNDS.zoom,
-			duration: 1500
-		});
+	export function flyTo(lat: number, lng: number, zoom?: number) {
+		map?.flyTo([lat, lng], zoom || PRINCETON_BOUNDS.zoom, { duration: 1.5 });
 	}
 
 	onDestroy(() => {
@@ -175,17 +142,16 @@
 	});
 </script>
 
-<div
-	bind:this={mapContainer}
-	class="w-full h-full min-h-[300px] {className}"
-></div>
+<div bind:this={mapContainer} class="w-full h-full min-h-[300px] {className}"></div>
 
 <style>
-	:global(.guess-marker), :global(.actual-marker) {
+	:global(.guess-marker),
+	:global(.actual-marker) {
 		cursor: pointer;
 	}
 
-	:global(.guess-marker > div), :global(.actual-marker > div) {
+	:global(.guess-marker > div),
+	:global(.actual-marker > div) {
 		animation: marker-drop 0.3s ease-out;
 	}
 
@@ -198,5 +164,10 @@
 			transform: translateY(0);
 			opacity: 1;
 		}
+	}
+
+	/* Hide Leaflet attribution on small screens */
+	:global(.leaflet-control-attribution) {
+		font-size: 10px;
 	}
 </style>

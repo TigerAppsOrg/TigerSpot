@@ -13,6 +13,9 @@
 			<a href="/settings" class="font-bold text-sm uppercase hover:text-orange transition-colors"
 				>⚙️ Settings</a
 			>
+			<a href="/about" class="font-bold text-sm uppercase hover:text-orange transition-colors"
+				>👥 About</a
+			>
 		</nav>
 	</div>
 </header>

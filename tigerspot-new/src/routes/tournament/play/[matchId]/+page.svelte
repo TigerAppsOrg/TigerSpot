@@ -19,8 +19,6 @@
 	const pictures = dummyPictures;
 	const currentUser = dummyUser;
 
-	const MAPBOX_TOKEN = import.meta.env.PUBLIC_MAPBOX_TOKEN || 'YOUR_MAPBOX_TOKEN';
-
 	// Game state
 	let currentRound = $state(1);
 	let guessCoords = $state<{ lat: number; lng: number } | null>(null);
@@ -196,30 +194,7 @@
 						</span>
 					</div>
 					<div class="grow min-h-[300px] lg:min-h-0">
-						{#if MAPBOX_TOKEN && MAPBOX_TOKEN !== 'YOUR_MAPBOX_TOKEN'}
-							<Map
-								accessToken={MAPBOX_TOKEN}
-								onSelect={handleMapSelect}
-								guessLocation={guessCoords ?? undefined}
-							/>
-						{:else}
-							<!-- Placeholder when no token -->
-							<div class="w-full h-full bg-gray flex items-center justify-center">
-								<div class="text-center p-8">
-									<div class="text-6xl mb-6">🗺️</div>
-									<p class="font-bold uppercase opacity-60 mb-6">Map Placeholder</p>
-									<p class="text-sm opacity-40 mb-6">Set PUBLIC_MAPBOX_TOKEN to enable</p>
-									<button
-										onclick={() => {
-											guessCoords = { lat: 40.3445, lng: -74.6567 };
-										}}
-										class="btn-brutal btn-cyan text-sm"
-									>
-										Simulate Click
-									</button>
-								</div>
-							</div>
-						{/if}
+						<Map onSelect={handleMapSelect} guessLocation={guessCoords ?? undefined} />
 					</div>
 				</Card>
 			</div>

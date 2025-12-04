@@ -31,7 +31,7 @@
 
 	<main class="pt-24 pb-12 px-4">
 		<div class="container-brutal max-w-4xl">
-			<h1 class="text-4xl font-black mb-10">Profile & Settings</h1>
+			<h1 class="text-4xl font-black mb-10 mt-8">Profile & Settings</h1>
 
 			<div class="grid md:grid-cols-2 gap-8">
 				<!-- Profile Section -->

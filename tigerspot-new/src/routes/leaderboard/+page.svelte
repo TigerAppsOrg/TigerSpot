@@ -18,7 +18,7 @@
 
 	<main class="pt-24 pb-12 px-4">
 		<div class="container-brutal">
-			<h1 class="text-4xl md:text-5xl font-black text-center mb-10">&#x1F3C6; Leaderboard</h1>
+			<h1 class="text-4xl md:text-5xl font-black text-center mt-8 mb-10">&#x1F3C6; Leaderboard</h1>
 
 			<!-- Tab Switcher -->
 			<div class="flex justify-center gap-6 mb-10">

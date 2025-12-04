@@ -5,8 +5,6 @@
 	import Map from '$lib/components/Map.svelte';
 	import { dummyPictures } from '$lib/data/dummy';
 
-	const MAPBOX_TOKEN = import.meta.env.PUBLIC_MAPBOX_TOKEN || 'YOUR_MAPBOX_TOKEN';
-
 	// Form state
 	let imagePreview = $state<string | null>(null);
 	let selectedFile = $state<File | null>(null);
@@ -128,29 +126,7 @@
 			<div>
 				<label class="block text-sm font-bold uppercase mb-2">Location (click on map)</label>
 				<div class="brutal-border overflow-hidden h-64">
-					{#if MAPBOX_TOKEN && MAPBOX_TOKEN !== 'YOUR_MAPBOX_TOKEN'}
-						<Map
-							accessToken={MAPBOX_TOKEN}
-							onSelect={handleMapSelect}
-							guessLocation={coordinates ?? undefined}
-						/>
-					{:else}
-						<div class="w-full h-full bg-gray flex items-center justify-center">
-							<div class="text-center p-4">
-								<div class="text-4xl mb-3">🗺️</div>
-								<p class="font-bold text-sm opacity-60 mb-3">Map Placeholder</p>
-								<button
-									type="button"
-									onclick={() => {
-										coordinates = { lat: 40.3445, lng: -74.6567 };
-									}}
-									class="btn-brutal btn-cyan text-xs"
-								>
-									Simulate Click
-								</button>
-							</div>
-						</div>
-					{/if}
+					<Map onSelect={handleMapSelect} guessLocation={coordinates ?? undefined} />
 				</div>
 				{#if coordinates}
 					<p class="mt-2 text-sm font-mono opacity-60">

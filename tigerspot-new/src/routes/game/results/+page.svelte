@@ -8,8 +8,6 @@
 	import { gameResults } from '$lib/stores/gameResults';
 	import { get } from 'svelte/store';
 
-	const MAPBOX_TOKEN = import.meta.env.PUBLIC_MAPBOX_TOKEN || 'YOUR_MAPBOX_TOKEN';
-
 	// Get results from store
 	const results = get(gameResults);
 
@@ -94,31 +92,7 @@
 						<h2 class="text-lg font-black uppercase">Your Guess vs Actual Location</h2>
 					</div>
 					<div class="h-[350px]">
-						{#if MAPBOX_TOKEN && MAPBOX_TOKEN !== 'YOUR_MAPBOX_TOKEN'}
-							<Map
-								accessToken={MAPBOX_TOKEN}
-								readonly
-								{guessLocation}
-								showActualLocation={actualLocation}
-							/>
-						{:else}
-							<div class="w-full h-full bg-gray flex items-center justify-center">
-								<div class="text-center p-8">
-									<div class="text-5xl mb-4">🗺️</div>
-									<p class="font-bold uppercase opacity-60 mb-4">Map Placeholder</p>
-									<div class="flex gap-4 justify-center text-sm">
-										<div
-											class="brutal-border brutal-shadow-sm bg-magenta text-white px-3 py-1 font-bold"
-										>
-											Your Guess
-										</div>
-										<div class="brutal-border brutal-shadow-sm bg-lime px-3 py-1 font-bold">
-											Actual Location
-										</div>
-									</div>
-								</div>
-							</div>
-						{/if}
+						<Map readonly {guessLocation} showActualLocation={actualLocation} />
 					</div>
 					<!-- Legend -->
 					<div class="flex justify-center gap-6 py-3 border-t-4 border-black text-sm">
