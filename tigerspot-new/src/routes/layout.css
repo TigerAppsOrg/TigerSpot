@@ -6,9 +6,9 @@
 	/* Primary Colors - matching original app */
 	--color-primary: #f5a623;
 	--color-primary-dark: #e89314;
-	--color-cyan: #00ffff;
-	--color-magenta: #ff00ff;
-	--color-lime: #bfff00;
+	--color-cyan: #4a8a9a;
+	--color-magenta: #a0527d;
+	--color-lime: #6b9e50;
 	--color-orange: #ff6600;
 
 	/* Neutrals */
@@ -41,20 +41,6 @@ html {
 body {
 	min-height: 100vh;
 	overflow-x: hidden;
-}
-
-/* Page border effect like original app */
-body::before {
-	content: '';
-	position: fixed;
-	top: 0;
-	left: 0;
-	right: 0;
-	bottom: 0;
-	border: 8px solid var(--color-black);
-	pointer-events: none;
-	z-index: 9999;
-	box-sizing: border-box;
 }
 
 /* Utility Classes */
@@ -108,7 +94,7 @@ body::before {
 /* Button Colors */
 .btn-cyan {
 	background-color: var(--color-cyan);
-	color: var(--color-black);
+	color: var(--color-white);
 }
 
 .btn-magenta {
@@ -118,7 +104,7 @@ body::before {
 
 .btn-lime {
 	background-color: var(--color-lime);
-	color: var(--color-black);
+	color: var(--color-white);
 }
 
 .btn-orange {

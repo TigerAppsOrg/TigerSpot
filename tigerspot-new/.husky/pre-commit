@@ -1,0 +1,2 @@
+cd tigerspot-new
+npx lint-staged

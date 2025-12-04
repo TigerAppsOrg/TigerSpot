@@ -29,12 +29,8 @@
 	<!-- Fixed Header -->
 	<header class="header-fixed bg-white brutal-border">
 		<div class="w-full h-full px-6 flex items-center justify-between">
-			<a href="/menu" class="text-2xl font-black tracking-tight">
-				TIGERSPOT
-			</a>
-			<Button variant="white" size="sm" href="/menu">
-				← Back
-			</Button>
+			<a href="/menu" class="text-2xl font-black tracking-tight"> TIGERSPOT </a>
+			<Button variant="white" size="sm" href="/menu">← Back</Button>
 		</div>
 	</header>
 
@@ -48,7 +44,9 @@
 					<h2 class="text-2xl font-black mb-8">&#x1F464; Profile</h2>
 
 					<div class="text-center mb-8">
-						<div class="w-28 h-28 bg-primary brutal-border brutal-shadow mx-auto flex items-center justify-center mb-6">
+						<div
+							class="w-28 h-28 bg-primary brutal-border brutal-shadow mx-auto flex items-center justify-center mb-6"
+						>
 							<span class="text-5xl">&#x1F42F;</span>
 						</div>
 						<h3 class="text-2xl font-bold">{dummyUser.username}</h3>
@@ -58,15 +56,19 @@
 					<div class="space-y-5">
 						<div class="flex justify-between items-center py-4 border-b-2 border-black/20">
 							<span class="font-bold">Total Points</span>
-							<span class="text-2xl font-black" style="color: #FF6600;">{dummyUser.totalPoints.toLocaleString()}</span>
+							<span class="text-2xl font-black" style="color: #FF6600;"
+								>{dummyUser.totalPoints.toLocaleString()}</span
+							>
 						</div>
 						<div class="flex justify-between items-center py-4 border-b-2 border-black/20">
 							<span class="font-bold">Current Streak</span>
-							<span class="text-2xl font-black" style="color: #FF00FF;">{dummyUser.currentStreak} days</span>
+							<span class="text-2xl font-black" style="color: #A0527D;"
+								>{dummyUser.currentStreak} days</span
+							>
 						</div>
 						<div class="flex justify-between items-center py-4 border-b-2 border-black/20">
 							<span class="font-bold">Global Rank</span>
-							<span class="text-2xl font-black" style="color: #00FFFF;">#7</span>
+							<span class="text-2xl font-black" style="color: #4A8A9A;">#7</span>
 						</div>
 						<div class="flex justify-between items-center py-4 border-b-2 border-black/20">
 							<span class="font-bold">Games Played</span>
@@ -74,7 +76,7 @@
 						</div>
 						<div class="flex justify-between items-center py-4">
 							<span class="font-bold">Best Streak</span>
-							<span class="text-2xl font-black" style="color: #BFFF00;">14 days</span>
+							<span class="text-2xl font-black" style="color: #6B9E50;">14 days</span>
 						</div>
 					</div>
 				</Card>
@@ -88,7 +90,10 @@
 							{#each themeOptions as theme}
 								<button
 									onclick={() => selectTheme(theme.name)}
-									class="aspect-square brutal-border brutal-shadow transition-transform hover:scale-105 flex items-center justify-center text-2xl {$currentTheme === theme.name ? 'ring-4 ring-black ring-offset-2' : ''}"
+									class="aspect-square brutal-border brutal-shadow transition-transform hover:scale-105 flex items-center justify-center text-2xl {$currentTheme ===
+									theme.name
+										? 'ring-4 ring-black ring-offset-2'
+										: ''}"
 									style="background-color: {theme.color};"
 									title={theme.label}
 								>
@@ -100,7 +105,7 @@
 						</div>
 
 						<p class="text-sm opacity-60 mt-6 text-center">
-							Selected: <strong>{themeOptions.find(t => t.name === $currentTheme)?.label}</strong>
+							Selected: <strong>{themeOptions.find((t) => t.name === $currentTheme)?.label}</strong>
 						</p>
 					</Card>
 
@@ -110,22 +115,34 @@
 						<div class="space-y-6">
 							<div class="flex items-center justify-between py-3">
 								<span class="font-bold">Sound Effects</span>
-								<button class="w-14 h-8 brutal-border relative transition-colors" style="background-color: #BFFF00;">
-									<div class="absolute left-1 top-1 w-6 h-6 bg-white brutal-border transition-transform"></div>
+								<button
+									class="w-14 h-8 brutal-border relative transition-colors"
+									style="background-color: #6B9E50;"
+								>
+									<div
+										class="absolute left-1 top-1 w-6 h-6 bg-white brutal-border transition-transform"
+									></div>
 								</button>
 							</div>
 
 							<div class="flex items-center justify-between py-3">
 								<span class="font-bold">Notifications</span>
 								<button class="w-14 h-8 brutal-border relative transition-colors bg-gray">
-									<div class="absolute right-1 top-1 w-6 h-6 bg-white brutal-border transition-transform"></div>
+									<div
+										class="absolute right-1 top-1 w-6 h-6 bg-white brutal-border transition-transform"
+									></div>
 								</button>
 							</div>
 
 							<div class="flex items-center justify-between py-3">
 								<span class="font-bold">Show on Leaderboard</span>
-								<button class="w-14 h-8 brutal-border relative transition-colors" style="background-color: #BFFF00;">
-									<div class="absolute left-1 top-1 w-6 h-6 bg-white brutal-border transition-transform"></div>
+								<button
+									class="w-14 h-8 brutal-border relative transition-colors"
+									style="background-color: #6B9E50;"
+								>
+									<div
+										class="absolute left-1 top-1 w-6 h-6 bg-white brutal-border transition-transform"
+									></div>
 								</button>
 							</div>
 						</div>

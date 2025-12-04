@@ -10,18 +10,13 @@
 		children: Snippet;
 	}
 
-	let {
-		variant = 'default',
-		hoverable = false,
-		class: className = '',
-		children
-	}: Props = $props();
+	let { variant = 'default', hoverable = false, class: className = '', children }: Props = $props();
 
 	const variantStyles: Record<CardVariant, { bg: string; text: string }> = {
 		default: { bg: '#FFFFFF', text: '#000000' },
-		cyan: { bg: '#00FFFF', text: '#000000' },
-		magenta: { bg: '#FF00FF', text: '#FFFFFF' },
-		lime: { bg: '#BFFF00', text: '#000000' },
+		cyan: { bg: '#4A8A9A', text: '#FFFFFF' },
+		magenta: { bg: '#A0527D', text: '#FFFFFF' },
+		lime: { bg: '#6B9E50', text: '#FFFFFF' },
 		orange: { bg: '#FF6600', text: '#FFFFFF' }
 	};
 

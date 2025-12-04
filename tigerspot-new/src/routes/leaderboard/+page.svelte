@@ -6,7 +6,7 @@
 	let activeTab = $state<'daily' | 'alltime'>('daily');
 
 	// Find current user's rank
-	const userRank = dummyLeaderboard.findIndex(u => u.username === dummyUser.username) + 1;
+	const userRank = dummyLeaderboard.findIndex((u) => u.username === dummyUser.username) + 1;
 </script>
 
 <svelte:head>
@@ -17,12 +17,8 @@
 	<!-- Fixed Header -->
 	<header class="header-fixed bg-white brutal-border">
 		<div class="w-full h-full px-6 flex items-center justify-between">
-			<a href="/menu" class="text-2xl font-black tracking-tight">
-				TIGERSPOT
-			</a>
-			<Button variant="white" size="sm" href="/menu">
-				← Back
-			</Button>
+			<a href="/menu" class="text-2xl font-black tracking-tight"> TIGERSPOT </a>
+			<Button variant="white" size="sm" href="/menu">← Back</Button>
 		</div>
 	</header>
 
@@ -34,13 +30,13 @@
 			<div class="flex justify-center gap-6 mb-10">
 				<button
 					class="btn-brutal {activeTab === 'daily' ? 'btn-black' : 'btn-white'}"
-					onclick={() => activeTab = 'daily'}
+					onclick={() => (activeTab = 'daily')}
 				>
 					Today
 				</button>
 				<button
 					class="btn-brutal {activeTab === 'alltime' ? 'btn-black' : 'btn-white'}"
-					onclick={() => activeTab = 'alltime'}
+					onclick={() => (activeTab = 'alltime')}
 				>
 					All Time
 				</button>
@@ -102,7 +98,10 @@
 				<div class="divide-y-4 divide-black">
 					{#each dummyLeaderboard as entry, i}
 						<div
-							class="flex items-center gap-6 py-5 first:pt-0 last:pb-0 {entry.username === dummyUser.username ? 'bg-cyan/20 -mx-8 px-8' : ''}"
+							class="flex items-center gap-6 py-5 first:pt-0 last:pb-0 {entry.username ===
+							dummyUser.username
+								? 'bg-cyan/20 -mx-8 px-8'
+								: ''}"
 						>
 							<!-- Rank -->
 							<div class="w-14 text-center">
@@ -120,11 +119,17 @@
 							</div>
 
 							<!-- User Info -->
-							<div class="flex-grow">
-								<div class="font-bold text-lg {entry.username === dummyUser.username ? 'text-cyan' : ''}">
+							<div class="grow">
+								<div
+									class="font-bold text-lg {entry.username === dummyUser.username
+										? 'text-cyan'
+										: ''}"
+								>
 									{entry.username}
 									{#if entry.username === dummyUser.username}
-										<span class="text-xs uppercase ml-3 bg-cyan text-black px-3 py-1 brutal-border">You</span>
+										<span class="text-xs uppercase ml-3 bg-cyan text-black px-3 py-1 brutal-border"
+											>You</span
+										>
 									{/if}
 								</div>
 								<div class="text-xs opacity-60 mt-1">
@@ -151,7 +156,7 @@
 						<div class="w-14 text-center text-2xl font-black">
 							{userRank}
 						</div>
-						<div class="flex-grow">
+						<div class="grow">
 							<div class="font-bold text-cyan text-lg">{dummyUser.username}</div>
 							<div class="text-xs opacity-60">Your position</div>
 						</div>

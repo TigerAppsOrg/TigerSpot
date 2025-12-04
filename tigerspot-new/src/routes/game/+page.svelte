@@ -61,23 +61,21 @@
 	<!-- Fixed Header -->
 	<header class="header-fixed bg-white brutal-border">
 		<div class="w-full h-full px-6 flex items-center justify-between">
-			<a href="/menu" class="text-2xl font-black tracking-tight">
-				TIGERSPOT
-			</a>
+			<a href="/menu" class="text-2xl font-black tracking-tight"> TIGERSPOT </a>
 			<Timer duration={120} onComplete={handleTimeUp} />
 		</div>
 	</header>
 
 	<!-- Game Area with padding for fixed header -->
-	<main class="flex-grow pt-24 pb-6 px-4">
+	<main class="grow pt-24 pb-6 px-4">
 		<div class="container-brutal h-full flex flex-col lg:flex-row gap-6">
 			<!-- Image Panel -->
 			<div class="lg:w-1/2 flex flex-col">
-				<Card class="flex-grow flex flex-col p-0 overflow-hidden">
+				<Card class="grow flex flex-col p-0 overflow-hidden">
 					<div class="p-5 border-b-4 border-black flex items-center justify-between">
 						<h2 class="text-xl font-black uppercase">Where is this?</h2>
 						<button
-							onclick={() => showFullImage = !showFullImage}
+							onclick={() => (showFullImage = !showFullImage)}
 							class="brutal-border brutal-shadow-sm bg-white px-4 py-2 text-sm font-bold hover:bg-gray transition-colors"
 						>
 							{showFullImage ? 'Minimize' : 'Expand'}
@@ -85,11 +83,11 @@
 					</div>
 					<button
 						type="button"
-						class="relative flex-grow bg-gray cursor-zoom-in w-full block min-h-[300px]"
+						class="relative grow bg-gray cursor-zoom-in w-full block min-h-[300px]"
 						class:fixed={showFullImage}
 						class:inset-6={showFullImage}
 						class:z-50={showFullImage}
-						onclick={() => showFullImage = !showFullImage}
+						onclick={() => (showFullImage = !showFullImage)}
 					>
 						<img
 							src={picture.imageUrl}
@@ -109,7 +107,7 @@
 
 			<!-- Map Panel -->
 			<div class="lg:w-1/2 flex flex-col">
-				<Card class="flex-grow flex flex-col p-0 overflow-hidden">
+				<Card class="grow flex flex-col p-0 overflow-hidden">
 					<div class="p-5 border-b-4 border-black flex items-center justify-between">
 						<h2 class="text-xl font-black uppercase">Click to guess</h2>
 						{#if guessCoords}
@@ -118,7 +116,7 @@
 							</span>
 						{/if}
 					</div>
-					<div class="flex-grow min-h-[300px] lg:min-h-0">
+					<div class="grow min-h-[300px] lg:min-h-0">
 						{#if MAPBOX_TOKEN && MAPBOX_TOKEN !== 'YOUR_MAPBOX_TOKEN'}
 							<Map
 								accessToken={MAPBOX_TOKEN}
@@ -161,12 +159,7 @@
 					Click on the map to place your guess
 				{/if}
 			</div>
-			<Button
-				variant="black"
-				size="lg"
-				disabled={!guessCoords}
-				onclick={submitGuess}
-			>
+			<Button variant="black" size="lg" disabled={!guessCoords} onclick={submitGuess}>
 				Submit Guess
 			</Button>
 		</div>

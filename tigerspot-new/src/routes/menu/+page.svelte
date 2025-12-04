@@ -12,15 +12,15 @@
 	<!-- Fixed Header -->
 	<header class="header-fixed bg-white brutal-border">
 		<div class="w-full h-full px-6 flex items-center justify-between">
-			<a href="/" class="text-2xl font-black tracking-tight">
-				TIGERSPOT
-			</a>
+			<a href="/" class="text-2xl font-black tracking-tight"> TIGERSPOT </a>
 			<div class="flex items-center gap-6">
 				<div class="text-right hidden sm:block">
 					<div class="text-xs font-bold uppercase opacity-60">Welcome back</div>
 					<div class="font-bold text-lg">{dummyUser.username}</div>
 				</div>
-				<div class="w-14 h-14 bg-primary brutal-border brutal-shadow flex items-center justify-center">
+				<div
+					class="w-14 h-14 bg-primary brutal-border brutal-shadow flex items-center justify-center"
+				>
 					<span class="text-2xl">&#x1F42F;</span>
 				</div>
 			</div>
@@ -33,7 +33,9 @@
 			<!-- Stats Bar -->
 			<div class="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
 				<Card class="text-center py-6">
-					<div class="text-3xl md:text-4xl font-black text-orange">{dummyUser.totalPoints.toLocaleString()}</div>
+					<div class="text-3xl md:text-4xl font-black text-orange">
+						{dummyUser.totalPoints.toLocaleString()}
+					</div>
 					<div class="text-xs font-bold uppercase opacity-60 mt-2">Total Points</div>
 				</Card>
 				<Card class="text-center py-6">
@@ -60,14 +62,18 @@
 						<div class="flex flex-col h-full">
 							<div class="text-5xl mb-6">&#x1F4C5;</div>
 							<h3 class="text-2xl font-black mb-4">Daily Challenge</h3>
-							<p class="opacity-80 mb-6 flex-grow leading-relaxed">
+							<p class="opacity-80 mb-6 grow leading-relaxed">
 								One new location every day. How close can you get?
 							</p>
 							<div class="flex items-center justify-between">
-								<span class="brutal-border brutal-shadow-sm bg-white px-4 py-2 text-sm font-bold">
+								<span
+									class="brutal-border brutal-shadow-sm bg-white text-black px-4 py-2 text-sm font-bold"
+								>
 									{dummyUser.currentStreak} day streak
 								</span>
-								<span class="font-bold uppercase text-sm group-hover:translate-x-2 transition-transform">
+								<span
+									class="font-bold uppercase text-sm group-hover:translate-x-2 transition-transform"
+								>
 									Play →
 								</span>
 							</div>
@@ -81,14 +87,18 @@
 						<div class="flex flex-col h-full">
 							<div class="text-5xl mb-6">&#x2694;&#xFE0F;</div>
 							<h3 class="text-2xl font-black mb-4">Versus Mode</h3>
-							<p class="text-white/80 mb-6 flex-grow leading-relaxed">
+							<p class="text-white/80 mb-6 grow leading-relaxed">
 								Challenge your friends to 5-round battles!
 							</p>
 							<div class="flex items-center justify-between">
-								<span class="brutal-border brutal-shadow-sm bg-white text-black px-4 py-2 text-sm font-bold">
+								<span
+									class="brutal-border brutal-shadow-sm bg-white text-black px-4 py-2 text-sm font-bold"
+								>
 									2 pending
 								</span>
-								<span class="font-bold uppercase text-sm group-hover:translate-x-2 transition-transform">
+								<span
+									class="font-bold uppercase text-sm group-hover:translate-x-2 transition-transform"
+								>
 									Battle →
 								</span>
 							</div>
@@ -102,14 +112,18 @@
 						<div class="flex flex-col h-full">
 							<div class="text-5xl mb-6">&#x1F3C6;</div>
 							<h3 class="text-2xl font-black mb-4">Tournament</h3>
-							<p class="opacity-80 mb-6 flex-grow leading-relaxed">
+							<p class="opacity-80 mb-6 grow leading-relaxed">
 								Bracket-style competition. Double elimination!
 							</p>
 							<div class="flex items-center justify-between">
-								<span class="brutal-border brutal-shadow-sm bg-white px-4 py-2 text-sm font-bold">
+								<span
+									class="brutal-border brutal-shadow-sm bg-white text-black px-4 py-2 text-sm font-bold"
+								>
 									1 active
 								</span>
-								<span class="font-bold uppercase text-sm group-hover:translate-x-2 transition-transform">
+								<span
+									class="font-bold uppercase text-sm group-hover:translate-x-2 transition-transform"
+								>
 									Compete →
 								</span>
 							</div>
@@ -120,12 +134,8 @@
 
 			<!-- Quick Links -->
 			<div class="flex flex-wrap gap-6">
-				<Button variant="white" href="/leaderboard">
-					&#x1F4CA; Leaderboard
-				</Button>
-				<Button variant="white" href="/settings">
-					&#x1F464; Profile & Settings
-				</Button>
+				<Button variant="white" href="/leaderboard">&#x1F4CA; Leaderboard</Button>
+				<Button variant="white" href="/settings">&#x1F464; Profile & Settings</Button>
 			</div>
 		</div>
 	</main>
