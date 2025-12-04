@@ -1,0 +1,270 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==================== USERS ====================
+
+model User {
+  username    String   @id @db.VarChar(255) // Princeton NetID
+  displayName String   @db.VarChar(255)
+  email       String?  @db.VarChar(255)
+  classYear   String?  @db.VarChar(20) // "2026" or "Graduate"
+  totalPoints Int      @default(0)
+  isAdmin     Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  daily                  UserDaily?
+  challengesSent         Challenge[]             @relation("Challenger")
+  challengesReceived     Challenge[]             @relation("Challengee")
+  tournamentParticipants TournamentParticipant[]
+  matchesAsPlayer1       TournamentMatch[]       @relation("MatchPlayer1")
+  matchesAsPlayer2       TournamentMatch[]       @relation("MatchPlayer2")
+  matchesWon             TournamentMatch[]       @relation("MatchWinner")
+  tournamentsCreated     Tournament[]            @relation("TournamentCreator")
+  tournamentsWon         Tournament[]            @relation("TournamentWinner")
+  uploadedPictures       Picture[]               @relation("PictureUploader")
+  challengeRounds        ChallengeRound[]
+  tournamentRounds       TournamentRound[]
+
+  @@index([totalPoints(sort: Desc)])
+}
+
+model UserDaily {
+  username      String    @id @db.VarChar(255)
+  points        Int       @default(0)
+  distance      Int       @default(0) // Best distance in meters
+  played        Boolean   @default(false)
+  lastPlayed    DateTime?
+  currentStreak Int       @default(0)
+  maxStreak     Int       @default(0)
+
+  user User @relation(fields: [username], references: [username], onDelete: Cascade)
+}
+
+// ==================== PICTURES ====================
+
+model Picture {
+  id           Int        @id @default(autoincrement())
+  cloudinaryId String     @db.VarChar(512) // Cloudinary public_id
+  imageUrl     String     @db.VarChar(1024) // Full Cloudinary URL
+  latitude     Float
+  longitude    Float
+  placeName    String     @db.VarChar(255)
+  difficulty   Difficulty @default(MEDIUM)
+  uploadedBy   String?    @db.VarChar(255)
+  createdAt    DateTime   @default(now())
+
+  // Relations
+  uploader         User?             @relation("PictureUploader", fields: [uploadedBy], references: [username])
+  dailyChallenges  DailyChallenge[]
+  challengeRounds  ChallengeRound[]
+  tournamentRounds TournamentRound[]
+
+  @@index([difficulty])
+}
+
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+// ==================== DAILY CHALLENGE ====================
+
+model DailyChallenge {
+  id        Int      @id @default(autoincrement())
+  date      DateTime @unique @db.Date
+  pictureId Int
+
+  picture Picture @relation(fields: [pictureId], references: [id])
+
+  @@index([date])
+}
+
+// ==================== VERSUS MODE ====================
+
+model Challenge {
+  id         Int             @id @default(autoincrement())
+  challengerId   String          @db.VarChar(255)
+  challengeeId   String          @db.VarChar(255)
+  status         ChallengeStatus @default(PENDING)
+
+  challengerPoints   Int     @default(0)
+  challengeePoints   Int     @default(0)
+  challengerFinished Boolean @default(false)
+  challengeeFinished Boolean @default(false)
+
+  winnerId    String?   @db.VarChar(255)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  startedAt   DateTime?
+  completedAt DateTime?
+
+  // Relations
+  challenger User             @relation("Challenger", fields: [challengerId], references: [username])
+  challengee User             @relation("Challengee", fields: [challengeeId], references: [username])
+  rounds     ChallengeRound[]
+
+  @@index([challengerId])
+  @@index([challengeeId])
+  @@index([status])
+}
+
+enum ChallengeStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  IN_PROGRESS
+  COMPLETED
+}
+
+model ChallengeRound {
+  id          Int @id @default(autoincrement())
+  challengeId Int
+  roundNumber Int // 1-5
+  pictureId   Int
+
+  // Player submissions (one row per player per round)
+  playerUsername String?   @db.VarChar(255)
+  guessLat       Float?
+  guessLng       Float?
+  distance       Int? // meters
+  points         Int?
+  timeSeconds    Int?
+  submittedAt    DateTime?
+
+  // Relations
+  challenge Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  picture   Picture   @relation(fields: [pictureId], references: [id])
+  player    User?     @relation(fields: [playerUsername], references: [username])
+
+  @@unique([challengeId, roundNumber, playerUsername])
+  @@index([challengeId])
+}
+
+// ==================== TOURNAMENTS ====================
+
+model Tournament {
+  id              Int              @id @default(autoincrement())
+  name            String           @db.VarChar(255)
+  status          TournamentStatus @default(OPEN)
+  difficulty      Difficulty       @default(MEDIUM)
+  timeLimit       Int              @default(120) // seconds per round
+  roundsPerMatch  Int              @default(5)
+  maxParticipants Int              @default(8)
+
+  createdBy   String    @db.VarChar(255)
+  createdAt   DateTime  @default(now())
+  startedAt   DateTime?
+  completedAt DateTime?
+  winnerId    String?   @db.VarChar(255)
+
+  // Relations
+  creator      User                    @relation("TournamentCreator", fields: [createdBy], references: [username])
+  winner       User?                   @relation("TournamentWinner", fields: [winnerId], references: [username])
+  participants TournamentParticipant[]
+  matches      TournamentMatch[]
+
+  @@index([status])
+}
+
+enum TournamentStatus {
+  OPEN
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+model TournamentParticipant {
+  id           Int      @id @default(autoincrement())
+  tournamentId Int
+  username     String   @db.VarChar(255)
+  seed         Int? // Seeding position
+  eliminated   Boolean  @default(false)
+  lossCount    Int      @default(0) // For double elimination: 0, 1, or 2
+  joinedAt     DateTime @default(now())
+
+  // Relations
+  tournament Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  user       User       @relation(fields: [username], references: [username])
+
+  @@unique([tournamentId, username])
+  @@index([tournamentId])
+}
+
+model TournamentMatch {
+  id           Int         @id @default(autoincrement())
+  tournamentId Int
+  bracketType  BracketType
+  roundNumber  Int // Round within bracket type
+  matchNumber  Int // Match position in round
+
+  player1Id    String? @db.VarChar(255)
+  player2Id    String? @db.VarChar(255)
+  player1Score Int?
+  player2Score Int?
+  winnerId     String? @db.VarChar(255)
+
+  status MatchStatus @default(PENDING)
+
+  // Bracket navigation
+  nextWinnerMatchId Int? // Winner advances here
+  nextLoserMatchId  Int? // Loser goes here (for winners bracket)
+
+  startedAt   DateTime?
+  completedAt DateTime?
+
+  // Relations
+  tournament Tournament        @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  player1    User?             @relation("MatchPlayer1", fields: [player1Id], references: [username])
+  player2    User?             @relation("MatchPlayer2", fields: [player2Id], references: [username])
+  winner     User?             @relation("MatchWinner", fields: [winnerId], references: [username])
+  rounds     TournamentRound[]
+
+  @@index([tournamentId])
+  @@index([status])
+}
+
+enum BracketType {
+  WINNERS
+  LOSERS
+  GRAND_FINAL
+}
+
+enum MatchStatus {
+  PENDING
+  READY // Both players assigned
+  IN_PROGRESS
+  COMPLETED
+}
+
+model TournamentRound {
+  id          Int @id @default(autoincrement())
+  matchId     Int
+  roundNumber Int // 1 to roundsPerMatch
+  pictureId   Int
+
+  // Player submissions
+  playerUsername String?   @db.VarChar(255)
+  guessLat       Float?
+  guessLng       Float?
+  distance       Int?
+  points         Int?
+  timeSeconds    Int?
+  submittedAt    DateTime?
+
+  // Relations
+  match   TournamentMatch @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  picture Picture         @relation(fields: [pictureId], references: [id])
+  player  User?           @relation(fields: [playerUsername], references: [username])
+
+  @@unique([matchId, roundNumber, playerUsername])
+  @@index([matchId])
+}
