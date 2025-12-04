@@ -115,6 +115,202 @@ export const dummyTournaments = [
 	}
 ];
 
+// Active tournament (single tournament at a time)
+export const dummyActiveTournament = {
+	id: 1,
+	name: 'Spring Showdown 2024',
+	status: 'in_progress' as 'open' | 'in_progress' | 'completed',
+	difficulty: 'mixed' as 'easy' | 'medium' | 'hard' | 'mixed',
+	timeLimit: 30,
+	roundsPerMatch: 5,
+	participants: [
+		'tiger123',
+		'tiger88',
+		'nassau_nav',
+		'campus_king',
+		'firestone_fan',
+		'orange_black',
+		'chapel_champ',
+		'ivy_explorer'
+	],
+	createdAt: new Date()
+};
+
+// Type for bracket match
+export type BracketMatch = {
+	id: number;
+	player1: string | null;
+	player2: string | null;
+	player1Score: number | null;
+	player2Score: number | null;
+	winnerId: string | null;
+	status: 'pending' | 'in_progress' | 'completed';
+};
+
+// Double elimination bracket structure
+export const dummyBracket = {
+	winners: [
+		// Round 1 (Quarterfinals)
+		[
+			{
+				id: 1,
+				player1: 'tiger123',
+				player2: 'tiger88',
+				player1Score: 4200,
+				player2Score: 3800,
+				winnerId: 'tiger123',
+				status: 'completed'
+			},
+			{
+				id: 2,
+				player1: 'nassau_nav',
+				player2: 'campus_king',
+				player1Score: 4500,
+				player2Score: 4100,
+				winnerId: 'nassau_nav',
+				status: 'completed'
+			},
+			{
+				id: 3,
+				player1: 'firestone_fan',
+				player2: 'orange_black',
+				player1Score: 3900,
+				player2Score: 4300,
+				winnerId: 'orange_black',
+				status: 'completed'
+			},
+			{
+				id: 4,
+				player1: 'chapel_champ',
+				player2: 'ivy_explorer',
+				player1Score: 4000,
+				player2Score: 3600,
+				winnerId: 'chapel_champ',
+				status: 'completed'
+			}
+		],
+		// Round 2 (Semifinals)
+		[
+			{
+				id: 5,
+				player1: 'tiger123',
+				player2: 'nassau_nav',
+				player1Score: null,
+				player2Score: null,
+				winnerId: null,
+				status: 'in_progress'
+			},
+			{
+				id: 6,
+				player1: 'orange_black',
+				player2: 'chapel_champ',
+				player1Score: null,
+				player2Score: null,
+				winnerId: null,
+				status: 'pending'
+			}
+		],
+		// Finals
+		[
+			{
+				id: 7,
+				player1: null,
+				player2: null,
+				player1Score: null,
+				player2Score: null,
+				winnerId: null,
+				status: 'pending'
+			}
+		]
+	] as BracketMatch[][],
+	losers: [
+		// Losers Round 1 (losers from QF)
+		[
+			{
+				id: 8,
+				player1: 'tiger88',
+				player2: 'campus_king',
+				player1Score: null,
+				player2Score: null,
+				winnerId: null,
+				status: 'pending'
+			},
+			{
+				id: 9,
+				player1: 'firestone_fan',
+				player2: 'ivy_explorer',
+				player1Score: null,
+				player2Score: null,
+				winnerId: null,
+				status: 'pending'
+			}
+		],
+		// Losers Round 2 (winners from LR1 vs losers from SF)
+		[
+			{
+				id: 10,
+				player1: null,
+				player2: null,
+				player1Score: null,
+				player2Score: null,
+				winnerId: null,
+				status: 'pending'
+			},
+			{
+				id: 11,
+				player1: null,
+				player2: null,
+				player1Score: null,
+				player2Score: null,
+				winnerId: null,
+				status: 'pending'
+			}
+		],
+		// Losers Semifinals
+		[
+			{
+				id: 12,
+				player1: null,
+				player2: null,
+				player1Score: null,
+				player2Score: null,
+				winnerId: null,
+				status: 'pending'
+			}
+		],
+		// Losers Finals
+		[
+			{
+				id: 13,
+				player1: null,
+				player2: null,
+				player1Score: null,
+				player2Score: null,
+				winnerId: null,
+				status: 'pending'
+			}
+		]
+	] as BracketMatch[][],
+	grandFinal: {
+		id: 14,
+		player1: null,
+		player2: null,
+		player1Score: null,
+		player2Score: null,
+		winnerId: null,
+		status: 'pending'
+	} as BracketMatch
+};
+
+// Current user's active match (if they have one)
+export const dummyCurrentMatch = {
+	matchId: 5,
+	bracketType: 'winners' as 'winners' | 'losers' | 'grand_final',
+	roundNumber: 2,
+	opponent: 'nassau_nav',
+	pictures: dummyPictures // Use the same 5 pictures for the match
+};
+
 // Princeton campus bounds for map
 export const PRINCETON_BOUNDS = {
 	center: { lng: -74.6551, lat: 40.3431 },
