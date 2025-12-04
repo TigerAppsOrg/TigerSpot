@@ -12,5 +12,5 @@
 			}
 		}
 	],
-	"tailwindStylesheet": "./src/routes/layout.css"
+	"tailwindStylesheet": "./tigerspot-new/src/routes/layout.css"
 }

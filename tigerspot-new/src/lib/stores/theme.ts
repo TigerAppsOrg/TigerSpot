@@ -1,7 +1,15 @@
 import { writable } from 'svelte/store';
 import { browser } from '$app/environment';
 
-export type ThemeName = 'orange' | 'green' | 'beige' | 'purple' | 'gray' | 'blue' | 'cream' | 'pink';
+export type ThemeName =
+	| 'orange'
+	| 'green'
+	| 'beige'
+	| 'purple'
+	| 'gray'
+	| 'blue'
+	| 'cream'
+	| 'pink';
 
 export interface Theme {
 	name: ThemeName;

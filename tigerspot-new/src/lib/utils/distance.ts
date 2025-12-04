@@ -6,21 +6,13 @@ function toRadians(degrees: number): number {
 	return degrees * (Math.PI / 180);
 }
 
-export function calculateDistance(
-	lat1: number,
-	lon1: number,
-	lat2: number,
-	lon2: number
-): number {
+export function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
 	const dLat = toRadians(lat2 - lat1);
 	const dLon = toRadians(lon2 - lon1);
 
 	const a =
 		Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-		Math.cos(toRadians(lat1)) *
-			Math.cos(toRadians(lat2)) *
-			Math.sin(dLon / 2) *
-			Math.sin(dLon / 2);
+		Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
 
 	const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
@@ -45,10 +37,7 @@ export function calculateDailyPoints(distanceMeters: number): number {
 	return Math.max(0, Math.floor((1 - distanceMeters / 110) * 1000));
 }
 
-export function calculateVersusPoints(
-	distanceMeters: number,
-	timeSeconds: number
-): number {
+export function calculateVersusPoints(distanceMeters: number, timeSeconds: number): number {
 	if (distanceMeters < 10 && timeSeconds < 10) return 1000;
 	const distancePoints = Math.max(0, 1 - distanceMeters / 110) * 900;
 	const timePoints = Math.max(0, 1 - timeSeconds / 120) * 100;

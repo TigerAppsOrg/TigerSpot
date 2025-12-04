@@ -7,43 +7,43 @@ import { setupTournamentHandlers } from './handlers/tournament.handler.js';
 let io: Server;
 
 export function initializeSocket(httpServer: HTTPServer) {
-  io = new Server(httpServer, {
-    cors: {
-      origin: config.cors.frontendUrl,
-      credentials: true
-    }
-  });
+	io = new Server(httpServer, {
+		cors: {
+			origin: config.cors.frontendUrl,
+			credentials: true
+		}
+	});
 
-  // Main namespace
-  io.on('connection', (socket) => {
-    console.log(`Client connected: ${socket.id}`);
+	// Main namespace
+	io.on('connection', (socket) => {
+		console.log(`Client connected: ${socket.id}`);
 
-    socket.on('disconnect', () => {
-      console.log(`Client disconnected: ${socket.id}`);
-    });
-  });
+		socket.on('disconnect', () => {
+			console.log(`Client disconnected: ${socket.id}`);
+		});
+	});
 
-  // Versus mode namespace
-  const versusNamespace = io.of('/versus');
-  versusNamespace.on('connection', (socket) => {
-    console.log(`Versus client connected: ${socket.id}`);
-    setupVersusHandlers(socket, versusNamespace);
-  });
+	// Versus mode namespace
+	const versusNamespace = io.of('/versus');
+	versusNamespace.on('connection', (socket) => {
+		console.log(`Versus client connected: ${socket.id}`);
+		setupVersusHandlers(socket, versusNamespace);
+	});
 
-  // Tournament mode namespace
-  const tournamentNamespace = io.of('/tournament');
-  tournamentNamespace.on('connection', (socket) => {
-    console.log(`Tournament client connected: ${socket.id}`);
-    setupTournamentHandlers(socket, tournamentNamespace);
-  });
+	// Tournament mode namespace
+	const tournamentNamespace = io.of('/tournament');
+	tournamentNamespace.on('connection', (socket) => {
+		console.log(`Tournament client connected: ${socket.id}`);
+		setupTournamentHandlers(socket, tournamentNamespace);
+	});
 
-  console.log('Socket.io initialized');
-  return io;
+	console.log('Socket.io initialized');
+	return io;
 }
 
 export function getIO(): Server {
-  if (!io) {
-    throw new Error('Socket.io not initialized');
-  }
-  return io;
+	if (!io) {
+		throw new Error('Socket.io not initialized');
+	}
+	return io;
 }

@@ -1,0 +1,23 @@
+# Package Managers
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+bun.lock
+bun.lockb
+
+# Build outputs
+**/dist/
+**/build/
+**/.svelte-kit/
+
+# Dependencies
+**/node_modules/
+
+# Static assets
+tigerspot-new/static/
+
+# Generated files
+**/prisma/migrations/
+
+# Legacy
+legacy/

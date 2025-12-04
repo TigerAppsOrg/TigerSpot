@@ -92,117 +92,117 @@ tigerspot/
 
 ```typescript
 // Users table
-users = pgTable("users", {
-  username: varchar(255).primaryKey(), // Princeton NetID
-  totalPoints: integer().default(0),
-  isAdmin: boolean().default(false),
-  createdAt: timestamp().defaultNow(),
+users = pgTable('users', {
+	username: varchar(255).primaryKey(), // Princeton NetID
+	totalPoints: integer().default(0),
+	isAdmin: boolean().default(false),
+	createdAt: timestamp().defaultNow()
 });
 
 // Daily stats (reset daily)
-userDaily = pgTable("user_daily", {
-  username: varchar(255)
-    .primaryKey()
-    .references(() => users.username),
-  points: integer().default(0),
-  distance: integer().default(0),
-  played: boolean().default(false),
-  lastPlayed: date(),
-  currentStreak: integer().default(0),
+userDaily = pgTable('user_daily', {
+	username: varchar(255)
+		.primaryKey()
+		.references(() => users.username),
+	points: integer().default(0),
+	distance: integer().default(0),
+	played: boolean().default(false),
+	lastPlayed: date(),
+	currentStreak: integer().default(0)
 });
 
 // Pictures with difficulty
-pictures = pgTable("pictures", {
-  id: serial().primaryKey(),
-  s3Key: varchar(512).notNull(), // S3 object key
-  latitude: doublePrecision().notNull(),
-  longitude: doublePrecision().notNull(),
-  placeName: varchar(255).notNull(),
-  difficulty: varchar(20).notNull(), // 'easy' | 'medium' | 'hard'
-  createdAt: timestamp().defaultNow(),
+pictures = pgTable('pictures', {
+	id: serial().primaryKey(),
+	s3Key: varchar(512).notNull(), // S3 object key
+	latitude: doublePrecision().notNull(),
+	longitude: doublePrecision().notNull(),
+	placeName: varchar(255).notNull(),
+	difficulty: varchar(20).notNull(), // 'easy' | 'medium' | 'hard'
+	createdAt: timestamp().defaultNow()
 });
 
 // Versus challenges (same as legacy)
-challenges = pgTable("challenges", {
-  id: serial().primaryKey(),
-  challengerId: varchar(255).references(() => users.username),
-  challengeeId: varchar(255).references(() => users.username),
-  status: varchar(20).default("pending"), // pending|accepted|declined|completed
-  pictureIds: integer().array(), // 5 picture IDs
-  challengerPoints: integer().default(0),
-  challengeePoints: integer().default(0),
-  challengerFinished: boolean().default(false),
-  challengeeFinished: boolean().default(false),
-  createdAt: timestamp().defaultNow(),
+challenges = pgTable('challenges', {
+	id: serial().primaryKey(),
+	challengerId: varchar(255).references(() => users.username),
+	challengeeId: varchar(255).references(() => users.username),
+	status: varchar(20).default('pending'), // pending|accepted|declined|completed
+	pictureIds: integer().array(), // 5 picture IDs
+	challengerPoints: integer().default(0),
+	challengeePoints: integer().default(0),
+	challengerFinished: boolean().default(false),
+	challengeeFinished: boolean().default(false),
+	createdAt: timestamp().defaultNow()
 });
 
 // Challenge rounds (normalized from legacy's arrays)
-challengeRounds = pgTable("challenge_rounds", {
-  id: serial().primaryKey(),
-  challengeId: integer().references(() => challenges.id),
-  roundNumber: integer().notNull(), // 1-5
-  pictureId: integer().references(() => pictures.id),
-  challengerSubmitted: boolean().default(false),
-  challengeeSubmitted: boolean().default(false),
-  challengerPoints: integer(),
-  challengeePoints: integer(),
-  challengerTime: integer(), // seconds
-  challengeeTime: integer(),
+challengeRounds = pgTable('challenge_rounds', {
+	id: serial().primaryKey(),
+	challengeId: integer().references(() => challenges.id),
+	roundNumber: integer().notNull(), // 1-5
+	pictureId: integer().references(() => pictures.id),
+	challengerSubmitted: boolean().default(false),
+	challengeeSubmitted: boolean().default(false),
+	challengerPoints: integer(),
+	challengeePoints: integer(),
+	challengerTime: integer(), // seconds
+	challengeeTime: integer()
 });
 
 // Tournaments
-tournaments = pgTable("tournaments", {
-  id: serial().primaryKey(),
-  name: varchar(255).notNull(),
-  status: varchar(20).default("open"), // open|in_progress|completed
-  difficulty: varchar(20).notNull(), // easy|medium|hard|mixed
-  timeLimit: integer().notNull(), // seconds per round
-  roundsPerMatch: integer().default(5),
-  createdBy: varchar(255).references(() => users.username),
-  createdAt: timestamp().defaultNow(),
-  startedAt: timestamp(),
+tournaments = pgTable('tournaments', {
+	id: serial().primaryKey(),
+	name: varchar(255).notNull(),
+	status: varchar(20).default('open'), // open|in_progress|completed
+	difficulty: varchar(20).notNull(), // easy|medium|hard|mixed
+	timeLimit: integer().notNull(), // seconds per round
+	roundsPerMatch: integer().default(5),
+	createdBy: varchar(255).references(() => users.username),
+	createdAt: timestamp().defaultNow(),
+	startedAt: timestamp()
 });
 
 // Tournament participants
-tournamentParticipants = pgTable("tournament_participants", {
-  id: serial().primaryKey(),
-  tournamentId: integer().references(() => tournaments.id),
-  username: varchar(255).references(() => users.username),
-  eliminated: boolean().default(false),
-  lossCount: integer().default(0), // For double elimination (0, 1, or 2)
-  joinedAt: timestamp().defaultNow(),
+tournamentParticipants = pgTable('tournament_participants', {
+	id: serial().primaryKey(),
+	tournamentId: integer().references(() => tournaments.id),
+	username: varchar(255).references(() => users.username),
+	eliminated: boolean().default(false),
+	lossCount: integer().default(0), // For double elimination (0, 1, or 2)
+	joinedAt: timestamp().defaultNow()
 });
 
 // Tournament matches (bracket structure)
-tournamentMatches = pgTable("tournament_matches", {
-  id: serial().primaryKey(),
-  tournamentId: integer().references(() => tournaments.id),
-  bracketType: varchar(20).notNull(), // 'winners' | 'losers' | 'grand_final'
-  roundNumber: integer().notNull(),
-  matchNumber: integer().notNull(),
-  player1Id: varchar(255).references(() => users.username),
-  player2Id: varchar(255).references(() => users.username),
-  winnerId: varchar(255).references(() => users.username),
-  player1Score: integer(),
-  player2Score: integer(),
-  pictureIds: integer().array(), // Same pictures for both players
-  status: varchar(20).default("pending"), // pending|in_progress|completed
-  nextMatchId: integer(), // Winner advances to this match
-  loserNextMatchId: integer(), // Loser goes here (losers bracket)
+tournamentMatches = pgTable('tournament_matches', {
+	id: serial().primaryKey(),
+	tournamentId: integer().references(() => tournaments.id),
+	bracketType: varchar(20).notNull(), // 'winners' | 'losers' | 'grand_final'
+	roundNumber: integer().notNull(),
+	matchNumber: integer().notNull(),
+	player1Id: varchar(255).references(() => users.username),
+	player2Id: varchar(255).references(() => users.username),
+	winnerId: varchar(255).references(() => users.username),
+	player1Score: integer(),
+	player2Score: integer(),
+	pictureIds: integer().array(), // Same pictures for both players
+	status: varchar(20).default('pending'), // pending|in_progress|completed
+	nextMatchId: integer(), // Winner advances to this match
+	loserNextMatchId: integer() // Loser goes here (losers bracket)
 });
 
 // Tournament match rounds
-tournamentRounds = pgTable("tournament_rounds", {
-  id: serial().primaryKey(),
-  matchId: integer().references(() => tournamentMatches.id),
-  roundNumber: integer().notNull(),
-  pictureId: integer().references(() => pictures.id),
-  player1Submitted: boolean().default(false),
-  player2Submitted: boolean().default(false),
-  player1Points: integer(),
-  player2Points: integer(),
-  player1Time: integer(),
-  player2Time: integer(),
+tournamentRounds = pgTable('tournament_rounds', {
+	id: serial().primaryKey(),
+	matchId: integer().references(() => tournamentMatches.id),
+	roundNumber: integer().notNull(),
+	pictureId: integer().references(() => pictures.id),
+	player1Submitted: boolean().default(false),
+	player2Submitted: boolean().default(false),
+	player1Points: integer(),
+	player2Points: integer(),
+	player1Time: integer(),
+	player2Time: integer()
 });
 ```
 
@@ -212,38 +212,38 @@ tournamentRounds = pgTable("tournament_rounds", {
 
 ```typescript
 export default $config({
-  app(input) {
-    return {
-      name: "tigerspot",
-      removal: input?.stage === "production" ? "retain" : "remove",
-      home: "aws",
-      providers: { aws: { region: "us-east-1" } },
-    };
-  },
-  async run() {
-    // S3 bucket for images
-    const bucket = new sst.aws.Bucket("Images", {
-      access: "public",
-    });
+	app(input) {
+		return {
+			name: 'tigerspot',
+			removal: input?.stage === 'production' ? 'retain' : 'remove',
+			home: 'aws',
+			providers: { aws: { region: 'us-east-1' } }
+		};
+	},
+	async run() {
+		// S3 bucket for images
+		const bucket = new sst.aws.Bucket('Images', {
+			access: 'public'
+		});
 
-    // RDS PostgreSQL
-    const vpc = new sst.aws.Vpc("Vpc");
-    const database = new sst.aws.Postgres("Database", {
-      vpc,
-      scaling: { min: "0.5 ACU", max: "2 ACU" },
-    });
+		// RDS PostgreSQL
+		const vpc = new sst.aws.Vpc('Vpc');
+		const database = new sst.aws.Postgres('Database', {
+			vpc,
+			scaling: { min: '0.5 ACU', max: '2 ACU' }
+		});
 
-    // SvelteKit app
-    const site = new sst.aws.SvelteKit("Site", {
-      link: [bucket, database],
-      environment: {
-        CAS_URL: "https://fed.princeton.edu/cas",
-        PUBLIC_BASE_URL: process.env.PUBLIC_BASE_URL,
-      },
-    });
+		// SvelteKit app
+		const site = new sst.aws.SvelteKit('Site', {
+			link: [bucket, database],
+			environment: {
+				CAS_URL: 'https://fed.princeton.edu/cas',
+				PUBLIC_BASE_URL: process.env.PUBLIC_BASE_URL
+			}
+		});
 
-    return { url: site.url };
-  },
+		return { url: site.url };
+	}
 });
 ```
 
@@ -253,29 +253,26 @@ export default $config({
 
 ```typescript
 // src/lib/server/auth/cas.ts
-const CAS_URL = "https://fed.princeton.edu/cas";
+const CAS_URL = 'https://fed.princeton.edu/cas';
 
-export async function validateTicket(
-  ticket: string,
-  serviceUrl: string
-): Promise<string | null> {
-  const validateUrl = `${CAS_URL}/serviceValidate?ticket=${ticket}&service=${encodeURIComponent(
-    serviceUrl
-  )}`;
-  const response = await fetch(validateUrl);
-  const xml = await response.text();
+export async function validateTicket(ticket: string, serviceUrl: string): Promise<string | null> {
+	const validateUrl = `${CAS_URL}/serviceValidate?ticket=${ticket}&service=${encodeURIComponent(
+		serviceUrl
+	)}`;
+	const response = await fetch(validateUrl);
+	const xml = await response.text();
 
-  // Parse XML for <cas:user>netid</cas:user>
-  const match = xml.match(/<cas:user>([^<]+)<\/cas:user>/);
-  return match ? match[1] : null;
+	// Parse XML for <cas:user>netid</cas:user>
+	const match = xml.match(/<cas:user>([^<]+)<\/cas:user>/);
+	return match ? match[1] : null;
 }
 
 export function getLoginUrl(serviceUrl: string): string {
-  return `${CAS_URL}/login?service=${encodeURIComponent(serviceUrl)}`;
+	return `${CAS_URL}/login?service=${encodeURIComponent(serviceUrl)}`;
 }
 
 export function getLogoutUrl(serviceUrl: string): string {
-  return `${CAS_URL}/logout?service=${encodeURIComponent(serviceUrl)}`;
+	return `${CAS_URL}/logout?service=${encodeURIComponent(serviceUrl)}`;
 }
 ```
 
@@ -296,31 +293,23 @@ export function getLogoutUrl(serviceUrl: string): string {
 
 // Daily mode: distance only
 export function calculateDailyPoints(distanceMeters: number): number {
-  if (distanceMeters < 3) return 1500;
-  if (distanceMeters < 6) return 1250;
-  if (distanceMeters < 10) return 1000;
-  return Math.max(0, Math.floor((1 - distanceMeters / 110) * 1000));
+	if (distanceMeters < 3) return 1500;
+	if (distanceMeters < 6) return 1250;
+	if (distanceMeters < 10) return 1000;
+	return Math.max(0, Math.floor((1 - distanceMeters / 110) * 1000));
 }
 
 // Versus/Tournament: distance + time
-export function calculateVersusPoints(
-  distanceMeters: number,
-  timeSeconds: number
-): number {
-  if (distanceMeters < 10 && timeSeconds < 10) return 1000;
-  const distancePoints = Math.max(0, 1 - distanceMeters / 110) * 900;
-  const timePoints = Math.max(0, 1 - timeSeconds / 120) * 100;
-  return Math.floor(distancePoints + timePoints);
+export function calculateVersusPoints(distanceMeters: number, timeSeconds: number): number {
+	if (distanceMeters < 10 && timeSeconds < 10) return 1000;
+	const distancePoints = Math.max(0, 1 - distanceMeters / 110) * 900;
+	const timePoints = Math.max(0, 1 - timeSeconds / 120) * 100;
+	return Math.floor(distancePoints + timePoints);
 }
 
 // Haversine distance
-export function calculateDistance(
-  lat1: number,
-  lon1: number,
-  lat2: number,
-  lon2: number
-): number {
-  // ... haversine formula returning meters
+export function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+	// ... haversine formula returning meters
 }
 ```
 
@@ -333,80 +322,74 @@ export function calculateDistance(
 ```typescript
 // src/lib/server/services/tournament.ts
 
-export function generateDoubleEliminationBracket(
-  playerIds: string[]
-): BracketStructure {
-  const n = playerIds.length;
-  const paddedSize = nextPowerOf2(n); // Round up to power of 2
+export function generateDoubleEliminationBracket(playerIds: string[]): BracketStructure {
+	const n = playerIds.length;
+	const paddedSize = nextPowerOf2(n); // Round up to power of 2
 
-  // Shuffle players
-  const shuffled = shuffle(playerIds);
+	// Shuffle players
+	const shuffled = shuffle(playerIds);
 
-  // Create winners bracket matches
-  const winnersRounds = Math.log2(paddedSize);
-  const winnersBracket: Match[][] = [];
+	// Create winners bracket matches
+	const winnersRounds = Math.log2(paddedSize);
+	const winnersBracket: Match[][] = [];
 
-  // First round: seed players (with byes for padded slots)
-  const firstRound: Match[] = [];
-  for (let i = 0; i < paddedSize / 2; i++) {
-    firstRound.push({
-      player1Id: shuffled[i * 2] || null, // null = bye
-      player2Id: shuffled[i * 2 + 1] || null,
-      bracketType: "winners",
-      roundNumber: 1,
-      matchNumber: i + 1,
-    });
-  }
-  winnersBracket.push(firstRound);
+	// First round: seed players (with byes for padded slots)
+	const firstRound: Match[] = [];
+	for (let i = 0; i < paddedSize / 2; i++) {
+		firstRound.push({
+			player1Id: shuffled[i * 2] || null, // null = bye
+			player2Id: shuffled[i * 2 + 1] || null,
+			bracketType: 'winners',
+			roundNumber: 1,
+			matchNumber: i + 1
+		});
+	}
+	winnersBracket.push(firstRound);
 
-  // Create losers bracket (roughly 2x rounds as winners bracket)
-  const losersBracket: Match[][] = [];
-  // ... losers bracket structure
+	// Create losers bracket (roughly 2x rounds as winners bracket)
+	const losersBracket: Match[][] = [];
+	// ... losers bracket structure
 
-  // Grand finals (winner of winners vs winner of losers)
-  const grandFinal: Match = {
-    bracketType: "grand_final",
-    roundNumber: 1,
-    matchNumber: 1,
-  };
+	// Grand finals (winner of winners vs winner of losers)
+	const grandFinal: Match = {
+		bracketType: 'grand_final',
+		roundNumber: 1,
+		matchNumber: 1
+	};
 
-  return { winnersBracket, losersBracket, grandFinal };
+	return { winnersBracket, losersBracket, grandFinal };
 }
 ```
 
 ### Match Advancement
 
 ```typescript
-export async function advanceMatch(
-  matchId: number,
-  winnerId: string
-): Promise<void> {
-  const match = await getMatch(matchId);
-  const loserId =
-    match.player1Id === winnerId ? match.player2Id : match.player1Id;
+export async function advanceMatch(matchId: number, winnerId: string): Promise<void> {
+	const match = await getMatch(matchId);
+	const loserId = match.player1Id === winnerId ? match.player2Id : match.player1Id;
 
-  // Update match
-  await updateMatch(matchId, { winnerId, status: "completed" });
+	// Update match
+	await updateMatch(matchId, { winnerId, status: 'completed' });
 
-  // Winner advances to next match in same bracket
-  if (match.nextMatchId) {
-    await addPlayerToMatch(match.nextMatchId, winnerId);
-  }
+	// Winner advances to next match in same bracket
+	if (match.nextMatchId) {
+		await addPlayerToMatch(match.nextMatchId, winnerId);
+	}
 
-  // Loser handling
-  if (match.bracketType === "winners") {
-    // Move to losers bracket
-    await incrementLossCount(match.tournamentId, loserId);
-    if (match.loserNextMatchId) {
-      await addPlayerToMatch(match.loserNextMatchId, loserId);
-    }
-  } else if (match.bracketType === "losers") {
-    // Eliminated (2nd loss)
-    await eliminatePlayer(match.tournamentId, loserId);
-  }
+	// Loser handling
+	if (match.bracketType === 'winners') {
+		// Move to losers bracket
+		await incrementLossCount(match.tournamentId, loserId);
+		if (match.loserNextMatchId) {
+			await addPlayerToMatch(match.loserNextMatchId, loserId);
+		}
+	} else if (match.bracketType === 'losers') {
+		// Eliminated (2nd loss)
+		await eliminatePlayer(match.tournamentId, loserId);
+	}
 
-  // Check if tournament is complete
-  await checkTournamentCompletion(match.tournamentId);
+	// Check if tournament is complete
+	await checkTournamentCompletion(match.tournamentId);
 }
 ```
 
@@ -416,26 +399,23 @@ All players in the same tournament round get the same pictures:
 
 ```typescript
 export async function generateMatchPictures(
-  tournamentId: number,
-  difficulty: string,
-  count: number = 5
+	tournamentId: number,
+	difficulty: string,
+	count: number = 5
 ): Promise<number[]> {
-  // Get pictures matching difficulty that haven't been used in this tournament
-  const usedPictureIds = await getUsedPictureIds(tournamentId);
+	// Get pictures matching difficulty that haven't been used in this tournament
+	const usedPictureIds = await getUsedPictureIds(tournamentId);
 
-  const pictures = await db
-    .select()
-    .from(picturesTable)
-    .where(
-      and(
-        eq(picturesTable.difficulty, difficulty),
-        notInArray(picturesTable.id, usedPictureIds)
-      )
-    )
-    .orderBy(sql`RANDOM()`)
-    .limit(count);
+	const pictures = await db
+		.select()
+		.from(picturesTable)
+		.where(
+			and(eq(picturesTable.difficulty, difficulty), notInArray(picturesTable.id, usedPictureIds))
+		)
+		.orderBy(sql`RANDOM()`)
+		.limit(count);
 
-  return pictures.map((p) => p.id);
+	return pictures.map((p) => p.id);
 }
 ```
 
@@ -446,14 +426,12 @@ export async function generateMatchPictures(
 ### Features
 
 1. **Image Management**
-
    - Upload images to S3 with presigned URLs
    - Set coordinates via map click
    - Set place name and difficulty
    - View/edit/delete existing images
 
 2. **Tournament Management**
-
    - Create tournament (name, difficulty, time limit)
    - View participants (who joined)
    - Start tournament (generates bracket)
@@ -470,45 +448,44 @@ export async function generateMatchPictures(
 ```typescript
 // POST /api/admin/images/presign
 export async function POST({ request, locals }) {
-  if (!locals.user?.isAdmin) throw error(403);
+	if (!locals.user?.isAdmin) throw error(403);
 
-  const { filename, contentType } = await request.json();
-  const key = `images/${crypto.randomUUID()}-${filename}`;
+	const { filename, contentType } = await request.json();
+	const key = `images/${crypto.randomUUID()}-${filename}`;
 
-  const command = new PutObjectCommand({
-    Bucket: Resource.Images.name,
-    Key: key,
-    ContentType: contentType,
-  });
+	const command = new PutObjectCommand({
+		Bucket: Resource.Images.name,
+		Key: key,
+		ContentType: contentType
+	});
 
-  const presignedUrl = await getSignedUrl(s3Client, command, {
-    expiresIn: 300,
-  });
+	const presignedUrl = await getSignedUrl(s3Client, command, {
+		expiresIn: 300
+	});
 
-  return json({ presignedUrl, key });
+	return json({ presignedUrl, key });
 }
 
 // POST /api/admin/images
 export async function POST({ request, locals }) {
-  if (!locals.user?.isAdmin) throw error(403);
+	if (!locals.user?.isAdmin) throw error(403);
 
-  const { s3Key, latitude, longitude, placeName, difficulty } =
-    await request.json();
+	const { s3Key, latitude, longitude, placeName, difficulty } = await request.json();
 
-  // Validate inputs
-  if (!["easy", "medium", "hard"].includes(difficulty)) {
-    throw error(400, "Invalid difficulty");
-  }
+	// Validate inputs
+	if (!['easy', 'medium', 'hard'].includes(difficulty)) {
+		throw error(400, 'Invalid difficulty');
+	}
 
-  await db.insert(pictures).values({
-    s3Key,
-    latitude,
-    longitude,
-    placeName,
-    difficulty,
-  });
+	await db.insert(pictures).values({
+		s3Key,
+		latitude,
+		longitude,
+		placeName,
+		difficulty
+	});
 
-  return json({ success: true });
+	return json({ success: true });
 }
 ```
 
@@ -519,46 +496,46 @@ export async function POST({ request, locals }) {
 ### hooks.server.ts
 
 ```typescript
-import { sequence } from "@sveltejs/kit/hooks";
+import { sequence } from '@sveltejs/kit/hooks';
 
 // CSRF protection
 const csrf: Handle = async ({ event, resolve }) => {
-  if (event.request.method !== "GET") {
-    const origin = event.request.headers.get("origin");
-    const host = event.request.headers.get("host");
-    if (!origin || new URL(origin).host !== host) {
-      throw error(403, "CSRF check failed");
-    }
-  }
-  return resolve(event);
+	if (event.request.method !== 'GET') {
+		const origin = event.request.headers.get('origin');
+		const host = event.request.headers.get('host');
+		if (!origin || new URL(origin).host !== host) {
+			throw error(403, 'CSRF check failed');
+		}
+	}
+	return resolve(event);
 };
 
 // Security headers
 const securityHeaders: Handle = async ({ event, resolve }) => {
-  const response = await resolve(event);
-  response.headers.set("X-Frame-Options", "DENY");
-  response.headers.set("X-Content-Type-Options", "nosniff");
-  response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
-  response.headers.set(
-    "Content-Security-Policy",
-    "default-src 'self'; img-src 'self' https://*.s3.amazonaws.com; ..."
-  );
-  return response;
+	const response = await resolve(event);
+	response.headers.set('X-Frame-Options', 'DENY');
+	response.headers.set('X-Content-Type-Options', 'nosniff');
+	response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+	response.headers.set(
+		'Content-Security-Policy',
+		"default-src 'self'; img-src 'self' https://*.s3.amazonaws.com; ..."
+	);
+	return response;
 };
 
 // Auth middleware
 const auth: Handle = async ({ event, resolve }) => {
-  const session = event.cookies.get("session");
-  if (session) {
-    event.locals.user = await validateSession(session);
-  }
-  return resolve(event);
+	const session = event.cookies.get('session');
+	if (session) {
+		event.locals.user = await validateSession(session);
+	}
+	return resolve(event);
 };
 
 // Rate limiting (use in-memory or Redis)
 const rateLimit: Handle = async ({ event, resolve }) => {
-  // Implement rate limiting for API routes
-  return resolve(event);
+	// Implement rate limiting for API routes
+	return resolve(event);
 };
 
 export const handle = sequence(csrf, securityHeaders, auth, rateLimit);
@@ -568,13 +545,13 @@ export const handle = sequence(csrf, securityHeaders, auth, rateLimit);
 
 ```typescript
 // Use zod for all API inputs
-import { z } from "zod";
+import { z } from 'zod';
 
 const submitGuessSchema = z.object({
-  latitude: z.number().min(-90).max(90),
-  longitude: z.number().min(-180).max(180),
-  pictureId: z.number().int().positive(),
-  timeSeconds: z.number().int().min(0).max(300).optional(),
+	latitude: z.number().min(-90).max(90),
+	longitude: z.number().min(-180).max(180),
+	pictureId: z.number().int().positive(),
+	timeSeconds: z.number().int().min(0).max(300).optional()
 });
 
 // In route handler
@@ -586,14 +563,11 @@ const body = submitGuessSchema.parse(await request.json());
 ```typescript
 // Always verify user is participant in challenge/match
 async function verifyParticipant(challengeId: number, username: string) {
-  const challenge = await getChallenge(challengeId);
-  if (
-    challenge.challengerId !== username &&
-    challenge.challengeeId !== username
-  ) {
-    throw error(403, "Not a participant");
-  }
-  return challenge;
+	const challenge = await getChallenge(challengeId);
+	if (challenge.challengerId !== username && challenge.challengeeId !== username) {
+		throw error(403, 'Not a participant');
+	}
+	return challenge;
 }
 ```
 
@@ -652,46 +626,44 @@ async function verifyParticipant(challengeId: number, username: string) {
 ```svelte
 <!-- src/lib/components/Map.svelte -->
 <script>
-  import mapboxgl from 'mapbox-gl';
-  import { onMount, createEventDispatcher } from 'svelte';
-  import { PUBLIC_MAPBOX_TOKEN } from '$env/static/public';
+	import mapboxgl from 'mapbox-gl';
+	import { onMount, createEventDispatcher } from 'svelte';
+	import { PUBLIC_MAPBOX_TOKEN } from '$env/static/public';
 
-  export let readonly = false;
-  export let markerPosition = null;
+	export let readonly = false;
+	export let markerPosition = null;
 
-  const dispatch = createEventDispatcher();
-  let mapContainer;
-  let map;
-  let marker;
+	const dispatch = createEventDispatcher();
+	let mapContainer;
+	let map;
+	let marker;
 
-  // Princeton campus center
-  const PRINCETON_CENTER = { lng: -74.6551, lat: 40.3431 };
+	// Princeton campus center
+	const PRINCETON_CENTER = { lng: -74.6551, lat: 40.3431 };
 
-  onMount(() => {
-    mapboxgl.accessToken = PUBLIC_MAPBOX_TOKEN;
+	onMount(() => {
+		mapboxgl.accessToken = PUBLIC_MAPBOX_TOKEN;
 
-    map = new mapboxgl.Map({
-      container: mapContainer,
-      style: 'mapbox://styles/mapbox/satellite-streets-v12',
-      center: [PRINCETON_CENTER.lng, PRINCETON_CENTER.lat],
-      zoom: 16,
-    });
+		map = new mapboxgl.Map({
+			container: mapContainer,
+			style: 'mapbox://styles/mapbox/satellite-streets-v12',
+			center: [PRINCETON_CENTER.lng, PRINCETON_CENTER.lat],
+			zoom: 16
+		});
 
-    if (!readonly) {
-      map.on('click', (e) => {
-        const { lng, lat } = e.lngLat;
-        setMarker(lng, lat);
-        dispatch('select', { longitude: lng, latitude: lat });
-      });
-    }
-  });
+		if (!readonly) {
+			map.on('click', (e) => {
+				const { lng, lat } = e.lngLat;
+				setMarker(lng, lat);
+				dispatch('select', { longitude: lng, latitude: lat });
+			});
+		}
+	});
 
-  function setMarker(lng, lat) {
-    if (marker) marker.remove();
-    marker = new mapboxgl.Marker({ color: '#FF0000' })
-      .setLngLat([lng, lat])
-      .addTo(map);
-  }
+	function setMarker(lng, lat) {
+		if (marker) marker.remove();
+		marker = new mapboxgl.Marker({ color: '#FF0000' }).setLngLat([lng, lat]).addTo(map);
+	}
 </script>
 
 <div bind:this={mapContainer} class="w-full h-96 rounded-lg" />
@@ -711,71 +683,71 @@ PUBLIC_MAPBOX_TOKEN=pk.xxx  # Mapbox public access token
 
 ```typescript
 // scripts/migrate-legacy.ts
-import { drizzle } from "drizzle-orm/postgres-js";
-import postgres from "postgres";
-import * as schema from "../src/lib/server/db/schema";
+import { drizzle } from 'drizzle-orm/postgres-js';
+import postgres from 'postgres';
+import * as schema from '../src/lib/server/db/schema';
 
 const legacyDb = postgres(process.env.LEGACY_DATABASE_URL!);
 const newDb = drizzle(postgres(process.env.DATABASE_URL!), { schema });
 
 async function migrate() {
-  console.log("Starting migration...");
+	console.log('Starting migration...');
 
-  // 1. Migrate users
-  const legacyUsers = await legacyDb`SELECT * FROM users`;
-  for (const user of legacyUsers) {
-    await newDb
-      .insert(schema.users)
-      .values({
-        username: user.username,
-        totalPoints: user.points,
-        isAdmin: false, // Set admins manually after migration
-      })
-      .onConflictDoNothing();
-  }
-  console.log(`Migrated ${legacyUsers.length} users`);
+	// 1. Migrate users
+	const legacyUsers = await legacyDb`SELECT * FROM users`;
+	for (const user of legacyUsers) {
+		await newDb
+			.insert(schema.users)
+			.values({
+				username: user.username,
+				totalPoints: user.points,
+				isAdmin: false // Set admins manually after migration
+			})
+			.onConflictDoNothing();
+	}
+	console.log(`Migrated ${legacyUsers.length} users`);
 
-  // 2. Migrate usersdaily
-  const legacyDaily = await legacyDb`SELECT * FROM usersdaily`;
-  for (const daily of legacyDaily) {
-    await newDb
-      .insert(schema.userDaily)
-      .values({
-        username: daily.username,
-        points: daily.points,
-        distance: daily.distance,
-        played: daily.played,
-        lastPlayed: daily.last_played,
-        currentStreak: daily.current_streak,
-      })
-      .onConflictDoNothing();
-  }
-  console.log(`Migrated ${legacyDaily.length} daily records`);
+	// 2. Migrate usersdaily
+	const legacyDaily = await legacyDb`SELECT * FROM usersdaily`;
+	for (const daily of legacyDaily) {
+		await newDb
+			.insert(schema.userDaily)
+			.values({
+				username: daily.username,
+				points: daily.points,
+				distance: daily.distance,
+				played: daily.played,
+				lastPlayed: daily.last_played,
+				currentStreak: daily.current_streak
+			})
+			.onConflictDoNothing();
+	}
+	console.log(`Migrated ${legacyDaily.length} daily records`);
 
-  // 3. Migrate pictures (need to upload to S3 separately)
-  const legacyPictures = await legacyDb`SELECT * FROM pictures`;
-  for (const pic of legacyPictures) {
-    // Note: Cloudinary URLs stored as s3Key temporarily
-    // Run separate script to download from Cloudinary and upload to S3
-    await newDb
-      .insert(schema.pictures)
-      .values({
-        id: pic.pictureid,
-        s3Key: pic.link, // Will be replaced with S3 key after image migration
-        latitude: pic.coordinates[0],
-        longitude: pic.coordinates[1],
-        placeName: pic.place,
-        difficulty: "medium", // Default, admin can recategorize
-      })
-      .onConflictDoNothing();
-  }
-  console.log(`Migrated ${legacyPictures.length} pictures`);
+	// 3. Migrate pictures (need to upload to S3 separately)
+	const legacyPictures = await legacyDb`SELECT * FROM pictures`;
+	for (const pic of legacyPictures) {
+		// Note: Cloudinary URLs stored as s3Key temporarily
+		// Run separate script to download from Cloudinary and upload to S3
+		await newDb
+			.insert(schema.pictures)
+			.values({
+				id: pic.pictureid,
+				s3Key: pic.link, // Will be replaced with S3 key after image migration
+				latitude: pic.coordinates[0],
+				longitude: pic.coordinates[1],
+				placeName: pic.place,
+				difficulty: 'medium' // Default, admin can recategorize
+			})
+			.onConflictDoNothing();
+	}
+	console.log(`Migrated ${legacyPictures.length} pictures`);
 
-  // 4. Migrate completed matches (historical record)
-  const legacyMatches = await legacyDb`SELECT * FROM matches`;
-  // Store in a legacy_matches table or skip if not needed
+	// 4. Migrate completed matches (historical record)
+	const legacyMatches = await legacyDb`SELECT * FROM matches`;
+	// Store in a legacy_matches table or skip if not needed
 
-  console.log("Migration complete!");
+	console.log('Migration complete!');
 }
 
 migrate().catch(console.error);
@@ -785,37 +757,34 @@ migrate().catch(console.error);
 
 ```typescript
 // scripts/migrate-images.ts
-import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 
 async function migrateImages() {
-  const pictures = await db.select().from(schema.pictures);
+	const pictures = await db.select().from(schema.pictures);
 
-  for (const pic of pictures) {
-    if (pic.s3Key.startsWith("http")) {
-      // Download from Cloudinary
-      const response = await fetch(pic.s3Key);
-      const buffer = await response.arrayBuffer();
+	for (const pic of pictures) {
+		if (pic.s3Key.startsWith('http')) {
+			// Download from Cloudinary
+			const response = await fetch(pic.s3Key);
+			const buffer = await response.arrayBuffer();
 
-      // Upload to S3
-      const key = `images/${pic.id}.jpg`;
-      await s3.send(
-        new PutObjectCommand({
-          Bucket: process.env.IMAGES_BUCKET,
-          Key: key,
-          Body: Buffer.from(buffer),
-          ContentType: "image/jpeg",
-        })
-      );
+			// Upload to S3
+			const key = `images/${pic.id}.jpg`;
+			await s3.send(
+				new PutObjectCommand({
+					Bucket: process.env.IMAGES_BUCKET,
+					Key: key,
+					Body: Buffer.from(buffer),
+					ContentType: 'image/jpeg'
+				})
+			);
 
-      // Update database
-      await db
-        .update(schema.pictures)
-        .set({ s3Key: key })
-        .where(eq(schema.pictures.id, pic.id));
+			// Update database
+			await db.update(schema.pictures).set({ s3Key: key }).where(eq(schema.pictures.id, pic.id));
 
-      console.log(`Migrated image ${pic.id}`);
-    }
-  }
+			console.log(`Migrated image ${pic.id}`);
+		}
+	}
 }
 ```
 

@@ -9,17 +9,17 @@ const adminController = new AdminController();
 
 // Configure multer for image uploads (memory storage for processing before Cloudinary)
 const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: {
-    fileSize: 10 * 1024 * 1024 // 10MB limit
-  },
-  fileFilter: (_req, file, cb) => {
-    if (file.mimetype.startsWith('image/')) {
-      cb(null, true);
-    } else {
-      cb(new Error('Only image files are allowed'));
-    }
-  }
+	storage: multer.memoryStorage(),
+	limits: {
+		fileSize: 10 * 1024 * 1024 // 10MB limit
+	},
+	fileFilter: (_req, file, cb) => {
+		if (file.mimetype.startsWith('image/')) {
+			cb(null, true);
+		} else {
+			cb(new Error('Only image files are allowed'));
+		}
+	}
 });
 
 // All admin routes require authentication and admin privileges

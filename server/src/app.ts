@@ -19,10 +19,10 @@ app.use(helmet());
 
 // CORS
 app.use(
-  cors({
-    origin: config.cors.frontendUrl,
-    credentials: true
-  })
+	cors({
+		origin: config.cors.frontendUrl,
+		credentials: true
+	})
 );
 
 // Body parsing
@@ -34,7 +34,7 @@ app.use(cookieParser());
 
 // Health check
 app.get('/api/health', (_req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+	res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
 // Routes
@@ -47,15 +47,15 @@ app.use('/api/admin', adminRoutes);
 
 // 404 handler
 app.use((_req, res) => {
-  res.status(404).json({ error: 'Not found' });
+	res.status(404).json({ error: 'Not found' });
 });
 
 // Error handler
 app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
-  console.error('Unhandled error:', err);
-  res.status(500).json({
-    error: config.nodeEnv === 'development' ? err.message : 'Internal server error'
-  });
+	console.error('Unhandled error:', err);
+	res.status(500).json({
+		error: config.nodeEnv === 'development' ? err.message : 'Internal server error'
+	});
 });
 
 export default app;

@@ -56,10 +56,7 @@
 	<div class="font-display text-sm font-bold uppercase tracking-widest text-black/60">
 		{label}
 	</div>
-	<span
-		bind:this={scoreElement}
-		class="font-display font-bold tabular-nums {sizeClasses[size]}"
-	>
+	<span bind:this={scoreElement} class="font-display font-bold tabular-nums {sizeClasses[size]}">
 		{displayScore.toLocaleString()}
 	</span>
 </div>
