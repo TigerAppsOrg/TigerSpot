@@ -1,13 +1,24 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { goto } from '$app/navigation';
 	import Button from '$lib/components/Button.svelte';
 	import Card from '$lib/components/Card.svelte';
+	import { userStore } from '$lib/stores/user.svelte';
 
 	let mounted = $state(false);
 
-	onMount(() => {
+	onMount(async () => {
 		mounted = true;
+		// Check if already logged in
+		await userStore.load();
+		if (userStore.isAuthenticated) {
+			goto('/menu');
+		}
 	});
+
+	function handleLogin() {
+		userStore.login();
+	}
 </script>
 
 <svelte:head>
@@ -69,7 +80,7 @@
 					</div>
 				</div>
 
-				<Button variant="black" size="lg" href="/menu" class="text-xl">
+				<Button variant="black" size="lg" onclick={handleLogin} class="text-xl">
 					Login with Princeton CAS
 				</Button>
 			</Card>

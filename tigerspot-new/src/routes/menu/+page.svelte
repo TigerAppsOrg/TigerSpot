@@ -1,9 +1,39 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
+	import { goto } from '$app/navigation';
 	import Button from '$lib/components/Button.svelte';
 	import Header from '$lib/components/Header.svelte';
 	import GameModeCard from '$lib/components/GameModeCard.svelte';
 	import StatCard from '$lib/components/StatCard.svelte';
-	import { dummyUser } from '$lib/data/dummy';
+	import { userStore } from '$lib/stores/user.svelte';
+	import { getMyStats, type UserStats } from '$lib/api/leaderboard';
+	import { getChallenges } from '$lib/api/versus';
+	import { listTournaments } from '$lib/api/tournament';
+
+	let stats = $state<UserStats | null>(null);
+	let pendingChallenges = $state(0);
+	let activeTournaments = $state(0);
+
+	onMount(async () => {
+		// Redirect to login if not authenticated
+		if (!userStore.isAuthenticated && !userStore.loading) {
+			goto('/');
+			return;
+		}
+
+		// Load user stats
+		stats = await getMyStats();
+
+		// Load pending challenges count
+		const challenges = await getChallenges();
+		pendingChallenges = challenges.received.length + challenges.active.length;
+
+		// Load active tournaments count
+		const tournaments = await listTournaments();
+		activeTournaments = tournaments.filter(
+			(t) => t.status === 'open' || t.status === 'in_progress'
+		).length;
+	});
 </script>
 
 <svelte:head>
@@ -23,7 +53,7 @@
 			<div class="flex flex-wrap gap-6 mb-8">
 				<Button variant="white" href="/leaderboard">📊 Leaderboard</Button>
 				<Button variant="white" href="/settings">👤 Profile & Settings</Button>
-				{#if dummyUser.isAdmin}
+				{#if userStore.isAdmin}
 					<Button variant="orange" href="/admin">⚙️ Admin Dashboard</Button>
 				{/if}
 			</div>
@@ -38,7 +68,7 @@
 					emoji="📅"
 					title="Daily Challenge"
 					description="One new location every day. How close can you get?"
-					stat="{dummyUser.currentStreak} day streak"
+					stat="{stats?.currentStreak ?? 0} day streak"
 				/>
 
 				<GameModeCard
@@ -47,7 +77,7 @@
 					emoji="⚔️"
 					title="Versus Mode"
 					description="Challenge your friends to 5-round battles!"
-					stat="2 pending"
+					stat="{pendingChallenges} pending"
 					cta="Battle"
 				/>
 
@@ -57,7 +87,7 @@
 					emoji="🏆"
 					title="Tournament"
 					description="Bracket-style competition. Double elimination!"
-					stat="1 active"
+					stat="{activeTournaments} active"
 					cta="Compete"
 					class="md:col-span-2 xl:col-span-1"
 				/>
@@ -65,10 +95,10 @@
 
 			<!-- Stats Bar -->
 			<div class="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-				<StatCard value={dummyUser.totalPoints} label="Total Points" valueColor="text-orange" />
-				<StatCard value={dummyUser.currentStreak} label="Day Streak" valueColor="text-magenta" />
-				<StatCard value="#7" label="Rank" valueColor="text-cyan" />
-				<StatCard value="42" label="Games Played" valueColor="text-lime" />
+				<StatCard value={stats?.totalPoints ?? 0} label="Total Points" valueColor="text-orange" />
+				<StatCard value={stats?.currentStreak ?? 0} label="Day Streak" valueColor="text-magenta" />
+				<StatCard value="#{stats?.rank ?? '-'}" label="Rank" valueColor="text-cyan" />
+				<StatCard value={stats?.maxStreak ?? 0} label="Best Streak" valueColor="text-lime" />
 			</div>
 		</div>
 	</main>
