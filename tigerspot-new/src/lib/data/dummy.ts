@@ -58,25 +58,37 @@ export const dummyLeaderboard = [
 	{ rank: 10, username: 'newbie_nav', points: 3100, streak: 1 }
 ];
 
+// Available players pool for versus mode
+export const dummyVersusPlayers = [
+	'ptonpro',
+	'tiger88',
+	'nassau_nav',
+	'campus_king',
+	'firestone_fan',
+	'orange_black',
+	'chapel_champ',
+	'ivy_explorer'
+];
+
 export const dummyChallenges = [
 	{
 		id: 1,
 		opponent: 'tiger88',
-		status: 'pending',
+		status: 'pending' as 'pending' | 'accepted' | 'completed',
 		isChallenger: true,
 		createdAt: new Date(Date.now() - 1000 * 60 * 30)
 	},
 	{
 		id: 2,
 		opponent: 'nassau_nav',
-		status: 'accepted',
+		status: 'accepted' as 'pending' | 'accepted' | 'completed',
 		isChallenger: false,
 		createdAt: new Date(Date.now() - 1000 * 60 * 60 * 2)
 	},
 	{
 		id: 3,
 		opponent: 'campus_king',
-		status: 'completed',
+		status: 'completed' as 'pending' | 'accepted' | 'completed',
 		isChallenger: true,
 		yourScore: 4200,
 		theirScore: 3800,
