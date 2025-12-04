@@ -1,6 +1,7 @@
 <script lang="ts">
 	import Button from '$lib/components/Button.svelte';
 	import Card from '$lib/components/Card.svelte';
+	import Header from '$lib/components/Header.svelte';
 	import { dummyUser } from '$lib/data/dummy';
 </script>
 
@@ -9,20 +10,7 @@
 </svelte:head>
 
 <div class="min-h-screen bg-primary">
-	<!-- Fixed Header -->
-	<header class="header-fixed bg-white brutal-border">
-		<div class="w-full h-full px-6 flex items-center justify-between">
-			<a href="/menu">
-				<img src="logo.png" alt="TigerSpot Logo" class="inline-block w-40" />
-			</a>
-			<div class="flex items-center gap-6">
-				<div class="text-right hidden sm:block">
-					<div class="text-xs font-bold uppercase opacity-60">Welcome back</div>
-					<div class="font-bold text-lg">{dummyUser.username}</div>
-				</div>
-			</div>
-		</div>
-	</header>
+	<Header />
 
 	<!-- Main content with padding for fixed header -->
 	<main class="pt-24 pb-12 px-4">

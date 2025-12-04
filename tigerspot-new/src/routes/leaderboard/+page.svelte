@@ -1,6 +1,6 @@
 <script lang="ts">
-	import Button from '$lib/components/Button.svelte';
 	import Card from '$lib/components/Card.svelte';
+	import Header from '$lib/components/Header.svelte';
 	import { dummyLeaderboard, dummyUser } from '$lib/data/dummy';
 
 	let activeTab = $state<'daily' | 'alltime'>('daily');
@@ -14,13 +14,7 @@
 </svelte:head>
 
 <div class="min-h-screen bg-primary">
-	<!-- Fixed Header -->
-	<header class="header-fixed bg-white brutal-border">
-		<div class="w-full h-full px-6 flex items-center justify-between">
-			<a href="/menu" class="text-2xl font-black tracking-tight"> TIGERSPOT </a>
-			<Button variant="white" size="sm" href="/menu">← Back</Button>
-		</div>
-	</header>
+	<Header />
 
 	<main class="pt-24 pb-12 px-4">
 		<div class="container-brutal">
