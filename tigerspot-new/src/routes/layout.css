@@ -1,19 +1,20 @@
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&display=swap');
 @import 'tailwindcss';
 
 /* Neobrutalist Design System for TigerSpot */
 @theme {
 	/* Primary Colors - matching original app */
-	--color-primary: #F5A623;
-	--color-primary-dark: #E89314;
-	--color-cyan: #00FFFF;
-	--color-magenta: #FF00FF;
-	--color-lime: #BFFF00;
-	--color-orange: #FF6600;
+	--color-primary: #f5a623;
+	--color-primary-dark: #e89314;
+	--color-cyan: #00ffff;
+	--color-magenta: #ff00ff;
+	--color-lime: #bfff00;
+	--color-orange: #ff6600;
 
 	/* Neutrals */
 	--color-black: #000000;
-	--color-white: #FFFFFF;
-	--color-gray: #E5E5E5;
+	--color-white: #ffffff;
+	--color-gray: #e5e5e5;
 
 	/* Shadows */
 	--shadow-brutal: 4px 4px 0 var(--color-black);
@@ -29,9 +30,6 @@
 	--font-display: 'Nunito', system-ui, sans-serif;
 	--font-body: 'Nunito', system-ui, sans-serif;
 }
-
-/* Import Google Fonts */
-@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&display=swap');
 
 /* Base Styles */
 html {
@@ -90,7 +88,9 @@ body::before {
 	letter-spacing: 0.02em;
 	border: var(--border-brutal);
 	box-shadow: var(--shadow-brutal);
-	transition: transform 0.15s ease, box-shadow 0.15s ease;
+	transition:
+		transform 0.15s ease,
+		box-shadow 0.15s ease;
 	cursor: pointer;
 	text-decoration: none;
 }
@@ -145,7 +145,9 @@ body::before {
 }
 
 .card-brutal-hover {
-	transition: transform 0.2s ease, box-shadow 0.2s ease;
+	transition:
+		transform 0.2s ease,
+		box-shadow 0.2s ease;
 }
 
 .card-brutal-hover:hover {
@@ -154,7 +156,13 @@ body::before {
 }
 
 /* Headings */
-h1, h2, h3, h4, h5, h6, .heading {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+.heading {
 	font-family: var(--font-display);
 	font-weight: 800;
 	letter-spacing: -0.01em;
@@ -197,7 +205,8 @@ h1, h2, h3, h4, h5, h6, .heading {
 
 /* Animated Background */
 @keyframes gradient-shift {
-	0%, 100% {
+	0%,
+	100% {
 		background-position: 0% 50%;
 	}
 	50% {
@@ -219,7 +228,8 @@ h1, h2, h3, h4, h5, h6, .heading {
 
 /* Floating animation for decorative shapes */
 @keyframes float {
-	0%, 100% {
+	0%,
+	100% {
 		transform: translateY(0) rotate(var(--rotate, 0deg));
 	}
 	50% {
@@ -228,7 +238,8 @@ h1, h2, h3, h4, h5, h6, .heading {
 }
 
 @keyframes float-delayed {
-	0%, 100% {
+	0%,
+	100% {
 		transform: translateY(0) rotate(var(--rotate, 0deg));
 	}
 	50% {
@@ -265,7 +276,8 @@ h1, h2, h3, h4, h5, h6, .heading {
 }
 
 @keyframes wiggle {
-	0%, 100% {
+	0%,
+	100% {
 		transform: rotate(-3deg);
 	}
 	50% {
@@ -295,15 +307,26 @@ h1, h2, h3, h4, h5, h6, .heading {
 }
 
 /* Staggered animation delays */
-.delay-100 { animation-delay: 0.1s; }
-.delay-200 { animation-delay: 0.2s; }
-.delay-300 { animation-delay: 0.3s; }
-.delay-400 { animation-delay: 0.4s; }
-.delay-500 { animation-delay: 0.5s; }
+.delay-100 {
+	animation-delay: 0.1s;
+}
+.delay-200 {
+	animation-delay: 0.2s;
+}
+.delay-300 {
+	animation-delay: 0.3s;
+}
+.delay-400 {
+	animation-delay: 0.4s;
+}
+.delay-500 {
+	animation-delay: 0.5s;
+}
 
 /* Timer urgency animation */
 @keyframes pulse-urgent {
-	0%, 100% {
+	0%,
+	100% {
 		transform: scale(1);
 	}
 	50% {
