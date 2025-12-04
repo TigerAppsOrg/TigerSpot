@@ -1,8 +1,12 @@
 <script lang="ts">
+	import { goto } from '$app/navigation';
 	import Button from '$lib/components/Button.svelte';
 	import Card from '$lib/components/Card.svelte';
 	import Header from '$lib/components/Header.svelte';
-	import { dummyVersusPlayers, dummyChallenges, dummyUser } from '$lib/data/dummy';
+	import PlayerChip from '$lib/components/PlayerChip.svelte';
+	import ChallengeCard from '$lib/components/ChallengeCard.svelte';
+	import EmptyState from '$lib/components/EmptyState.svelte';
+	import { dummyVersusPlayers, dummyChallenges } from '$lib/data/dummy';
 
 	let challenges = $state([...dummyChallenges]);
 
@@ -12,6 +16,7 @@
 	const receivedChallenges = $derived(
 		challenges.filter((c) => !c.isChallenger && c.status === 'pending')
 	);
+	const activeMatches = $derived(challenges.filter((c) => c.status === 'accepted'));
 	const completedMatches = $derived(challenges.filter((c) => c.status === 'completed'));
 
 	function challengePlayer(username: string) {
@@ -33,15 +38,8 @@
 		challenges = challenges.filter((c) => c.id !== id);
 	}
 
-	function formatTimeAgo(date: Date) {
-		const seconds = Math.floor((new Date().getTime() - date.getTime()) / 1000);
-		if (seconds < 60) return 'just now';
-		const minutes = Math.floor(seconds / 60);
-		if (minutes < 60) return `${minutes}m ago`;
-		const hours = Math.floor(minutes / 60);
-		if (hours < 24) return `${hours}h ago`;
-		const days = Math.floor(hours / 24);
-		return `${days}d ago`;
+	function startGame(id: number) {
+		goto(`/versus/play/${id}`);
 	}
 </script>
 
@@ -72,16 +70,33 @@
 						<h2 class="text-2xl font-black mb-6">Available Players</h2>
 						<div class="flex flex-wrap gap-3">
 							{#each dummyVersusPlayers as player}
-								<button
+								<PlayerChip
+									username={player}
+									clickable
 									onclick={() => challengePlayer(player)}
-									class="brutal-border brutal-shadow-sm bg-white text-black hover:bg-cyan px-4 py-2 font-bold transition-all hover:scale-105"
-								>
-									{player}
-								</button>
+									class="brutal-shadow-sm"
+								/>
 							{/each}
 						</div>
 						<p class="text-sm opacity-70 mt-4">Click a player to challenge them</p>
 					</Card>
+
+					<!-- Active Matches -->
+					{#if activeMatches.length > 0}
+						<Card variant="orange">
+							<h2 class="text-2xl font-black mb-6">Active Matches</h2>
+							<div class="space-y-4">
+								{#each activeMatches as match}
+									<ChallengeCard
+										opponent={match.opponent}
+										createdAt={match.createdAt}
+										status="active"
+										onStart={() => startGame(match.id)}
+									/>
+								{/each}
+							</div>
+						</Card>
+					{/if}
 				</div>
 
 				<!-- Right Column -->
@@ -92,26 +107,17 @@
 						{#if receivedChallenges.length > 0}
 							<div class="space-y-4">
 								{#each receivedChallenges as challenge}
-									<div class="brutal-border bg-white p-4">
-										<div class="flex items-center justify-between gap-4 mb-3 flex-wrap">
-											<div>
-												<div class="font-black text-lg">{challenge.opponent}</div>
-												<div class="text-xs opacity-60">{formatTimeAgo(challenge.createdAt)}</div>
-											</div>
-										</div>
-										<div class="flex gap-2">
-											<Button variant="lime" onclick={() => acceptChallenge(challenge.id)}
-												>Accept</Button
-											>
-											<Button variant="white" onclick={() => declineChallenge(challenge.id)}
-												>Decline</Button
-											>
-										</div>
-									</div>
+									<ChallengeCard
+										opponent={challenge.opponent}
+										createdAt={challenge.createdAt}
+										status="pending"
+										onAccept={() => acceptChallenge(challenge.id)}
+										onDecline={() => declineChallenge(challenge.id)}
+									/>
 								{/each}
 							</div>
 						{:else}
-							<p class="text-center opacity-60 py-8">No pending challenges</p>
+							<EmptyState message="No pending challenges" size="sm" />
 						{/if}
 					</Card>
 
@@ -121,21 +127,15 @@
 						{#if sentChallenges.length > 0}
 							<div class="space-y-3">
 								{#each sentChallenges as challenge}
-									<div
-										class="brutal-border bg-gray/30 p-4 flex items-center justify-between gap-4 flex-wrap"
-									>
-										<div>
-											<div class="font-bold">{challenge.opponent}</div>
-											<div class="text-xs opacity-60">{formatTimeAgo(challenge.createdAt)}</div>
-										</div>
-										<span class="brutal-border px-3 py-1 text-xs font-bold bg-white opacity-60">
-											WAITING
-										</span>
-									</div>
+									<ChallengeCard
+										opponent={challenge.opponent}
+										createdAt={challenge.createdAt}
+										status="sent"
+									/>
 								{/each}
 							</div>
 						{:else}
-							<p class="text-center opacity-60 py-8">No outgoing challenges</p>
+							<EmptyState message="No outgoing challenges" size="sm" />
 						{/if}
 					</Card>
 				</div>
@@ -172,6 +172,11 @@
 					</div>
 				</Card>
 			{/if}
+
+			<!-- Back to Menu -->
+			<div class="text-center mt-10">
+				<Button variant="white" href="/menu">Back to Menu</Button>
+			</div>
 		</div>
 	</main>
 </div>

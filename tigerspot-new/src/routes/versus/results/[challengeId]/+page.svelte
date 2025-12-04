@@ -3,8 +3,8 @@
 	import Button from '$lib/components/Button.svelte';
 	import Card from '$lib/components/Card.svelte';
 	import Header from '$lib/components/Header.svelte';
+	import ScoreComparison from '$lib/components/ScoreComparison.svelte';
 	import { dummyChallenges, dummyPictures } from '$lib/data/dummy';
-	import { formatDistance } from '$lib/utils/distance';
 
 	const challengeId = $derived(parseInt($page.params.challengeId));
 	const challenge = $derived(dummyChallenges.find((c) => c.id === challengeId));
@@ -74,17 +74,13 @@
 			<Card variant={won ? 'lime' : 'magenta'} class="text-center mb-10">
 				<div class="text-6xl mb-4">{won ? '🏆' : '💔'}</div>
 				<h1 class="text-4xl font-black mb-4">{won ? 'VICTORY!' : 'DEFEAT'}</h1>
-				<div class="flex items-center justify-center gap-8 flex-wrap">
-					<div>
-						<div class="text-xs font-bold uppercase opacity-70 mb-1">You</div>
-						<div class="text-4xl font-black">{yourTotalScore.toLocaleString()}</div>
-					</div>
-					<div class="text-3xl opacity-60">-</div>
-					<div>
-						<div class="text-xs font-bold uppercase opacity-70 mb-1">{challenge?.opponent}</div>
-						<div class="text-4xl font-black">{opponentTotalScore.toLocaleString()}</div>
-					</div>
-				</div>
+				<ScoreComparison
+					player1Name="You"
+					player1Score={yourTotalScore}
+					player2Name={challenge?.opponent || 'Opponent'}
+					player2Score={opponentTotalScore}
+					size="lg"
+				/>
 			</Card>
 
 			<!-- Round-by-Round Breakdown -->
@@ -106,31 +102,15 @@
 								</div>
 							</div>
 
-							<div class="grid grid-cols-2 gap-4">
-								<!-- Your Score -->
-								<div
-									class="brutal-border p-3 {result.yourScore > result.opponentScore
-										? 'bg-lime/20'
-										: 'bg-white'}"
-								>
-									<div class="text-xs font-bold uppercase opacity-60 mb-1">You</div>
-									<div class="text-2xl font-black mb-1">{result.yourScore}</div>
-									<div class="text-xs opacity-60">{formatDistance(result.yourDistance)}</div>
-								</div>
-
-								<!-- Opponent Score -->
-								<div
-									class="brutal-border p-3 {result.opponentScore > result.yourScore
-										? 'bg-magenta/20'
-										: 'bg-white'}"
-								>
-									<div class="text-xs font-bold uppercase opacity-60 mb-1">
-										{challenge?.opponent}
-									</div>
-									<div class="text-2xl font-black mb-1">{result.opponentScore}</div>
-									<div class="text-xs opacity-60">{formatDistance(result.opponentDistance)}</div>
-								</div>
-							</div>
+							<ScoreComparison
+								player1Name="You"
+								player1Score={result.yourScore}
+								player1Distance={result.yourDistance}
+								player2Name={challenge?.opponent || 'Opponent'}
+								player2Score={result.opponentScore}
+								player2Distance={result.opponentDistance}
+								highlightWinner
+							/>
 						</div>
 					{/each}
 				</div>
