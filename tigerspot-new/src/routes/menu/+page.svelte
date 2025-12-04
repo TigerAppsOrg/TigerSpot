@@ -12,16 +12,13 @@
 	<!-- Fixed Header -->
 	<header class="header-fixed bg-white brutal-border">
 		<div class="w-full h-full px-6 flex items-center justify-between">
-			<a href="/" class="text-2xl font-black tracking-tight"> TIGERSPOT </a>
+			<a href="/menu">
+				<img src="logo.png" alt="TigerSpot Logo" class="inline-block w-40" />
+			</a>
 			<div class="flex items-center gap-6">
 				<div class="text-right hidden sm:block">
 					<div class="text-xs font-bold uppercase opacity-60">Welcome back</div>
 					<div class="font-bold text-lg">{dummyUser.username}</div>
-				</div>
-				<div
-					class="w-14 h-14 bg-primary brutal-border brutal-shadow flex items-center justify-center"
-				>
-					<span class="text-2xl">&#x1F42F;</span>
 				</div>
 			</div>
 		</div>

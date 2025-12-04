@@ -108,46 +108,6 @@
 							Selected: <strong>{themeOptions.find((t) => t.name === $currentTheme)?.label}</strong>
 						</p>
 					</Card>
-
-					<Card>
-						<h2 class="text-2xl font-black mb-8">&#x2699;&#xFE0F; Preferences</h2>
-
-						<div class="space-y-6">
-							<div class="flex items-center justify-between py-3">
-								<span class="font-bold">Sound Effects</span>
-								<button
-									class="w-14 h-8 brutal-border relative transition-colors"
-									style="background-color: #6B9E50;"
-								>
-									<div
-										class="absolute left-1 top-1 w-6 h-6 bg-white brutal-border transition-transform"
-									></div>
-								</button>
-							</div>
-
-							<div class="flex items-center justify-between py-3">
-								<span class="font-bold">Notifications</span>
-								<button class="w-14 h-8 brutal-border relative transition-colors bg-gray">
-									<div
-										class="absolute right-1 top-1 w-6 h-6 bg-white brutal-border transition-transform"
-									></div>
-								</button>
-							</div>
-
-							<div class="flex items-center justify-between py-3">
-								<span class="font-bold">Show on Leaderboard</span>
-								<button
-									class="w-14 h-8 brutal-border relative transition-colors"
-									style="background-color: #6B9E50;"
-								>
-									<div
-										class="absolute left-1 top-1 w-6 h-6 bg-white brutal-border transition-transform"
-									></div>
-								</button>
-							</div>
-						</div>
-					</Card>
-
 					<Card variant="magenta">
 						<div class="text-center">
 							<h3 class="text-xl font-bold mb-4">Sign Out</h3>

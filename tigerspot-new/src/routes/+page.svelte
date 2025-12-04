@@ -18,46 +18,24 @@
 	<!-- Subtle pattern overlay -->
 	<div class="absolute inset-0 bg-stripes opacity-20"></div>
 
-	<!-- Animated floating shapes -->
-	<div
-		class="absolute top-24 left-[10%] w-20 h-20 md:w-32 md:h-32 bg-cyan brutal-border brutal-shadow animate-float"
-		style="--rotate: 12deg;"
-	></div>
-	<div
-		class="absolute top-48 right-[15%] w-16 h-16 md:w-24 md:h-24 bg-magenta brutal-border brutal-shadow animate-float-delayed"
-		style="--rotate: -8deg;"
-	></div>
-	<div
-		class="absolute bottom-40 left-[20%] w-14 h-14 md:w-20 md:h-20 bg-lime brutal-border brutal-shadow animate-float"
-		style="--rotate: 45deg;"
-	></div>
-	<div
-		class="absolute bottom-28 right-[25%] w-18 h-18 md:w-28 md:h-28 bg-white brutal-border brutal-shadow animate-float-delayed"
-		style="--rotate: -15deg;"
-	></div>
-	<div
-		class="absolute top-1/3 left-[5%] w-12 h-12 md:w-16 md:h-16 bg-orange brutal-border brutal-shadow animate-float-delayed hidden lg:block"
-		style="--rotate: 30deg;"
-	></div>
-
 	<!-- Main content -->
 	<div
 		class="relative container-brutal min-h-screen flex flex-col items-center justify-center py-16 px-4"
 	>
 		<!-- Logo/Title with bounce animation -->
-		<div class="text-center mb-16 {mounted ? 'animate-bounce-in' : 'opacity-0'}">
-			<h1 class="text-5xl sm:text-6xl md:text-8xl font-black mb-6 tracking-tight drop-shadow-lg">
-				<span class="inline-block hover:animate-wiggle cursor-default">TIGER</span><span
-					class="inline-block hover:animate-wiggle cursor-default">SPOT</span
-				>
+		<div class="text-center mb-16 mt-16 {mounted ? 'animate-bounce-in' : 'opacity-0'}">
+			<h1 class="font-black tracking-tight drop-shadow-lg">
+				<img
+					src="logo.png"
+					alt="TigerSpot Logo"
+					class="inline-block hover:animate-wiggle cursor-default w-2xl"
+				/>
 			</h1>
-			<p class="text-xl md:text-2xl font-bold uppercase tracking-wide">
-				The Princeton Campus Guessing Game
-			</p>
+			<p class="text-xl font-bold uppercase tracking-wide">The Princeton Campus Guessing Game</p>
 		</div>
 
 		<!-- Hero Card with slide animation -->
-		<div class="{mounted ? 'animate-slide-up delay-200' : 'opacity-0'} w-full max-w-2xl mb-12">
+		<div class="{mounted ? 'animate-slide-up delay-200' : 'opacity-0'} w-full max-w-4xl mb-12">
 			<Card class="text-center">
 				<h2 class="text-2xl md:text-3xl mb-6 font-bold">How well do you know Princeton?</h2>
 				<p class="text-lg mb-8 opacity-80 leading-relaxed">
@@ -124,11 +102,21 @@
 
 		<!-- Footer -->
 		<footer
-			class="mt-20 text-center text-sm opacity-60 {mounted
+			class="mt-20 text-center text-sm opacity-60 mb-6 {mounted
 				? 'animate-slide-up delay-500'
 				: 'opacity-0'}"
 		>
-			<p class="font-medium">Made with &#x1F9E1; by Princeton Students</p>
+			<p class="font-medium">
+				Made with &#x1F9E1; by Ethan Do, Claudia Lee, Frank Liu, Winsice Ng, and Jessica Yan
+			</p>
+			<p>
+				Maintained by <a
+					class="underline hover:text-black transition-colors"
+					href="https://tigerapps.org"
+					target="_blank"
+					rel="noopener noreferrer">TigerApps</a
+				>
+			</p>
 		</footer>
 	</div>
 </div>
