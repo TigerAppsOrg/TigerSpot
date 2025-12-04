@@ -79,13 +79,13 @@
 
 		<!-- Team Grid -->
 		<div
-			class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 max-w-5xl mx-auto {mounted
+			class="flex flex-wrap justify-center gap-8 max-w-5xl mx-auto {mounted
 				? 'animate-slide-up delay-300'
 				: 'opacity-0'}"
 		>
 			{#each teamMembers as member, i}
 				<div
-					class="transform transition-all duration-300 hover:scale-105"
+					class="w-full sm:w-[calc(50%-1rem)] lg:w-[calc(33.333%-1.33rem)] transform transition-all duration-300 hover:scale-105"
 					style="animation-delay: {300 + i * 100}ms"
 				>
 					<Card class="text-center h-full">
