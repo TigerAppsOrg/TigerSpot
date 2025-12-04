@@ -18,26 +18,13 @@
 	<!-- Main content with padding for fixed header -->
 	<main class="relative pt-24 pb-12 px-4">
 		<div class="container-brutal">
-			<!-- Stats Bar -->
-			<div class="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-				<Card class="text-center py-6">
-					<div class="text-3xl md:text-4xl font-black text-orange">
-						{dummyUser.totalPoints.toLocaleString()}
-					</div>
-					<div class="text-xs font-bold uppercase opacity-60 mt-2">Total Points</div>
-				</Card>
-				<Card class="text-center py-6">
-					<div class="text-3xl md:text-4xl font-black text-magenta">{dummyUser.currentStreak}</div>
-					<div class="text-xs font-bold uppercase opacity-60 mt-2">Day Streak</div>
-				</Card>
-				<Card class="text-center py-6">
-					<div class="text-3xl md:text-4xl font-black text-cyan">#7</div>
-					<div class="text-xs font-bold uppercase opacity-60 mt-2">Rank</div>
-				</Card>
-				<Card class="text-center py-6">
-					<div class="text-3xl md:text-4xl font-black text-lime">42</div>
-					<div class="text-xs font-bold uppercase opacity-60 mt-2">Games Played</div>
-				</Card>
+			<!-- Quick Links -->
+			<div class="flex flex-wrap gap-6 mb-8">
+				<Button variant="white" href="/leaderboard">&#x1F4CA; Leaderboard</Button>
+				<Button variant="white" href="/settings">&#x1F464; Profile & Settings</Button>
+				{#if dummyUser.isAdmin}
+					<Button variant="orange" href="/admin">&#x2699;&#xFE0F; Admin Dashboard</Button>
+				{/if}
 			</div>
 
 			<!-- Game Modes -->
@@ -120,13 +107,26 @@
 				</a>
 			</div>
 
-			<!-- Quick Links -->
-			<div class="flex flex-wrap gap-6">
-				<Button variant="white" href="/leaderboard">&#x1F4CA; Leaderboard</Button>
-				<Button variant="white" href="/settings">&#x1F464; Profile & Settings</Button>
-				{#if dummyUser.isAdmin}
-					<Button variant="orange" href="/admin">&#x2699;&#xFE0F; Admin Dashboard</Button>
-				{/if}
+			<!-- Stats Bar -->
+			<div class="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+				<Card class="text-center py-6">
+					<div class="text-3xl md:text-4xl font-black text-orange">
+						{dummyUser.totalPoints.toLocaleString()}
+					</div>
+					<div class="text-xs font-bold uppercase opacity-60 mt-2">Total Points</div>
+				</Card>
+				<Card class="text-center py-6">
+					<div class="text-3xl md:text-4xl font-black text-magenta">{dummyUser.currentStreak}</div>
+					<div class="text-xs font-bold uppercase opacity-60 mt-2">Day Streak</div>
+				</Card>
+				<Card class="text-center py-6">
+					<div class="text-3xl md:text-4xl font-black text-cyan">#7</div>
+					<div class="text-xs font-bold uppercase opacity-60 mt-2">Rank</div>
+				</Card>
+				<Card class="text-center py-6">
+					<div class="text-3xl md:text-4xl font-black text-lime">42</div>
+					<div class="text-xs font-bold uppercase opacity-60 mt-2">Games Played</div>
+				</Card>
 			</div>
 		</div>
 	</main>
