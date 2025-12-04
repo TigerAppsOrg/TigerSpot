@@ -121,6 +121,9 @@
 			<div class="flex flex-wrap gap-6">
 				<Button variant="white" href="/leaderboard">&#x1F4CA; Leaderboard</Button>
 				<Button variant="white" href="/settings">&#x1F464; Profile & Settings</Button>
+				{#if dummyUser.isAdmin}
+					<Button variant="orange" href="/admin">&#x2699;&#xFE0F; Admin Dashboard</Button>
+				{/if}
 			</div>
 		</div>
 	</main>

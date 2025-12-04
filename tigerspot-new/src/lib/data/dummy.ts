@@ -4,7 +4,7 @@ export const dummyUser = {
 	username: 'tiger123',
 	totalPoints: 5420,
 	currentStreak: 7,
-	isAdmin: false
+	isAdmin: true // Set to true for admin dashboard access
 };
 
 export const dummyPictures = [
