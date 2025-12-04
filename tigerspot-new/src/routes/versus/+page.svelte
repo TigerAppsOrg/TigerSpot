@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import Button from '$lib/components/Button.svelte';
 	import Card from '$lib/components/Card.svelte';
@@ -6,36 +7,70 @@
 	import PlayerChip from '$lib/components/PlayerChip.svelte';
 	import ChallengeCard from '$lib/components/ChallengeCard.svelte';
 	import EmptyState from '$lib/components/EmptyState.svelte';
-	import { dummyVersusPlayers, dummyChallenges } from '$lib/data/dummy';
+	import {
+		getAvailablePlayers,
+		getChallenges,
+		createChallenge,
+		acceptChallenge as apiAcceptChallenge,
+		declineChallenge as apiDeclineChallenge,
+		type Player,
+		type Challenge
+	} from '$lib/api/versus';
+	import { userStore } from '$lib/stores/user.svelte';
 
-	let challenges = $state([...dummyChallenges]);
+	let players = $state<Player[]>([]);
+	let receivedChallenges = $state<Challenge[]>([]);
+	let sentChallenges = $state<Challenge[]>([]);
+	let activeMatches = $state<Challenge[]>([]);
+	let completedMatches = $state<Challenge[]>([]);
+	let loading = $state(true);
 
-	const sentChallenges = $derived(
-		challenges.filter((c) => c.isChallenger && c.status === 'pending')
-	);
-	const receivedChallenges = $derived(
-		challenges.filter((c) => !c.isChallenger && c.status === 'pending')
-	);
-	const activeMatches = $derived(challenges.filter((c) => c.status === 'accepted'));
-	const completedMatches = $derived(challenges.filter((c) => c.status === 'completed'));
+	onMount(async () => {
+		// Redirect to login if not authenticated
+		if (!userStore.isAuthenticated && !userStore.loading) {
+			goto('/');
+			return;
+		}
+		await loadData();
+	});
 
-	function challengePlayer(username: string) {
-		const newChallenge = {
-			id: challenges.length + 1,
-			opponent: username,
-			status: 'pending' as 'pending' | 'accepted' | 'completed',
-			isChallenger: true,
-			createdAt: new Date()
-		};
-		challenges = [...challenges, newChallenge];
+	async function loadData() {
+		loading = true;
+		const [playersData, challengesData] = await Promise.all([
+			getAvailablePlayers(),
+			getChallenges()
+		]);
+		players = playersData;
+		receivedChallenges = challengesData.received;
+		sentChallenges = challengesData.sent;
+		activeMatches = challengesData.active;
+		completedMatches = challengesData.completed;
+		loading = false;
 	}
 
-	function acceptChallenge(id: number) {
-		challenges = challenges.map((c) => (c.id === id ? { ...c, status: 'accepted' } : c));
+	async function challengePlayer(username: string) {
+		const newChallenge = await createChallenge(username);
+		if (newChallenge) {
+			sentChallenges = [...sentChallenges, newChallenge];
+		}
 	}
 
-	function declineChallenge(id: number) {
-		challenges = challenges.filter((c) => c.id !== id);
+	async function handleAcceptChallenge(id: number) {
+		const success = await apiAcceptChallenge(id);
+		if (success) {
+			const challenge = receivedChallenges.find((c) => c.id === id);
+			if (challenge) {
+				receivedChallenges = receivedChallenges.filter((c) => c.id !== id);
+				activeMatches = [...activeMatches, { ...challenge, status: 'accepted' }];
+			}
+		}
+	}
+
+	async function handleDeclineChallenge(id: number) {
+		const success = await apiDeclineChallenge(id);
+		if (success) {
+			receivedChallenges = receivedChallenges.filter((c) => c.id !== id);
+		}
 	}
 
 	function startGame(id: number) {
@@ -68,17 +103,23 @@
 					<!-- Players Pool -->
 					<Card variant="cyan">
 						<h2 class="text-2xl font-black mb-6">Available Players</h2>
-						<div class="flex flex-wrap gap-3">
-							{#each dummyVersusPlayers as player}
-								<PlayerChip
-									username={player}
-									clickable
-									onclick={() => challengePlayer(player)}
-									class="brutal-shadow-sm"
-								/>
-							{/each}
-						</div>
-						<p class="text-sm opacity-70 mt-4">Click a player to challenge them</p>
+						{#if loading}
+							<div class="text-center py-4">Loading players...</div>
+						{:else if players.length > 0}
+							<div class="flex flex-wrap gap-3">
+								{#each players as player}
+									<PlayerChip
+										username={player.displayName || player.username}
+										clickable
+										onclick={() => challengePlayer(player.username)}
+										class="brutal-shadow-sm"
+									/>
+								{/each}
+							</div>
+							<p class="text-sm opacity-70 mt-4">Click a player to challenge them</p>
+						{:else}
+							<EmptyState message="No players available" size="sm" />
+						{/if}
 					</Card>
 
 					<!-- Active Matches -->
@@ -88,8 +129,8 @@
 							<div class="space-y-4">
 								{#each activeMatches as match}
 									<ChallengeCard
-										opponent={match.opponent}
-										createdAt={match.createdAt}
+										opponent={match.opponentDisplayName || match.opponent}
+										createdAt={new Date(match.createdAt)}
 										status="active"
 										onStart={() => startGame(match.id)}
 									/>
@@ -108,11 +149,11 @@
 							<div class="space-y-4">
 								{#each receivedChallenges as challenge}
 									<ChallengeCard
-										opponent={challenge.opponent}
-										createdAt={challenge.createdAt}
+										opponent={challenge.opponentDisplayName || challenge.opponent}
+										createdAt={new Date(challenge.createdAt)}
 										status="pending"
-										onAccept={() => acceptChallenge(challenge.id)}
-										onDecline={() => declineChallenge(challenge.id)}
+										onAccept={() => handleAcceptChallenge(challenge.id)}
+										onDecline={() => handleDeclineChallenge(challenge.id)}
 									/>
 								{/each}
 							</div>
@@ -128,8 +169,8 @@
 							<div class="space-y-3">
 								{#each sentChallenges as challenge}
 									<ChallengeCard
-										opponent={challenge.opponent}
-										createdAt={challenge.createdAt}
+										opponent={challenge.opponentDisplayName || challenge.opponent}
+										createdAt={new Date(challenge.createdAt)}
 										status="sent"
 									/>
 								{/each}
@@ -148,7 +189,9 @@
 					<div class="space-y-3">
 						{#each completedMatches as match}
 							{@const won =
-								match.yourScore && match.theirScore && match.yourScore > match.theirScore}
+								match.yourScore !== undefined &&
+								match.theirScore !== undefined &&
+								match.yourScore > match.theirScore}
 							<div
 								class="brutal-border p-4 flex items-center justify-between gap-4 {won
 									? 'bg-lime/20'
@@ -158,11 +201,11 @@
 									<span class="text-2xl">{won ? '🏆' : '💔'}</span>
 									<div>
 										<div class="font-black">
-											{won ? 'Victory' : 'Defeat'} vs {match.opponent}
+											{won ? 'Victory' : 'Defeat'} vs {match.opponentDisplayName || match.opponent}
 										</div>
 										<div class="text-sm">
-											<span class="font-bold">{match.yourScore}</span> -
-											<span class="font-bold">{match.theirScore}</span>
+											<span class="font-bold">{match.yourScore ?? 0}</span> -
+											<span class="font-bold">{match.theirScore ?? 0}</span>
 										</div>
 									</div>
 								</div>

@@ -1,44 +1,23 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import Button from '$lib/components/Button.svelte';
 	import Card from '$lib/components/Card.svelte';
 	import Header from '$lib/components/Header.svelte';
-	import {
-		dummyTournaments,
-		dummyActiveTournament,
-		dummyUser,
-		dummyCurrentMatch
-	} from '$lib/data/dummy';
+	import { listTournaments, joinTournament, type Tournament } from '$lib/api/tournament';
+	import { userStore } from '$lib/stores/user.svelte';
 
-	const currentUser = dummyUser;
+	let tournaments = $state<Tournament[]>([]);
+	let loading = $state(true);
+	let joiningId = $state<number | null>(null);
 
-	// Combine dummy tournaments with the active one for a fuller list
-	const allTournaments = [
-		{
-			...dummyActiveTournament,
-			participants: dummyActiveTournament.participants.length,
-			maxParticipants: 8,
-			participantsList: dummyActiveTournament.participants
-		},
-		...dummyTournaments
-			.filter((t) => t.id !== dummyActiveTournament.id)
-			.map((t) => ({
-				...t,
-				participantsList: [] as string[],
-				roundsPerMatch: 5,
-				createdAt: new Date()
-			}))
-	];
-
-	// Check if user is in a tournament
-	const isInTournament = (participantsList: string[]) =>
-		participantsList.includes(currentUser.username);
-
-	// Check if user has an active match in the active tournament
-	const hasActiveMatch =
-		dummyCurrentMatch &&
-		dummyActiveTournament.participants.includes(currentUser.username) &&
-		dummyActiveTournament.status === 'in_progress';
+	// TODO: Active match tracking will need WebSocket integration
+	let hasActiveMatch = $state(false);
+	let activeMatchInfo = $state<{
+		matchId: number;
+		opponent: string;
+		tournamentName: string;
+	} | null>(null);
 
 	const difficultyColors: Record<string, string> = {
 		easy: 'bg-lime',
@@ -53,8 +32,29 @@
 		completed: { color: 'bg-lime text-white', label: 'COMPLETED', icon: '🏆' }
 	};
 
-	function handleJoin(tournamentId: number) {
-		alert(`Join tournament ${tournamentId} - will be connected to backend`);
+	onMount(async () => {
+		// Redirect to login if not authenticated
+		if (!userStore.isAuthenticated && !userStore.loading) {
+			goto('/');
+			return;
+		}
+		await loadTournaments();
+	});
+
+	async function loadTournaments() {
+		loading = true;
+		tournaments = await listTournaments();
+		loading = false;
+	}
+
+	async function handleJoin(tournamentId: number) {
+		joiningId = tournamentId;
+		const success = await joinTournament(tournamentId);
+		if (success) {
+			// Reload tournaments to get updated participant count
+			await loadTournaments();
+		}
+		joiningId = null;
 	}
 </script>
 
@@ -75,7 +75,7 @@
 			</div>
 
 			<!-- Active Match Banner -->
-			{#if hasActiveMatch}
+			{#if hasActiveMatch && activeMatchInfo}
 				<Card variant="orange" class="mb-8 py-6">
 					<div class="flex flex-col md:flex-row items-center justify-between gap-4">
 						<div class="flex items-center gap-4">
@@ -83,13 +83,13 @@
 							<div>
 								<div class="font-black text-lg">Your Match is Ready!</div>
 								<div class="text-sm opacity-80">
-									vs <span class="font-bold">{dummyCurrentMatch.opponent}</span> in {dummyActiveTournament.name}
+									vs <span class="font-bold">{activeMatchInfo.opponent}</span> in {activeMatchInfo.tournamentName}
 								</div>
 							</div>
 						</div>
 						<Button
 							variant="black"
-							onclick={() => goto(`/tournament/play/${dummyCurrentMatch.matchId}`)}
+							onclick={() => goto(`/tournament/play/${activeMatchInfo?.matchId}`)}
 						>
 							Play Now
 						</Button>
@@ -97,122 +97,102 @@
 				</Card>
 			{/if}
 
-			<!-- Tournament List -->
-			<div class="space-y-6">
-				{#each allTournaments as tournament}
-					{@const status = statusConfig[tournament.status]}
-					{@const isParticipant = isInTournament(tournament.participantsList)}
-
-					<Card class="overflow-hidden p-0">
-						<!-- Tournament Header -->
-						<div class="p-6 pb-4">
-							<div class="flex flex-col md:flex-row md:items-start justify-between gap-4">
-								<div class="flex-1">
-									<div class="flex items-center gap-3 mb-2 flex-wrap">
-										<span class="text-2xl">{status.icon}</span>
-										<h2 class="text-xl font-black">{tournament.name}</h2>
-										<span
-											class="brutal-border px-2 py-0.5 text-xs font-bold uppercase {status.color}"
-										>
-											{status.label}
-										</span>
-									</div>
-
-									<div class="flex flex-wrap gap-3 text-sm">
-										<span
-											class="brutal-border px-2 py-1 text-xs font-bold uppercase {difficultyColors[
-												tournament.difficulty
-											]} text-white"
-										>
-											{tournament.difficulty}
-										</span>
-										<span class="opacity-60">
-											{tournament.participants}/{tournament.maxParticipants} players
-										</span>
-										<span class="opacity-60">{tournament.timeLimit}s per round</span>
-										{#if tournament.roundsPerMatch}
-											<span class="opacity-60">{tournament.roundsPerMatch} rounds/match</span>
-										{/if}
-									</div>
-								</div>
-
-								<!-- Actions based on status -->
-								<div class="flex gap-2 flex-shrink-0">
-									{#if tournament.status === 'open'}
-										{#if isParticipant}
-											<span
-												class="brutal-border bg-lime text-white px-4 py-2 font-bold text-sm flex items-center gap-2"
-											>
-												✓ Joined
-											</span>
-										{:else if tournament.participants < tournament.maxParticipants}
-											<Button variant="lime" onclick={() => handleJoin(tournament.id)}>Join</Button>
-										{:else}
-											<span class="brutal-border bg-gray text-black/60 px-4 py-2 font-bold text-sm">
-												Full
-											</span>
-										{/if}
-									{:else if tournament.status === 'in_progress'}
-										<Button variant="cyan" href={`/tournament/${tournament.id}`}>
-											View Bracket
-										</Button>
-									{:else if tournament.status === 'completed'}
-										<Button variant="white" href={`/tournament/${tournament.id}`}>
-											View Results
-										</Button>
-									{/if}
-								</div>
-							</div>
-						</div>
-
-						<!-- Participant preview for open/in_progress tournaments -->
-						{#if tournament.status !== 'completed' && tournament.participantsList.length > 0}
-							<div class="border-t-4 border-black px-6 py-4 bg-gray/30">
-								<div class="text-xs font-bold uppercase text-black/50 mb-2">Participants</div>
-								<div class="flex flex-wrap gap-2">
-									{#each tournament.participantsList.slice(0, 8) as participant}
-										<span
-											class="brutal-border px-2 py-1 text-xs font-bold {participant ===
-											currentUser.username
-												? 'bg-cyan text-white'
-												: 'bg-white'}"
-										>
-											{participant}
-											{#if participant === currentUser.username}(you){/if}
-										</span>
-									{/each}
-									{#if tournament.participantsList.length > 8}
-										<span class="text-xs font-bold opacity-50">
-											+{tournament.participantsList.length - 8} more
-										</span>
-									{/if}
-								</div>
-							</div>
-						{/if}
-
-						<!-- Winner banner for completed tournaments -->
-						{#if tournament.status === 'completed' && 'winner' in tournament && tournament.winner}
-							<div class="border-t-4 border-black px-6 py-4 bg-lime/20">
-								<div class="flex items-center gap-3">
-									<span class="text-2xl">👑</span>
-									<div>
-										<div class="text-xs font-bold uppercase text-black/50">Winner</div>
-										<div class="font-black">{tournament.winner}</div>
-									</div>
-								</div>
-							</div>
-						{/if}
-					</Card>
-				{/each}
-			</div>
-
-			<!-- Empty state -->
-			{#if allTournaments.length === 0}
+			{#if loading}
+				<div class="text-center py-12">
+					<div class="text-4xl mb-4">🐯</div>
+					<p class="font-bold">Loading tournaments...</p>
+				</div>
+			{:else if tournaments.length === 0}
 				<Card class="text-center py-16">
 					<div class="text-6xl mb-6">🏆</div>
 					<h2 class="text-2xl font-black mb-4">No Tournaments Yet</h2>
 					<p class="text-black/60 mb-8">Check back soon for upcoming tournaments!</p>
 				</Card>
+			{:else}
+				<!-- Tournament List -->
+				<div class="space-y-6">
+					{#each tournaments as tournament}
+						{@const status = statusConfig[tournament.status]}
+
+						<Card class="overflow-hidden p-0">
+							<!-- Tournament Header -->
+							<div class="p-6 pb-4">
+								<div class="flex flex-col md:flex-row md:items-start justify-between gap-4">
+									<div class="flex-1">
+										<div class="flex items-center gap-3 mb-2 flex-wrap">
+											<span class="text-2xl">{status.icon}</span>
+											<h2 class="text-xl font-black">{tournament.name}</h2>
+											<span
+												class="brutal-border px-2 py-0.5 text-xs font-bold uppercase {status.color}"
+											>
+												{status.label}
+											</span>
+										</div>
+
+										<div class="flex flex-wrap gap-3 text-sm">
+											<span
+												class="brutal-border px-2 py-1 text-xs font-bold uppercase {difficultyColors[
+													tournament.difficulty
+												]} text-white"
+											>
+												{tournament.difficulty}
+											</span>
+											<span class="opacity-60">
+												{tournament.participants}/{tournament.maxParticipants} players
+											</span>
+											<span class="opacity-60">{tournament.timeLimit}s per round</span>
+											{#if tournament.roundsPerMatch}
+												<span class="opacity-60">{tournament.roundsPerMatch} rounds/match</span>
+											{/if}
+										</div>
+									</div>
+
+									<!-- Actions based on status -->
+									<div class="flex gap-2 flex-shrink-0">
+										{#if tournament.status === 'open'}
+											{#if tournament.participants < tournament.maxParticipants}
+												<Button
+													variant="lime"
+													onclick={() => handleJoin(tournament.id)}
+													disabled={joiningId === tournament.id}
+												>
+													{joiningId === tournament.id ? 'Joining...' : 'Join'}
+												</Button>
+											{:else}
+												<span
+													class="brutal-border bg-gray text-black/60 px-4 py-2 font-bold text-sm"
+												>
+													Full
+												</span>
+											{/if}
+										{:else if tournament.status === 'in_progress'}
+											<Button variant="cyan" href={`/tournament/${tournament.id}`}>
+												View Bracket
+											</Button>
+										{:else if tournament.status === 'completed'}
+											<Button variant="white" href={`/tournament/${tournament.id}`}>
+												View Results
+											</Button>
+										{/if}
+									</div>
+								</div>
+							</div>
+
+							<!-- Winner banner for completed tournaments -->
+							{#if tournament.status === 'completed' && tournament.winner}
+								<div class="border-t-4 border-black px-6 py-4 bg-lime/20">
+									<div class="flex items-center gap-3">
+										<span class="text-2xl">👑</span>
+										<div>
+											<div class="text-xs font-bold uppercase text-black/50">Winner</div>
+											<div class="font-black">{tournament.winner}</div>
+										</div>
+									</div>
+								</div>
+							{/if}
+						</Card>
+					{/each}
+				</div>
 			{/if}
 
 			<!-- Back to Menu -->

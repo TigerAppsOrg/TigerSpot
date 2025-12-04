@@ -1,23 +1,28 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
+	import { goto } from '$app/navigation';
 	import Button from '$lib/components/Button.svelte';
 	import Card from '$lib/components/Card.svelte';
-	import { dummyTournaments } from '$lib/data/dummy';
+	import { listTournaments, type Tournament } from '$lib/api/tournament';
+	import { createTournament, startTournament, cancelTournament } from '$lib/api/admin';
+	import { userStore } from '$lib/stores/user.svelte';
 
 	// Form state
 	let name = $state('');
-	let difficulty = $state<'easy' | 'medium' | 'hard' | 'mixed'>('mixed');
+	let difficulty = $state<'EASY' | 'MEDIUM' | 'HARD'>('MEDIUM');
 	let timeLimit = $state(30);
 	let roundsPerMatch = $state(5);
 	let showSuccess = $state(false);
+	let creating = $state(false);
+	let loading = $state(true);
 
-	// Local tournaments list (for demo purposes)
-	let tournaments = $state([...dummyTournaments]);
+	// Tournaments from API
+	let tournaments = $state<Tournament[]>([]);
 
 	const difficultyOptions = [
-		{ value: 'easy', label: 'Easy', color: 'bg-lime' },
-		{ value: 'medium', label: 'Medium', color: 'bg-cyan' },
-		{ value: 'hard', label: 'Hard', color: 'bg-magenta' },
-		{ value: 'mixed', label: 'Mixed', color: 'bg-orange' }
+		{ value: 'EASY', label: 'Easy', color: 'bg-lime' },
+		{ value: 'MEDIUM', label: 'Medium', color: 'bg-cyan' },
+		{ value: 'HARD', label: 'Hard', color: 'bg-magenta' }
 	];
 
 	const statusColors: Record<string, string> = {
@@ -26,43 +31,66 @@
 		completed: 'bg-lime text-white'
 	};
 
-	function handleCreate() {
+	onMount(async () => {
+		// Redirect if not admin
+		if (!userStore.isAdmin && !userStore.loading) {
+			goto('/menu');
+			return;
+		}
+		tournaments = await listTournaments();
+		loading = false;
+	});
+
+	async function handleCreate() {
 		if (!name.trim()) {
 			alert('Please enter a tournament name');
 			return;
 		}
 
-		// Add to local list (demo only)
-		const newTournament = {
-			id: tournaments.length + 1,
+		creating = true;
+
+		const result = await createTournament({
 			name: name.trim(),
-			status: 'open' as const,
 			difficulty,
-			participants: 0,
-			maxParticipants: 8,
-			timeLimit
-		};
+			timeLimit,
+			roundsPerMatch
+		});
 
-		tournaments = [newTournament, ...tournaments];
+		if (result) {
+			// Reload tournaments
+			tournaments = await listTournaments();
 
-		// Reset form
-		name = '';
-		difficulty = 'mixed';
-		timeLimit = 30;
-		roundsPerMatch = 5;
+			// Reset form
+			name = '';
+			difficulty = 'MEDIUM';
+			timeLimit = 30;
+			roundsPerMatch = 5;
 
-		// Show success message
-		showSuccess = true;
-		setTimeout(() => (showSuccess = false), 3000);
+			// Show success message
+			showSuccess = true;
+			setTimeout(() => (showSuccess = false), 3000);
+		} else {
+			alert('Failed to create tournament');
+		}
+
+		creating = false;
 	}
 
-	function handleStart(id: number) {
-		tournaments = tournaments.map((t) => (t.id === id ? { ...t, status: 'in_progress' } : t));
+	async function handleStart(id: number) {
+		const success = await startTournament(id);
+		if (success) {
+			tournaments = tournaments.map((t) =>
+				t.id === id ? { ...t, status: 'in_progress' as const } : t
+			);
+		}
 	}
 
-	function handleDelete(id: number) {
-		if (confirm('Are you sure you want to delete this tournament?')) {
-			tournaments = tournaments.filter((t) => t.id !== id);
+	async function handleDelete(id: number) {
+		if (confirm('Are you sure you want to cancel this tournament?')) {
+			const success = await cancelTournament(id);
+			if (success) {
+				tournaments = tournaments.filter((t) => t.id !== id);
+			}
 		}
 	}
 </script>
@@ -98,11 +126,11 @@
 			<!-- Difficulty -->
 			<div>
 				<label class="block text-sm font-bold uppercase mb-2">Difficulty</label>
-				<div class="grid grid-cols-2 gap-2">
+				<div class="grid grid-cols-3 gap-2">
 					{#each difficultyOptions as option}
 						<button
 							type="button"
-							onclick={() => (difficulty = option.value as typeof difficulty)}
+							onclick={() => (difficulty = option.value as 'EASY' | 'MEDIUM' | 'HARD')}
 							class="brutal-border px-4 py-3 font-bold text-sm uppercase transition-all {difficulty ===
 							option.value
 								? `${option.color} text-white`
@@ -152,14 +180,21 @@
 		</div>
 
 		<div class="mt-8">
-			<Button variant="lime" size="lg" onclick={handleCreate}>Create Tournament</Button>
+			<Button variant="lime" size="lg" onclick={handleCreate} disabled={creating}>
+				{creating ? 'Creating...' : 'Create Tournament'}
+			</Button>
 		</div>
 	</Card>
 
 	<!-- Existing Tournaments -->
 	<h3 class="text-xl font-black uppercase mb-6">Existing Tournaments</h3>
 
-	{#if tournaments.length === 0}
+	{#if loading}
+		<div class="text-center py-12">
+			<div class="text-4xl mb-4">🐯</div>
+			<p class="font-bold">Loading tournaments...</p>
+		</div>
+	{:else if tournaments.length === 0}
 		<Card class="text-center py-10">
 			<div class="text-4xl mb-4">🏆</div>
 			<p class="text-black/60">No tournaments yet. Create one above!</p>

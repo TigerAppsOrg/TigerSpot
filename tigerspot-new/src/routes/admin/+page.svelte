@@ -1,9 +1,29 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
+	import { goto } from '$app/navigation';
 	import Card from '$lib/components/Card.svelte';
-	import { dummyTournaments, dummyPictures } from '$lib/data/dummy';
+	import { listTournaments, type Tournament } from '$lib/api/tournament';
+	import { listImages, type Picture } from '$lib/api/admin';
+	import { userStore } from '$lib/stores/user.svelte';
 
-	const activeTournaments = dummyTournaments.filter((t) => t.status === 'in_progress').length;
-	const openTournaments = dummyTournaments.filter((t) => t.status === 'open').length;
+	let tournaments = $state<Tournament[]>([]);
+	let images = $state<Picture[]>([]);
+	let loading = $state(true);
+
+	const activeTournaments = $derived(tournaments.filter((t) => t.status === 'in_progress').length);
+	const openTournaments = $derived(tournaments.filter((t) => t.status === 'open').length);
+
+	onMount(async () => {
+		// Redirect if not admin
+		if (!userStore.isAdmin && !userStore.loading) {
+			goto('/menu');
+			return;
+		}
+		const [tournamentsData, imagesData] = await Promise.all([listTournaments(), listImages()]);
+		tournaments = tournamentsData;
+		images = imagesData;
+		loading = false;
+	});
 </script>
 
 <div class="max-w-4xl mx-auto">
@@ -65,7 +85,7 @@
 						<span
 							class="brutal-border brutal-shadow-sm bg-white text-black px-3 py-1 text-sm font-bold"
 						>
-							{dummyPictures.length} images
+							{images.length} images
 						</span>
 						<span
 							class="font-bold uppercase text-sm group-hover:translate-x-2 transition-transform"

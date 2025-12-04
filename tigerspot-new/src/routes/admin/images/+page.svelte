@@ -1,37 +1,47 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
+	import { goto } from '$app/navigation';
 	import Button from '$lib/components/Button.svelte';
 	import Card from '$lib/components/Card.svelte';
 	import ImageUpload from '$lib/components/ImageUpload.svelte';
 	import Map from '$lib/components/Map.svelte';
-	import { dummyPictures } from '$lib/data/dummy';
+	import { listImages, uploadImage, deleteImage, type Picture } from '$lib/api/admin';
+	import { userStore } from '$lib/stores/user.svelte';
 
 	// Form state
 	let imagePreview = $state<string | null>(null);
 	let selectedFile = $state<File | null>(null);
 	let placeName = $state('');
-	let difficulty = $state<'easy' | 'medium' | 'hard'>('medium');
+	let difficulty = $state<'EASY' | 'MEDIUM' | 'HARD'>('MEDIUM');
 	let coordinates = $state<{ lat: number; lng: number } | null>(null);
 	let showSuccess = $state(false);
+	let uploading = $state(false);
+	let loading = $state(true);
 
-	// Local images list
-	let images = $state(
-		dummyPictures.map((p) => ({
-			...p,
-			difficulty: 'medium' as 'easy' | 'medium' | 'hard'
-		}))
-	);
+	// Images from API
+	let images = $state<Picture[]>([]);
 
 	const difficultyOptions = [
-		{ value: 'easy', label: 'Easy', color: 'bg-lime' },
-		{ value: 'medium', label: 'Medium', color: 'bg-cyan' },
-		{ value: 'hard', label: 'Hard', color: 'bg-magenta' }
+		{ value: 'EASY', label: 'Easy', color: 'bg-lime' },
+		{ value: 'MEDIUM', label: 'Medium', color: 'bg-cyan' },
+		{ value: 'HARD', label: 'Hard', color: 'bg-magenta' }
 	];
 
 	const difficultyColors: Record<string, string> = {
-		easy: 'bg-lime',
-		medium: 'bg-cyan',
-		hard: 'bg-magenta'
+		EASY: 'bg-lime',
+		MEDIUM: 'bg-cyan',
+		HARD: 'bg-magenta'
 	};
+
+	onMount(async () => {
+		// Redirect if not admin
+		if (!userStore.isAdmin && !userStore.loading) {
+			goto('/menu');
+			return;
+		}
+		images = await listImages();
+		loading = false;
+	});
 
 	function handleFileSelect(file: File) {
 		selectedFile = file;
@@ -51,7 +61,7 @@
 		coordinates = coords;
 	}
 
-	function handleAdd() {
+	async function handleAdd() {
 		if (!selectedFile) {
 			alert('Please select an image');
 			return;
@@ -60,38 +70,49 @@
 			alert('Please enter a place name');
 			return;
 		}
-		if (!coordinates) {
-			alert('Please click on the map to set coordinates');
-			return;
+
+		uploading = true;
+
+		// Upload to server - it handles EXIF extraction and Cloudinary upload
+		const result = await uploadImage(selectedFile, placeName.trim(), difficulty);
+
+		if (result?.success && result.picture) {
+			// If EXIF had GPS, it's already saved. Otherwise we need coords.
+			if (result.requiresCoordinates && !coordinates) {
+				alert('No GPS data found in image. Please click on the map to set coordinates.');
+				uploading = false;
+				return;
+			}
+
+			// Add to local list
+			images = [result.picture, ...images];
+
+			// Reset form
+			if (imagePreview) {
+				URL.revokeObjectURL(imagePreview);
+			}
+			imagePreview = null;
+			selectedFile = null;
+			placeName = '';
+			difficulty = 'MEDIUM';
+			coordinates = null;
+
+			// Show success
+			showSuccess = true;
+			setTimeout(() => (showSuccess = false), 3000);
+		} else {
+			alert(result?.message || 'Failed to upload image');
 		}
 
-		// Add to local list (demo only - using preview URL)
-		const newImage = {
-			id: images.length + 1,
-			imageUrl: imagePreview!,
-			latitude: coordinates.lat,
-			longitude: coordinates.lng,
-			placeName: placeName.trim(),
-			difficulty
-		};
-
-		images = [newImage, ...images];
-
-		// Reset form (but don't revoke URL since it's now in the list)
-		imagePreview = null;
-		selectedFile = null;
-		placeName = '';
-		difficulty = 'medium';
-		coordinates = null;
-
-		// Show success
-		showSuccess = true;
-		setTimeout(() => (showSuccess = false), 3000);
+		uploading = false;
 	}
 
-	function handleDelete(id: number) {
+	async function handleDelete(id: number) {
 		if (confirm('Are you sure you want to delete this image?')) {
-			images = images.filter((img) => img.id !== id);
+			const success = await deleteImage(id);
+			if (success) {
+				images = images.filter((img) => img.id !== id);
+			}
 		}
 	}
 </script>
@@ -157,7 +178,7 @@
 					{#each difficultyOptions as option}
 						<button
 							type="button"
-							onclick={() => (difficulty = option.value as typeof difficulty)}
+							onclick={() => (difficulty = option.value as 'EASY' | 'MEDIUM' | 'HARD')}
 							class="brutal-border px-4 py-3 font-bold text-sm uppercase transition-all {difficulty ===
 							option.value
 								? `${option.color} text-white`
@@ -171,14 +192,21 @@
 		</div>
 
 		<div class="mt-8">
-			<Button variant="cyan" size="lg" onclick={handleAdd}>Add Image</Button>
+			<Button variant="cyan" size="lg" onclick={handleAdd} disabled={uploading}>
+				{uploading ? 'Uploading...' : 'Add Image'}
+			</Button>
 		</div>
 	</Card>
 
 	<!-- Existing Images -->
 	<h3 class="text-xl font-black uppercase mb-6">Existing Images ({images.length})</h3>
 
-	{#if images.length === 0}
+	{#if loading}
+		<div class="text-center py-12">
+			<div class="text-4xl mb-4">🐯</div>
+			<p class="font-bold">Loading images...</p>
+		</div>
+	{:else if images.length === 0}
 		<Card class="text-center py-10">
 			<div class="text-4xl mb-4">🖼️</div>
 			<p class="text-black/60">No images yet. Add one above!</p>
