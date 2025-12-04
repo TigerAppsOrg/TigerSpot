@@ -35,9 +35,16 @@ export class AdminController {
 			// Extract EXIF GPS data
 			const exifData = await this.imageService.extractExifData(req.file.buffer);
 
-			// If we have GPS coordinates, we can proceed with full upload
-			// Otherwise, return the EXIF data so frontend can request manual input
-			if (exifData.latitude !== null && exifData.longitude !== null) {
+			// Check for manual coordinates from request body
+			const manualLat = req.body.latitude ? parseFloat(req.body.latitude) : null;
+			const manualLng = req.body.longitude ? parseFloat(req.body.longitude) : null;
+
+			// Use EXIF coordinates if available, otherwise fall back to manual
+			const latitude = exifData.latitude ?? manualLat;
+			const longitude = exifData.longitude ?? manualLng;
+
+			// If we have coordinates (from either source), proceed with upload
+			if (latitude !== null && longitude !== null) {
 				// Upload to Cloudinary
 				const uploadResult = await this.imageService.uploadToCloudinary(
 					req.file.buffer,
@@ -52,8 +59,8 @@ export class AdminController {
 				const picture = await this.imageService.createPicture({
 					cloudinaryId: uploadResult.publicId,
 					imageUrl: uploadResult.url,
-					latitude: exifData.latitude,
-					longitude: exifData.longitude,
+					latitude,
+					longitude,
 					placeName,
 					difficulty,
 					uploadedBy: req.user!.username
@@ -62,18 +69,12 @@ export class AdminController {
 				res.json({
 					success: true,
 					picture,
-					exifExtracted: true
+					exifExtracted: exifData.latitude !== null
 				});
 			} else {
-				// No GPS data - upload to Cloudinary but require manual coordinates
-				const uploadResult = await this.imageService.uploadToCloudinary(
-					req.file.buffer,
-					req.file.originalname
-				);
-
+				// No GPS data from EXIF and no manual coordinates provided
 				res.json({
-					success: true,
-					uploadResult,
+					success: false,
 					exifExtracted: false,
 					message: 'No GPS data found in image. Please provide coordinates manually.',
 					requiresCoordinates: true

@@ -26,24 +26,46 @@ interface UploadResult {
 export class ImageService {
 	/**
 	 * Extract GPS coordinates from image EXIF data
+	 * Supports JPEG, PNG, HEIC/HEIF, and other formats
 	 */
 	async extractExifData(buffer: Buffer): Promise<ExifGpsData> {
 		try {
-			// Parse EXIF with GPS data
-			const exif = await exifr.parse(buffer, {
-				gps: true,
-				pick: ['latitude', 'longitude', 'DateTimeOriginal']
-			});
+			// First try to get GPS data directly (works for most formats including HEIC)
+			const gps = await exifr.gps(buffer);
 
-			if (!exif) {
-				return { latitude: null, longitude: null, dateTaken: null };
+			if (gps && gps.latitude !== undefined && gps.longitude !== undefined) {
+				// Get additional metadata
+				const exif = await exifr.parse(buffer, {
+					pick: ['DateTimeOriginal', 'CreateDate', 'ModifyDate']
+				});
+
+				return {
+					latitude: gps.latitude,
+					longitude: gps.longitude,
+					dateTaken: exif?.DateTimeOriginal ?? exif?.CreateDate ?? exif?.ModifyDate ?? null
+				};
 			}
 
-			return {
-				latitude: exif.latitude ?? null,
-				longitude: exif.longitude ?? null,
-				dateTaken: exif.DateTimeOriginal ?? null
-			};
+			// Fallback: try full parse with all segments enabled (for edge cases)
+			const fullExif = await exifr.parse(buffer, {
+				gps: true,
+				tiff: true,
+				xmp: true,
+				icc: false,
+				iptc: false,
+				jfif: false,
+				ihdr: false
+			});
+
+			if (fullExif) {
+				return {
+					latitude: fullExif.latitude ?? null,
+					longitude: fullExif.longitude ?? null,
+					dateTaken: fullExif.DateTimeOriginal ?? fullExif.CreateDate ?? null
+				};
+			}
+
+			return { latitude: null, longitude: null, dateTaken: null };
 		} catch (error) {
 			console.error('EXIF extraction error:', error);
 			return { latitude: null, longitude: null, dateTaken: null };

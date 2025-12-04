@@ -43,10 +43,9 @@
 		loading = false;
 	});
 
-	function handleFileSelect(file: File) {
+	function handleFileSelect(file: File, previewUrl: string) {
 		selectedFile = file;
-		// Create preview URL
-		imagePreview = URL.createObjectURL(file);
+		imagePreview = previewUrl;
 	}
 
 	function handleClearImage() {
@@ -74,16 +73,15 @@
 		uploading = true;
 
 		// Upload to server - it handles EXIF extraction and Cloudinary upload
-		const result = await uploadImage(selectedFile, placeName.trim(), difficulty);
+		// Pass coordinates if manually set on map (used as fallback if no EXIF GPS)
+		const result = await uploadImage(
+			selectedFile,
+			placeName.trim(),
+			difficulty,
+			coordinates ?? undefined
+		);
 
 		if (result?.success && result.picture) {
-			// If EXIF had GPS, it's already saved. Otherwise we need coords.
-			if (result.requiresCoordinates && !coordinates) {
-				alert('No GPS data found in image. Please click on the map to set coordinates.');
-				uploading = false;
-				return;
-			}
-
 			// Add to local list
 			images = [result.picture, ...images];
 
@@ -100,6 +98,11 @@
 			// Show success
 			showSuccess = true;
 			setTimeout(() => (showSuccess = false), 3000);
+		} else if (result?.requiresCoordinates) {
+			// No GPS in EXIF and no manual coordinates provided
+			alert(
+				'No GPS data found in image. Please click on the map to set coordinates, then try again.'
+			);
 		} else {
 			alert(result?.message || 'Failed to upload image');
 		}

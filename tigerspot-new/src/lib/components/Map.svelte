@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
-	import L from 'leaflet';
-	import 'leaflet/dist/leaflet.css';
+	import type L from 'leaflet';
 	import { PRINCETON_BOUNDS } from '$lib/data/dummy';
 
 	interface Props {
@@ -25,80 +24,85 @@
 	let guessMarker: L.Marker | null = null;
 	let actualMarker: L.Marker | null = null;
 	let connectingLine: L.Polyline | null = null;
+	let leaflet: typeof L;
 
-	// Custom marker icons
-	const guessIcon = L.divIcon({
-		className: 'guess-marker',
-		html: `<div class="w-8 h-8 bg-magenta brutal-border brutal-shadow-sm flex items-center justify-center">
-			<span class="text-white font-bold">?</span>
-		</div>`,
-		iconSize: [32, 32],
-		iconAnchor: [16, 16]
-	});
+	onMount(async () => {
+		// Dynamic import to avoid SSR issues (Leaflet uses window)
+		leaflet = (await import('leaflet')).default;
+		await import('leaflet/dist/leaflet.css');
 
-	const actualIcon = L.divIcon({
-		className: 'actual-marker',
-		html: `<div class="w-8 h-8 bg-lime brutal-border brutal-shadow-sm flex items-center justify-center">
-			<span class="text-black font-bold">✓</span>
-		</div>`,
-		iconSize: [32, 32],
-		iconAnchor: [16, 16]
-	});
+		// Custom marker icons
+		const guessIcon = leaflet.divIcon({
+			className: 'guess-marker',
+			html: `<div class="w-8 h-8 bg-magenta brutal-border brutal-shadow-sm flex items-center justify-center">
+				<span class="text-white font-bold">?</span>
+			</div>`,
+			iconSize: [32, 32],
+			iconAnchor: [16, 16]
+		});
 
-	onMount(() => {
+		const actualIcon = leaflet.divIcon({
+			className: 'actual-marker',
+			html: `<div class="w-8 h-8 bg-lime brutal-border brutal-shadow-sm flex items-center justify-center">
+				<span class="text-black font-bold">✓</span>
+			</div>`,
+			iconSize: [32, 32],
+			iconAnchor: [16, 16]
+		});
+
 		// Initialize map
-		map = L.map(mapContainer, {
+		map = leaflet.map(mapContainer, {
 			center: [PRINCETON_BOUNDS.center.lat, PRINCETON_BOUNDS.center.lng],
 			zoom: PRINCETON_BOUNDS.zoom,
 			minZoom: PRINCETON_BOUNDS.minZoom,
 			maxZoom: PRINCETON_BOUNDS.maxZoom,
-			maxBounds: L.latLngBounds(
-				L.latLng(PRINCETON_BOUNDS.bounds[0][1], PRINCETON_BOUNDS.bounds[0][0]),
-				L.latLng(PRINCETON_BOUNDS.bounds[1][1], PRINCETON_BOUNDS.bounds[1][0])
+			maxBounds: leaflet.latLngBounds(
+				leaflet.latLng(PRINCETON_BOUNDS.bounds[0][1], PRINCETON_BOUNDS.bounds[0][0]),
+				leaflet.latLng(PRINCETON_BOUNDS.bounds[1][1], PRINCETON_BOUNDS.bounds[1][0])
 			)
 		});
 
 		// Use OpenStreetMap tiles (free, no API key needed)
-		L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-			attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-			maxZoom: 19
-		}).addTo(map);
+		leaflet
+			.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+				attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+				maxZoom: 19
+			})
+			.addTo(map);
 
 		// Handle click to place marker
 		if (!readonly) {
 			map.on('click', (e: L.LeafletMouseEvent) => {
 				const { lat, lng } = e.latlng;
-				setGuessMarker(lat, lng);
+				setGuessMarker(lat, lng, guessIcon);
 				onSelect?.({ lat, lng });
 			});
 		}
 
 		// Show existing markers if provided
 		if (guessLocation) {
-			setGuessMarker(guessLocation.lat, guessLocation.lng);
+			setGuessMarker(guessLocation.lat, guessLocation.lng, guessIcon);
 		}
 		if (showActualLocation) {
-			setActualMarker(showActualLocation.lat, showActualLocation.lng);
+			setActualMarker(showActualLocation.lat, showActualLocation.lng, actualIcon);
 			if (guessLocation) {
 				drawLine(guessLocation, showActualLocation);
 			}
 		}
 	});
 
-	function setGuessMarker(lat: number, lng: number) {
+	function setGuessMarker(lat: number, lng: number, icon: L.DivIcon) {
 		if (guessMarker) {
 			map.removeLayer(guessMarker);
 		}
-
-		guessMarker = L.marker([lat, lng], { icon: guessIcon }).addTo(map);
+		guessMarker = leaflet.marker([lat, lng], { icon }).addTo(map);
 	}
 
-	function setActualMarker(lat: number, lng: number) {
+	function setActualMarker(lat: number, lng: number, icon: L.DivIcon) {
 		if (actualMarker) {
 			map.removeLayer(actualMarker);
 		}
-
-		actualMarker = L.marker([lat, lng], { icon: actualIcon }).addTo(map);
+		actualMarker = leaflet.marker([lat, lng], { icon }).addTo(map);
 	}
 
 	function drawLine(from: { lat: number; lng: number }, to: { lat: number; lng: number }) {
@@ -106,20 +110,22 @@
 			map.removeLayer(connectingLine);
 		}
 
-		connectingLine = L.polyline(
-			[
-				[from.lat, from.lng],
-				[to.lat, to.lng]
-			],
-			{
-				color: '#FF6600',
-				weight: 4,
-				dashArray: '8, 8'
-			}
-		).addTo(map);
+		connectingLine = leaflet
+			.polyline(
+				[
+					[from.lat, from.lng],
+					[to.lat, to.lng]
+				],
+				{
+					color: '#FF6600',
+					weight: 4,
+					dashArray: '8, 8'
+				}
+			)
+			.addTo(map);
 
 		// Fit bounds to show both markers
-		const bounds = L.latLngBounds([
+		const bounds = leaflet.latLngBounds([
 			[from.lat, from.lng],
 			[to.lat, to.lng]
 		]);

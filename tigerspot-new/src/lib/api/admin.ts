@@ -65,12 +65,17 @@ export async function listImages(): Promise<Picture[]> {
 export async function uploadImage(
 	file: File,
 	placeName?: string,
-	difficulty?: 'EASY' | 'MEDIUM' | 'HARD'
+	difficulty?: 'EASY' | 'MEDIUM' | 'HARD',
+	coordinates?: { lat: number; lng: number }
 ): Promise<ImageUploadResult | null> {
 	const formData = new FormData();
 	formData.append('image', file);
 	if (placeName) formData.append('placeName', placeName);
 	if (difficulty) formData.append('difficulty', difficulty);
+	if (coordinates) {
+		formData.append('latitude', coordinates.lat.toString());
+		formData.append('longitude', coordinates.lng.toString());
+	}
 
 	const { data, error } = await api.uploadFile<ImageUploadResult>(
 		'/api/admin/images/upload',
