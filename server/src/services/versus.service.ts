@@ -371,7 +371,7 @@ export class VersusService {
 		};
 	}
 
-	private async calculatePlayerTotal(challengeId: number, username: string): number {
+	private async calculatePlayerTotal(challengeId: number, username: string): Promise<number> {
 		const rounds = await prisma.challengeRound.findMany({
 			where: {
 				challengeId,

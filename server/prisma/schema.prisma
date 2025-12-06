@@ -67,10 +67,11 @@ model Picture {
   showInTournament Boolean @default(true)
 
   // Relations
-  uploader         User?             @relation("PictureUploader", fields: [uploadedBy], references: [username])
-  dailyChallenges  DailyChallenge[]
-  challengeRounds  ChallengeRound[]
-  tournamentRounds TournamentRound[]
+  uploader              User?                    @relation("PictureUploader", fields: [uploadedBy], references: [username])
+  dailyChallenges       DailyChallenge[]
+  challengeRounds       ChallengeRound[]
+  tournamentRounds      TournamentRound[]
+  tournamentBracketRounds TournamentBracketRound[]
 
   @@index([difficulty])
 }
@@ -172,12 +173,31 @@ model Tournament {
   winnerId    String?   @db.VarChar(255)
 
   // Relations
-  creator      User                    @relation("TournamentCreator", fields: [createdBy], references: [username])
-  winner       User?                   @relation("TournamentWinner", fields: [winnerId], references: [username])
-  participants TournamentParticipant[]
-  matches      TournamentMatch[]
+  creator       User                       @relation("TournamentCreator", fields: [createdBy], references: [username])
+  winner        User?                      @relation("TournamentWinner", fields: [winnerId], references: [username])
+  participants  TournamentParticipant[]
+  matches       TournamentMatch[]
+  bracketRounds TournamentBracketRound[]
 
   @@index([status])
+}
+
+// Pre-selected pictures for each bracket round (set when tournament starts)
+// All matches in the same bracket round share these pictures
+model TournamentBracketRound {
+  id           Int         @id @default(autoincrement())
+  tournamentId Int
+  bracketType  BracketType
+  roundNumber  Int         // Round within bracket type (1, 2, 3...)
+  pictureIndex Int         // Which picture in the round (1 to roundsPerMatch)
+  pictureId    Int
+
+  // Relations
+  tournament Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  picture    Picture    @relation(fields: [pictureId], references: [id])
+
+  @@unique([tournamentId, bracketType, roundNumber, pictureIndex])
+  @@index([tournamentId, bracketType, roundNumber])
 }
 
 enum TournamentStatus {

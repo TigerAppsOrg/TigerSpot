@@ -1,5 +1,12 @@
 import { prisma } from '../config/database.js';
 import type { Bracket, BracketMatch } from '../types/index.js';
+import type { BracketType, Difficulty } from '@prisma/client';
+
+interface DifficultyDistribution {
+	EASY: number;
+	MEDIUM: number;
+	HARD: number;
+}
 
 export class BracketService {
 	/**
@@ -290,6 +297,20 @@ export class BracketService {
 				data: { nextWinnerMatchId: grandFinal.id }
 			});
 		}
+
+		// Pre-select pictures for all bracket rounds
+		const tournament = await prisma.tournament.findUnique({
+			where: { id: tournamentId },
+			select: { roundsPerMatch: true }
+		});
+		const roundsPerMatch = tournament?.roundsPerMatch || 5;
+
+		await this.preselectBracketPictures(
+			tournamentId,
+			winnersRounds,
+			losersRoundsCount,
+			roundsPerMatch
+		);
 
 		return { winnersMatches, losersMatches, grandFinalId: grandFinal.id };
 	}
@@ -583,5 +604,192 @@ export class BracketService {
 			await this.autoAdvanceEmptyLoserMatch(matchId);
 		}
 		// If both players exist, it's a normal match - do nothing
+	}
+
+	/**
+	 * Pre-select pictures for all bracket rounds
+	 * Each bracket round (e.g., Winners Round 1, Losers Round 2, Grand Final)
+	 * gets its own set of pictures. All matches in the same bracket round
+	 * share these pictures. No picture is used twice in the tournament.
+	 */
+	private async preselectBracketPictures(
+		tournamentId: number,
+		winnersRounds: number,
+		losersRoundsCount: number,
+		roundsPerMatch: number
+	) {
+		const usedPictureIds = new Set<number>();
+
+		// Define all bracket rounds with their difficulty distribution
+		const bracketRoundConfigs: {
+			bracketType: BracketType;
+			roundNumber: number;
+			distribution: DifficultyDistribution;
+		}[] = [];
+
+		// Winners bracket rounds
+		for (let round = 1; round <= winnersRounds; round++) {
+			const distribution = this.calculateDifficultyDistribution(
+				'WINNERS',
+				round,
+				winnersRounds,
+				losersRoundsCount
+			);
+			bracketRoundConfigs.push({
+				bracketType: 'WINNERS',
+				roundNumber: round,
+				distribution
+			});
+		}
+
+		// Losers bracket rounds
+		for (let round = 1; round <= losersRoundsCount; round++) {
+			const distribution = this.calculateDifficultyDistribution(
+				'LOSERS',
+				round,
+				winnersRounds,
+				losersRoundsCount
+			);
+			bracketRoundConfigs.push({
+				bracketType: 'LOSERS',
+				roundNumber: round,
+				distribution
+			});
+		}
+
+		// Grand Final
+		bracketRoundConfigs.push({
+			bracketType: 'GRAND_FINAL',
+			roundNumber: 1,
+			distribution: { EASY: 0, MEDIUM: 0, HARD: 100 }
+		});
+
+		// Select pictures for each bracket round
+		for (const config of bracketRoundConfigs) {
+			const pictures = await this.selectPicturesForRound(
+				roundsPerMatch,
+				config.distribution,
+				usedPictureIds
+			);
+
+			// Store in TournamentBracketRound
+			for (let i = 0; i < pictures.length; i++) {
+				await prisma.tournamentBracketRound.create({
+					data: {
+						tournamentId,
+						bracketType: config.bracketType,
+						roundNumber: config.roundNumber,
+						pictureIndex: i + 1,
+						pictureId: pictures[i]
+					}
+				});
+				usedPictureIds.add(pictures[i]);
+			}
+		}
+	}
+
+	/**
+	 * Calculate difficulty distribution based on bracket position
+	 * Early rounds: 80% Easy, 20% Medium
+	 * Mid-early rounds: 40% Easy, 50% Medium, 10% Hard
+	 * Mid-late rounds: 10% Easy, 50% Medium, 40% Hard
+	 * Late rounds: 20% Medium, 80% Hard
+	 * Grand Final: 100% Hard
+	 */
+	private calculateDifficultyDistribution(
+		bracketType: BracketType,
+		roundNumber: number,
+		totalWinnersRounds: number,
+		totalLosersRounds: number
+	): DifficultyDistribution {
+		// Grand Final: 100% HARD
+		if (bracketType === 'GRAND_FINAL') {
+			return { EASY: 0, MEDIUM: 0, HARD: 100 };
+		}
+
+		// Calculate progress through the bracket (0 to 1)
+		let progress: number;
+
+		if (bracketType === 'WINNERS') {
+			progress = (roundNumber - 1) / Math.max(1, totalWinnersRounds - 1);
+		} else {
+			// LOSERS bracket
+			progress = (roundNumber - 1) / Math.max(1, totalLosersRounds - 1);
+		}
+
+		// Apply difficulty curve based on progress
+		if (progress <= 0.25) {
+			// Early rounds: mostly easy
+			return { EASY: 80, MEDIUM: 20, HARD: 0 };
+		} else if (progress <= 0.5) {
+			// Mid-early rounds: transitioning
+			return { EASY: 40, MEDIUM: 50, HARD: 10 };
+		} else if (progress <= 0.75) {
+			// Mid-late rounds: getting harder
+			return { EASY: 10, MEDIUM: 50, HARD: 40 };
+		} else {
+			// Late rounds: mostly hard
+			return { EASY: 0, MEDIUM: 20, HARD: 80 };
+		}
+	}
+
+	/**
+	 * Select pictures for a bracket round based on difficulty distribution
+	 * Avoids pictures that have already been used in the tournament
+	 */
+	private async selectPicturesForRound(
+		count: number,
+		distribution: DifficultyDistribution,
+		usedPictureIds: Set<number>
+	): Promise<number[]> {
+		const result: number[] = [];
+
+		// Calculate how many of each difficulty to fetch
+		const easyCount = Math.round((count * distribution.EASY) / 100);
+		const mediumCount = Math.round((count * distribution.MEDIUM) / 100);
+		const hardCount = count - easyCount - mediumCount;
+
+		// Helper to get random pictures of a difficulty, excluding used ones
+		const getPictures = async (difficulty: Difficulty, needed: number): Promise<number[]> => {
+			if (needed <= 0) return [];
+
+			const pictures = await prisma.picture.findMany({
+				where: {
+					difficulty,
+					showInTournament: true,
+					id: { notIn: Array.from(usedPictureIds) }
+				},
+				select: { id: true }
+			});
+
+			// Shuffle and take what we need
+			const shuffled = pictures.sort(() => Math.random() - 0.5);
+			return shuffled.slice(0, needed).map((p) => p.id);
+		};
+
+		// Fetch pictures by difficulty
+		const easyPics = await getPictures('EASY', easyCount);
+		const mediumPics = await getPictures('MEDIUM', mediumCount);
+		const hardPics = await getPictures('HARD', hardCount);
+
+		result.push(...easyPics, ...mediumPics, ...hardPics);
+
+		// If we don't have enough pictures of the right difficulty, fill with any available
+		if (result.length < count) {
+			const fallbackPics = await prisma.picture.findMany({
+				where: {
+					showInTournament: true,
+					id: { notIn: [...Array.from(usedPictureIds), ...result] }
+				},
+				select: { id: true }
+			});
+
+			const shuffledFallback = fallbackPics.sort(() => Math.random() - 0.5);
+			const needed = count - result.length;
+			result.push(...shuffledFallback.slice(0, needed).map((p) => p.id));
+		}
+
+		// Shuffle final result so difficulties are mixed
+		return result.sort(() => Math.random() - 0.5);
 	}
 }

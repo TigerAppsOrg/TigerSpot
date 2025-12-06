@@ -1,19 +1,10 @@
 import { prisma } from '../config/database.js';
 import { BracketService } from './bracket.service.js';
-import { ImageService, type GameMode } from './image.service.js';
 import { calculateDistance, calculateVersusPoints } from '../utils/distance.js';
 import type { TournamentResponse } from '../types/index.js';
-import type { BracketType, Difficulty } from '@prisma/client';
-
-interface DifficultyDistribution {
-	EASY: number;
-	MEDIUM: number;
-	HARD: number;
-}
 
 export class TournamentService {
 	private bracketService = new BracketService();
-	private imageService = new ImageService();
 
 	/**
 	 * List all tournaments
@@ -173,7 +164,8 @@ export class TournamentService {
 
 	/**
 	 * Get round pictures for a match
-	 * Uses mixed difficulty that escalates through tournament stages
+	 * Uses pre-selected pictures from TournamentBracketRound
+	 * All matches in the same bracket round share the same pictures
 	 */
 	async getMatchRounds(matchId: number) {
 		const match = await prisma.tournamentMatch.findUnique({
@@ -187,7 +179,7 @@ export class TournamentService {
 			throw new Error('Match not found');
 		}
 
-		// Check if rounds already generated
+		// Check if rounds already generated for this match
 		const existingRounds = await prisma.tournamentRound.findMany({
 			where: {
 				matchId,
@@ -209,34 +201,32 @@ export class TournamentService {
 			}));
 		}
 
-		// Calculate bracket info to determine difficulty distribution
-		const bracketInfo = await this.getBracketInfo(match.tournament.id);
+		// Get pre-selected pictures for this bracket round
+		// All matches in the same (bracketType, roundNumber) share these pictures
+		const bracketRoundPictures = await prisma.tournamentBracketRound.findMany({
+			where: {
+				tournamentId: match.tournament.id,
+				bracketType: match.bracketType,
+				roundNumber: match.roundNumber
+			},
+			include: {
+				picture: { select: { id: true, imageUrl: true } }
+			},
+			orderBy: { pictureIndex: 'asc' }
+		});
 
-		// Calculate difficulty distribution based on match position in bracket
-		const distribution = this.calculateDifficultyDistribution(
-			match.bracketType,
-			match.roundNumber,
-			bracketInfo.totalWinnersRounds,
-			bracketInfo.totalLosersRounds
-		);
-
-		// Get pictures with mixed difficulty distribution
-		const pictures = await this.getPicturesWithDistribution(
-			match.tournament.roundsPerMatch,
-			distribution
-		);
-
-		if (pictures.length < match.tournament.roundsPerMatch) {
-			throw new Error('Not enough pictures available for the required difficulty distribution');
+		if (bracketRoundPictures.length < match.tournament.roundsPerMatch) {
+			throw new Error('Pre-selected pictures not found for this bracket round');
 		}
 
+		// Create TournamentRound records for this match using the pre-selected pictures
 		const rounds = [];
 		for (let i = 0; i < match.tournament.roundsPerMatch; i++) {
 			const round = await prisma.tournamentRound.create({
 				data: {
 					matchId,
 					roundNumber: i + 1,
-					pictureId: pictures[i].id
+					pictureId: bracketRoundPictures[i].pictureId
 				},
 				include: {
 					picture: { select: { id: true, imageUrl: true } }
@@ -251,112 +241,6 @@ export class TournamentService {
 		}
 
 		return rounds;
-	}
-
-	/**
-	 * Get bracket structure info for a tournament
-	 */
-	private async getBracketInfo(tournamentId: number): Promise<{
-		totalWinnersRounds: number;
-		totalLosersRounds: number;
-	}> {
-		const matches = await prisma.tournamentMatch.findMany({
-			where: { tournamentId },
-			select: { bracketType: true, roundNumber: true }
-		});
-
-		const winnersRounds = matches
-			.filter((m) => m.bracketType === 'WINNERS')
-			.map((m) => m.roundNumber);
-		const losersRounds = matches
-			.filter((m) => m.bracketType === 'LOSERS')
-			.map((m) => m.roundNumber);
-
-		return {
-			totalWinnersRounds: winnersRounds.length > 0 ? Math.max(...winnersRounds) : 1,
-			totalLosersRounds: losersRounds.length > 0 ? Math.max(...losersRounds) : 1
-		};
-	}
-
-	/**
-	 * Calculate difficulty distribution based on bracket position
-	 * Early rounds: 80% Easy, 20% Medium
-	 * Mid-early rounds: 40% Easy, 50% Medium, 10% Hard
-	 * Mid-late rounds: 10% Easy, 50% Medium, 40% Hard
-	 * Late rounds: 20% Medium, 80% Hard
-	 * Grand Final: 100% Hard
-	 */
-	private calculateDifficultyDistribution(
-		bracketType: BracketType,
-		roundNumber: number,
-		totalWinnersRounds: number,
-		totalLosersRounds: number
-	): DifficultyDistribution {
-		// Grand Final: 100% HARD
-		if (bracketType === 'GRAND_FINAL') {
-			return { EASY: 0, MEDIUM: 0, HARD: 100 };
-		}
-
-		// Calculate progress through the bracket (0 to 1)
-		let progress: number;
-
-		if (bracketType === 'WINNERS') {
-			progress = (roundNumber - 1) / Math.max(1, totalWinnersRounds - 1);
-		} else {
-			// LOSERS bracket
-			progress = (roundNumber - 1) / Math.max(1, totalLosersRounds - 1);
-		}
-
-		// Apply difficulty curve based on progress
-		if (progress <= 0.25) {
-			// Early rounds: mostly easy
-			return { EASY: 80, MEDIUM: 20, HARD: 0 };
-		} else if (progress <= 0.5) {
-			// Mid-early rounds: transitioning
-			return { EASY: 40, MEDIUM: 50, HARD: 10 };
-		} else if (progress <= 0.75) {
-			// Mid-late rounds: getting harder
-			return { EASY: 10, MEDIUM: 50, HARD: 40 };
-		} else {
-			// Late rounds: mostly hard
-			return { EASY: 0, MEDIUM: 20, HARD: 80 };
-		}
-	}
-
-	/**
-	 * Select pictures based on difficulty distribution
-	 */
-	private async getPicturesWithDistribution(
-		count: number,
-		distribution: DifficultyDistribution
-	): Promise<{ id: number; imageUrl: string }[]> {
-		const result: { id: number; imageUrl: string }[] = [];
-
-		// Calculate how many of each difficulty to fetch
-		const easyCount = Math.round((count * distribution.EASY) / 100);
-		const mediumCount = Math.round((count * distribution.MEDIUM) / 100);
-		const hardCount = count - easyCount - mediumCount; // Remaining for hard
-
-		// Fetch pictures of each difficulty (filtered by tournament visibility)
-		if (easyCount > 0) {
-			const easyPics = await this.imageService.getRandomPictures(easyCount, 'EASY', 'tournament');
-			result.push(...easyPics.map((p) => ({ id: p.id, imageUrl: p.imageUrl })));
-		}
-		if (mediumCount > 0) {
-			const mediumPics = await this.imageService.getRandomPictures(
-				mediumCount,
-				'MEDIUM',
-				'tournament'
-			);
-			result.push(...mediumPics.map((p) => ({ id: p.id, imageUrl: p.imageUrl })));
-		}
-		if (hardCount > 0) {
-			const hardPics = await this.imageService.getRandomPictures(hardCount, 'HARD', 'tournament');
-			result.push(...hardPics.map((p) => ({ id: p.id, imageUrl: p.imageUrl })));
-		}
-
-		// Shuffle the combined results so difficulties are mixed
-		return result.sort(() => Math.random() - 0.5);
 	}
 
 	/**
