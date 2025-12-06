@@ -141,9 +141,6 @@
 			<!-- Actions -->
 			<div class="flex flex-wrap justify-center gap-4">
 				<Button variant="cyan" href="/menu">Back to Menu</Button>
-				<Button variant="white" onclick={() => alert('Share feature coming soon!')}>
-					📤 Share Score
-				</Button>
 				<Button variant="black" href="/leaderboard">📊 Leaderboard</Button>
 			</div>
 		</div>
