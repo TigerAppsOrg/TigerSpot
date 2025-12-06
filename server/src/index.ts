@@ -14,10 +14,13 @@ async function start() {
 		// Connect to database
 		await connectDatabase();
 
-		// Start HTTP server
-		server.listen(config.port, () => {
+		// Start HTTP server on all interfaces (0.0.0.0)
+		server.listen(config.port, '0.0.0.0', () => {
 			console.log(`Server running on http://localhost:${config.port}`);
 			console.log(`Environment: ${config.nodeEnv}`);
+			if (config.nodeEnv === 'development') {
+				console.log(`Network: http://<your-ip>:${config.port}`);
+			}
 		});
 	} catch (error) {
 		console.error('Failed to start server:', error);

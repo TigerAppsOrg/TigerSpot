@@ -1,7 +1,19 @@
 // API client configuration
 // All Cloudinary operations happen server-side - credentials are never exposed to frontend
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+// Use same hostname as frontend so it works on local network
+const getApiBaseUrl = () => {
+	if (import.meta.env.VITE_API_URL) {
+		return import.meta.env.VITE_API_URL;
+	}
+	// In browser, use same host as frontend (works for localhost and local network IP)
+	if (typeof window !== 'undefined') {
+		return `http://${window.location.hostname}:3001`;
+	}
+	return 'http://localhost:3001';
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 interface ApiResponse<T> {
 	data?: T;

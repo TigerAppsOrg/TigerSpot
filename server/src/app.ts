@@ -17,10 +17,27 @@ const app = express();
 // Security middleware
 app.use(helmet());
 
-// CORS
+// CORS - in dev mode, allow any origin on port 5173 (for local network testing)
 app.use(
 	cors({
-		origin: config.cors.frontendUrl,
+		origin: (origin, callback) => {
+			// Allow requests with no origin (like mobile apps or curl)
+			if (!origin) return callback(null, true);
+
+			// In development, allow localhost and any local network IP on port 5173
+			if (config.nodeEnv === 'development') {
+				if (origin.includes(':5173') || origin === config.cors.frontendUrl) {
+					return callback(null, true);
+				}
+			}
+
+			// In production, only allow configured frontend URL
+			if (origin === config.cors.frontendUrl) {
+				return callback(null, true);
+			}
+
+			callback(new Error('Not allowed by CORS'));
+		},
 		credentials: true
 	})
 );
