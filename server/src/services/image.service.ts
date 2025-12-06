@@ -190,11 +190,21 @@ export class ImageService {
 
 	/**
 	 * Upload image buffer to Cloudinary
-	 * Converts to JPEG first for consistent format
+	 * Converts to JPEG and resizes before upload to save bandwidth and storage
 	 */
 	async uploadToCloudinary(buffer: Buffer, filename: string): Promise<UploadResult> {
 		// Convert to JPEG first (handles HEIC, PNG, etc.)
-		const jpegBuffer = await this.convertToJpeg(buffer);
+		let jpegBuffer = await this.convertToJpeg(buffer);
+
+		// Resize to max 800px on longest side before uploading
+		// This saves bandwidth and storage while maintaining good quality
+		jpegBuffer = await sharp(jpegBuffer)
+			.resize(800, 800, {
+				fit: 'inside',
+				withoutEnlargement: true
+			})
+			.jpeg({ quality: 90 })
+			.toBuffer();
 
 		return new Promise((resolve, reject) => {
 			const uploadStream = cloudinary.uploader.upload_stream(
@@ -202,7 +212,7 @@ export class ImageService {
 					folder: 'tigerspot',
 					resource_type: 'image',
 					public_id: `${Date.now()}-${filename.replace(/\.[^/.]+$/, '')}`,
-					transformation: [{ width: 1920, height: 1080, crop: 'limit' }, { quality: 'auto:good' }]
+					transformation: [{ quality: 'auto:good' }]
 				},
 				(error, result) => {
 					if (error || !result) {
