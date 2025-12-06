@@ -32,4 +32,10 @@ router.get('/:id/match/:matchId/rounds', tournamentController.getMatchRounds);
 // Submit guess for a tournament match round
 router.post('/:id/match/:matchId/submit', tournamentController.submitRound);
 
+// Get match results (scores for both players)
+router.get('/:id/match/:matchId/results', tournamentController.getMatchResults);
+
+// Get match status (for polling while waiting for opponent)
+router.get('/:id/match/:matchId/status', tournamentController.getMatchStatus);
+
 export default router;

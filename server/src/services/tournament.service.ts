@@ -388,4 +388,106 @@ export class TournamentService {
 
 		return rounds.reduce((sum, r) => sum + (r.points || 0), 0);
 	}
+
+	/**
+	 * Get match results with both players' scores
+	 */
+	async getMatchResults(matchId: number, username: string) {
+		const match = await prisma.tournamentMatch.findUnique({
+			where: { id: matchId },
+			include: {
+				tournament: { select: { id: true, roundsPerMatch: true } },
+				player1: { select: { username: true, displayName: true } },
+				player2: { select: { username: true, displayName: true } },
+				rounds: {
+					where: { playerUsername: { not: null } },
+					orderBy: [{ roundNumber: 'asc' }, { playerUsername: 'asc' }]
+				}
+			}
+		});
+
+		if (!match) {
+			throw new Error('Match not found');
+		}
+
+		// Determine which player is "you" and which is "opponent"
+		const isPlayer1 = match.player1Id === username;
+		const you = isPlayer1 ? match.player1 : match.player2;
+		const opponent = isPlayer1 ? match.player2 : match.player1;
+		const yourId = isPlayer1 ? match.player1Id : match.player2Id;
+		const opponentId = isPlayer1 ? match.player2Id : match.player1Id;
+
+		// Get round scores for each player
+		const yourRounds = match.rounds
+			.filter((r) => r.playerUsername === yourId)
+			.sort((a, b) => a.roundNumber - b.roundNumber);
+		const opponentRounds = match.rounds
+			.filter((r) => r.playerUsername === opponentId)
+			.sort((a, b) => a.roundNumber - b.roundNumber);
+
+		const yourScores = yourRounds.map((r) => r.points || 0);
+		const opponentScores = opponentRounds.map((r) => r.points || 0);
+		const yourTotal = yourScores.reduce((a, b) => a + b, 0);
+		const opponentTotal = opponentScores.reduce((a, b) => a + b, 0);
+
+		// Check completion status
+		const yourFinished = yourRounds.length === match.tournament.roundsPerMatch;
+		const opponentFinished = opponentRounds.length === match.tournament.roundsPerMatch;
+
+		return {
+			matchId: match.id,
+			tournamentId: match.tournament.id,
+			status: match.status,
+			you: {
+				username: you?.username || '',
+				displayName: you?.displayName || 'Unknown',
+				scores: yourScores,
+				total: yourTotal,
+				finished: yourFinished
+			},
+			opponent: {
+				username: opponent?.username || '',
+				displayName: opponent?.displayName || 'Unknown',
+				scores: opponentScores,
+				total: opponentTotal,
+				finished: opponentFinished
+			},
+			winnerId: match.winnerId,
+			completedAt: match.completedAt
+		};
+	}
+
+	/**
+	 * Get match status (for polling or socket updates)
+	 */
+	async getMatchStatus(matchId: number) {
+		const match = await prisma.tournamentMatch.findUnique({
+			where: { id: matchId },
+			include: {
+				tournament: { select: { roundsPerMatch: true } },
+				rounds: {
+					where: { playerUsername: { not: null } },
+					select: { playerUsername: true, roundNumber: true }
+				}
+			}
+		});
+
+		if (!match) return null;
+
+		const player1Rounds = match.rounds.filter((r) => r.playerUsername === match.player1Id).length;
+		const player2Rounds = match.rounds.filter((r) => r.playerUsername === match.player2Id).length;
+
+		return {
+			matchId: match.id,
+			status: match.status,
+			player1Id: match.player1Id,
+			player2Id: match.player2Id,
+			player1Progress: player1Rounds,
+			player2Progress: player2Rounds,
+			totalRounds: match.tournament.roundsPerMatch,
+			player1Finished: player1Rounds === match.tournament.roundsPerMatch,
+			player2Finished: player2Rounds === match.tournament.roundsPerMatch,
+			winnerId: match.winnerId
+		};
+	}
 }

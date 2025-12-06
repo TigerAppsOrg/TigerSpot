@@ -9,7 +9,24 @@ let io: Server;
 export function initializeSocket(httpServer: HTTPServer) {
 	io = new Server(httpServer, {
 		cors: {
-			origin: config.cors.frontendUrl,
+			origin: (origin, callback) => {
+				// Allow requests with no origin
+				if (!origin) return callback(null, true);
+
+				// In development, allow localhost and any local network IP on port 5173
+				if (config.nodeEnv === 'development') {
+					if (origin.includes(':5173') || origin === config.cors.frontendUrl) {
+						return callback(null, true);
+					}
+				}
+
+				// In production, only allow configured frontend URL
+				if (origin === config.cors.frontendUrl) {
+					return callback(null, true);
+				}
+
+				callback(new Error('Not allowed by CORS'));
+			},
 			credentials: true
 		}
 	});

@@ -179,4 +179,46 @@ export class TournamentController {
 			res.status(400).json({ error: (error as Error).message });
 		}
 	};
+
+	/**
+	 * Get match results
+	 */
+	getMatchResults = async (req: AuthRequest, res: Response) => {
+		const matchId = parseInt(req.params.matchId, 10);
+		if (isNaN(matchId)) {
+			res.status(400).json({ error: 'Invalid match ID' });
+			return;
+		}
+
+		try {
+			const results = await this.tournamentService.getMatchResults(matchId, req.user!.username);
+			res.json(results);
+		} catch (error) {
+			console.error('Error getting match results:', error);
+			res.status(400).json({ error: (error as Error).message });
+		}
+	};
+
+	/**
+	 * Get match status (for polling)
+	 */
+	getMatchStatus = async (req: AuthRequest, res: Response) => {
+		const matchId = parseInt(req.params.matchId, 10);
+		if (isNaN(matchId)) {
+			res.status(400).json({ error: 'Invalid match ID' });
+			return;
+		}
+
+		try {
+			const status = await this.tournamentService.getMatchStatus(matchId);
+			if (!status) {
+				res.status(404).json({ error: 'Match not found' });
+				return;
+			}
+			res.json(status);
+		} catch (error) {
+			console.error('Error getting match status:', error);
+			res.status(500).json({ error: 'Failed to get match status' });
+		}
+	};
 }

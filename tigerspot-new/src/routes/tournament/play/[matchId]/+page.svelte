@@ -1,18 +1,22 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
-	import { onMount } from 'svelte';
+	import { onMount, onDestroy } from 'svelte';
 	import Button from '$lib/components/Button.svelte';
 	import Card from '$lib/components/Card.svelte';
 	import Timer from '$lib/components/Timer.svelte';
 	import Map from '$lib/components/Map.svelte';
-	import { getMatchRounds, submitMatchRound, type RoundPicture } from '$lib/api/tournament';
+	import {
+		getMatchRounds,
+		submitMatchRound,
+		getMatchStatus,
+		type RoundPicture
+	} from '$lib/api/tournament';
 	import { userStore } from '$lib/stores/user.svelte';
 
 	const matchId = parseInt($page.params.matchId);
 
 	// Extract tournamentId from URL search params or state
-	// For now, we'll need to get this from somewhere - let's check the page URL
 	const urlParams = new URLSearchParams(window.location.search);
 	const tournamentId = parseInt(urlParams.get('tournamentId') || '0');
 
@@ -27,6 +31,11 @@
 	let roundStartTime = $state(Date.now());
 	let roundScores = $state<number[]>([]);
 	let timerComponent: Timer;
+
+	// Waiting state
+	let waitingForOpponent = $state(false);
+	let opponentProgress = $state(0);
+	let pollInterval: ReturnType<typeof setInterval> | null = null;
 
 	const totalRounds = $derived(roundPictures.length || 5);
 	const currentPicture = $derived(roundPictures[currentRound - 1]);
@@ -48,6 +57,33 @@
 		loading = false;
 		roundStartTime = Date.now();
 	});
+
+	onDestroy(() => {
+		if (pollInterval) {
+			clearInterval(pollInterval);
+		}
+	});
+
+	// Start polling for opponent status
+	function startPolling() {
+		pollInterval = setInterval(async () => {
+			const status = await getMatchStatus(tournamentId, matchId);
+			if (!status) return;
+
+			// Determine which player is the opponent
+			const isPlayer1 = status.player1Id === userStore.username;
+			opponentProgress = isPlayer1 ? status.player2Progress : status.player1Progress;
+			const opponentFinished = isPlayer1 ? status.player2Finished : status.player1Finished;
+
+			// If match is completed, go to results
+			if (status.status === 'COMPLETED' || opponentFinished) {
+				if (pollInterval) {
+					clearInterval(pollInterval);
+				}
+				goto(`/tournament/results/${matchId}?tournamentId=${tournamentId}`);
+			}
+		}, 2000); // Poll every 2 seconds
+	}
 
 	function handleMapSelect(coords: { lat: number; lng: number }) {
 		guessCoords = coords;
@@ -88,22 +124,21 @@
 				timerComponent.start();
 			}
 		} else {
-			// Match complete - go to results
-			const totalScore = roundScores.reduce((a, b) => a + b, 0);
-			// Store results in sessionStorage for the results page
-			sessionStorage.setItem(
-				'tournamentMatchResults',
-				JSON.stringify({
-					matchId,
-					opponent: opponentName,
-					yourScores: roundScores,
-					yourTotal: totalScore,
-					// Opponent scores will come from backend
-					opponentScores: [],
-					opponentTotal: 0
-				})
-			);
+			// All rounds complete - check if opponent is done
+			await checkMatchCompletion();
+		}
+	}
+
+	async function checkMatchCompletion() {
+		const status = await getMatchStatus(tournamentId, matchId);
+
+		if (status?.status === 'COMPLETED') {
+			// Both players done - go to results
 			goto(`/tournament/results/${matchId}?tournamentId=${tournamentId}`);
+		} else {
+			// Wait for opponent
+			waitingForOpponent = true;
+			startPolling();
 		}
 	}
 
@@ -112,32 +147,27 @@
 		if (guessCoords) {
 			submitRound();
 		} else {
-			// No guess - give 0 points for this round
-			roundScores = [...roundScores, 0];
+			// No guess - submit with default location (0,0) to record 0 points
+			submitRoundWithNoGuess();
+		}
+	}
 
-			if (currentRound < totalRounds) {
-				currentRound++;
-				roundStartTime = Date.now();
-				if (timerComponent) {
-					timerComponent.reset();
-					timerComponent.start();
-				}
-			} else {
-				// Match complete
-				const totalScore = roundScores.reduce((a, b) => a + b, 0);
-				sessionStorage.setItem(
-					'tournamentMatchResults',
-					JSON.stringify({
-						matchId,
-						opponent: opponentName,
-						yourScores: roundScores,
-						yourTotal: totalScore,
-						opponentScores: [],
-						opponentTotal: 0
-					})
-				);
-				goto(`/tournament/results/${matchId}?tournamentId=${tournamentId}`);
+	async function submitRoundWithNoGuess() {
+		// Submit with 0,0 coords which will give 0 points due to distance
+		const result = await submitMatchRound(tournamentId, matchId, currentRound, 0, 0, timeLimit);
+
+		roundScores = [...roundScores, result?.points || 0];
+
+		if (currentRound < totalRounds) {
+			currentRound++;
+			guessCoords = null;
+			roundStartTime = Date.now();
+			if (timerComponent) {
+				timerComponent.reset();
+				timerComponent.start();
 			}
+		} else {
+			await checkMatchCompletion();
 		}
 	}
 </script>
@@ -153,6 +183,44 @@
 			<Card class="text-center py-16">
 				<div class="text-4xl mb-4">⏳</div>
 				<p class="font-bold">Loading match...</p>
+			</Card>
+		</div>
+	{:else if waitingForOpponent}
+		<!-- Waiting for opponent -->
+		<div class="flex items-center justify-center min-h-screen">
+			<Card class="text-center py-16 px-12 max-w-md">
+				<div class="text-6xl mb-6 animate-bounce">⏳</div>
+				<h2 class="text-2xl font-black mb-4">Waiting for Opponent</h2>
+				<p class="opacity-80 mb-6">
+					You've finished all rounds! Waiting for your opponent to complete their rounds.
+				</p>
+
+				<!-- Your score summary -->
+				<div class="brutal-border bg-lime p-4 mb-6">
+					<div class="text-sm font-bold uppercase opacity-60 mb-1">Your Total Score</div>
+					<div class="text-3xl font-black">
+						{roundScores.reduce((a, b) => a + b, 0).toLocaleString()}
+					</div>
+				</div>
+
+				<!-- Opponent progress -->
+				<div class="brutal-border bg-gray/30 p-4 mb-6">
+					<div class="text-sm font-bold uppercase opacity-60 mb-2">Opponent Progress</div>
+					<div class="flex justify-center gap-2">
+						{#each Array(totalRounds) as _, i}
+							<div
+								class="w-4 h-4 brutal-border {i < opponentProgress ? 'bg-orange' : 'bg-white'}"
+							></div>
+						{/each}
+					</div>
+					<div class="text-sm mt-2 opacity-60">
+						{opponentProgress} / {totalRounds} rounds complete
+					</div>
+				</div>
+
+				<p class="text-sm opacity-60">
+					Results will appear automatically when your opponent finishes.
+				</p>
 			</Card>
 		</div>
 	{:else}

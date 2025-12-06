@@ -6,35 +6,36 @@
 	import Card from '$lib/components/Card.svelte';
 	import Header from '$lib/components/Header.svelte';
 	import { userStore } from '$lib/stores/user.svelte';
+	import { getMatchResults, type MatchResults } from '$lib/api/tournament';
 
-	const matchId = $page.params.matchId;
+	const matchId = parseInt($page.params.matchId);
 
 	// Get tournamentId from URL
 	const urlParams = new URLSearchParams(window.location.search);
 	const tournamentId = parseInt(urlParams.get('tournamentId') || '0');
 
-	// Results loaded from sessionStorage (set by match play page)
-	let results = $state<{
-		matchId: string;
-		opponent: string;
-		yourScores: number[];
-		yourTotal: number;
-		opponentScores: number[];
-		opponentTotal: number;
-	} | null>(null);
+	let loading = $state(true);
+	let results = $state<MatchResults | null>(null);
 
-	onMount(() => {
-		const stored = sessionStorage.getItem('tournamentMatchResults');
-		if (stored) {
-			results = JSON.parse(stored);
+	onMount(async () => {
+		if (!tournamentId || !matchId) {
+			goto('/tournament');
+			return;
+		}
+
+		// Fetch results from API
+		const data = await getMatchResults(tournamentId, matchId);
+		if (data) {
+			results = data;
 		} else {
-			// No results - redirect back
+			// Failed to load - redirect back
 			goto('/tournament');
 		}
+		loading = false;
 	});
 
-	const isWinner = $derived(results ? results.yourTotal > results.opponentTotal : false);
-	const isDraw = $derived(results ? results.yourTotal === results.opponentTotal : false);
+	const isWinner = $derived(results ? results.you.total > results.opponent.total : false);
+	const isDraw = $derived(results ? results.you.total === results.opponent.total : false);
 
 	const resultEmoji = $derived.by(() => {
 		if (isDraw) return '🤝';
@@ -57,6 +58,11 @@
 		if (isWinner) return 'Congratulations! You advance to the next round.';
 		return "Don't give up! You've been moved to the losers bracket.";
 	});
+
+	// Pad scores arrays to same length for display
+	const maxRounds = $derived(
+		results ? Math.max(results.you.scores.length, results.opponent.scores.length) : 0
+	);
 </script>
 
 <svelte:head>
@@ -68,7 +74,7 @@
 
 	<main class="pt-24 pb-12 px-4">
 		<div class="container-brutal max-w-4xl mx-auto">
-			{#if results}
+			{#if results && !loading}
 				<!-- Result Header -->
 				<div class="text-center mb-10">
 					<div class="text-6xl mb-4">{resultEmoji}</div>
@@ -86,8 +92,8 @@
 					<!-- Your Score -->
 					<Card variant={isWinner ? 'lime' : 'default'} class="text-center py-6">
 						<div class="text-sm font-bold uppercase opacity-60 mb-2">You</div>
-						<div class="text-lg font-black mb-1">{userStore.user?.username ?? 'You'}</div>
-						<div class="text-4xl font-black">{results.yourTotal.toLocaleString()}</div>
+						<div class="text-lg font-black mb-1">{results.you.displayName}</div>
+						<div class="text-4xl font-black">{results.you.total.toLocaleString()}</div>
 					</Card>
 
 					<!-- VS -->
@@ -98,8 +104,8 @@
 					<!-- Opponent Score -->
 					<Card variant={!isWinner && !isDraw ? 'lime' : 'default'} class="text-center py-6">
 						<div class="text-sm font-bold uppercase opacity-60 mb-2">Opponent</div>
-						<div class="text-lg font-black mb-1">{results.opponent}</div>
-						<div class="text-4xl font-black">{results.opponentTotal.toLocaleString()}</div>
+						<div class="text-lg font-black mb-1">{results.opponent.displayName}</div>
+						<div class="text-4xl font-black">{results.opponent.total.toLocaleString()}</div>
 					</Card>
 				</div>
 
@@ -107,8 +113,8 @@
 				<Card class="mb-10">
 					<h2 class="text-xl font-black uppercase mb-6">Round-by-Round</h2>
 					<div class="space-y-3">
-						{#each results.yourScores as yourScore, i}
-							{@const opponentScore = results.opponentScores[i]}
+						{#each results.you.scores as yourScore, i}
+							{@const opponentScore = results.opponent.scores[i] ?? 0}
 							{@const roundWinner =
 								yourScore > opponentScore ? 'you' : yourScore < opponentScore ? 'opponent' : 'draw'}
 							<div
@@ -135,7 +141,7 @@
 											? 'text-magenta font-black'
 											: ''} w-20"
 									>
-										<div class="text-xs opacity-60 uppercase">{results.opponent}</div>
+										<div class="text-xs opacity-60 uppercase">{results.opponent.displayName}</div>
 										<div class="text-lg font-bold tabular-nums">
 											{opponentScore.toLocaleString()}
 										</div>
@@ -162,13 +168,13 @@
 						<div class="flex items-center gap-8">
 							<div class="text-right w-20">
 								<div class="text-2xl font-black {isWinner ? 'text-lime' : ''}">
-									{results.yourTotal.toLocaleString()}
+									{results.you.total.toLocaleString()}
 								</div>
 							</div>
 							<div class="text-black/30 font-bold">vs</div>
 							<div class="text-left w-20">
 								<div class="text-2xl font-black {!isWinner && !isDraw ? 'text-magenta' : ''}">
-									{results.opponentTotal.toLocaleString()}
+									{results.opponent.total.toLocaleString()}
 								</div>
 							</div>
 							<div class="w-8"></div>
@@ -199,7 +205,7 @@
 			{:else}
 				<!-- Loading state -->
 				<Card class="text-center py-16">
-					<div class="text-4xl mb-4">⏳</div>
+					<div class="text-4xl mb-4 animate-bounce">⏳</div>
 					<p class="font-bold">Loading results...</p>
 				</Card>
 			{/if}

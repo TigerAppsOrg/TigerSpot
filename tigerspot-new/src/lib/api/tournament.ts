@@ -152,3 +152,72 @@ export async function submitMatchRound(
 	}
 	return data ?? null;
 }
+
+export interface MatchResults {
+	matchId: number;
+	tournamentId: number;
+	status: string;
+	you: {
+		username: string;
+		displayName: string;
+		scores: number[];
+		total: number;
+		finished: boolean;
+	};
+	opponent: {
+		username: string;
+		displayName: string;
+		scores: number[];
+		total: number;
+		finished: boolean;
+	};
+	winnerId: string | null;
+	completedAt: string | null;
+}
+
+export interface MatchStatus {
+	matchId: number;
+	status: string;
+	player1Id: string | null;
+	player2Id: string | null;
+	player1Progress: number;
+	player2Progress: number;
+	totalRounds: number;
+	player1Finished: boolean;
+	player2Finished: boolean;
+	winnerId: string | null;
+}
+
+/**
+ * Get match results with both players' scores
+ */
+export async function getMatchResults(
+	tournamentId: number,
+	matchId: number
+): Promise<MatchResults | null> {
+	const { data, error } = await api.get<MatchResults>(
+		`/api/tournament/${tournamentId}/match/${matchId}/results`
+	);
+	if (error) {
+		console.error('Failed to get match results:', error);
+		return null;
+	}
+	return data ?? null;
+}
+
+/**
+ * Get match status (for polling while waiting)
+ */
+export async function getMatchStatus(
+	tournamentId: number,
+	matchId: number
+): Promise<MatchStatus | null> {
+	const { data, error } = await api.get<MatchStatus>(
+		`/api/tournament/${tournamentId}/match/${matchId}/status`
+	);
+	if (error) {
+		console.error('Failed to get match status:', error);
+		return null;
+	}
+	return data ?? null;
+}
