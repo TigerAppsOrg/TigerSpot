@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
 	import type L from 'leaflet';
-	import { PRINCETON_BOUNDS } from '$lib/data/dummy';
 
 	interface Props {
 		readonly?: boolean;
@@ -29,6 +28,17 @@
 	let leaflet: typeof L;
 	let isInitialized = $state(false);
 	let lastClickedCoords: { lat: number; lng: number } | null = null;
+
+	const PRINCETON_BOUNDS = {
+		center: { lng: -74.6551, lat: 40.3431 },
+		zoom: 16,
+		minZoom: 14,
+		maxZoom: 19,
+		bounds: [
+			[-74.68, 40.32], // Southwest
+			[-74.63, 40.36] // Northeast
+		] as [[number, number], [number, number]]
+	};
 
 	onMount(async () => {
 		// Dynamic import to avoid SSR issues (Leaflet uses window)

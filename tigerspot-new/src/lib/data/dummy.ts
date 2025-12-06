@@ -317,15 +317,3 @@ export const dummyCurrentMatch = {
 	opponent: 'nassau_nav',
 	pictures: dummyPictures // Use the same 5 pictures for the match
 };
-
-// Princeton campus bounds for map
-export const PRINCETON_BOUNDS = {
-	center: { lng: -74.6551, lat: 40.3431 },
-	zoom: 16,
-	minZoom: 14,
-	maxZoom: 19,
-	bounds: [
-		[-74.68, 40.32], // Southwest
-		[-74.63, 40.36] // Northeast
-	] as [[number, number], [number, number]]
-};
