@@ -12,36 +12,31 @@ export const dummyPictures = [
 		id: 1,
 		imageUrl: 'https://images.unsplash.com/photo-1562774053-701939374585?w=800&h=600&fit=crop',
 		latitude: 40.3431,
-		longitude: -74.6551,
-		placeName: 'Nassau Hall'
+		longitude: -74.6551
 	},
 	{
 		id: 2,
 		imageUrl: 'https://images.unsplash.com/photo-1541339907198-e08756dedf3f?w=800&h=600&fit=crop',
 		latitude: 40.3465,
-		longitude: -74.6576,
-		placeName: 'Firestone Library'
+		longitude: -74.6576
 	},
 	{
 		id: 3,
 		imageUrl: 'https://images.unsplash.com/photo-1568792923760-d70635a89fdc?w=800&h=600&fit=crop',
 		latitude: 40.3485,
-		longitude: -74.6593,
-		placeName: 'Princeton Chapel'
+		longitude: -74.6593
 	},
 	{
 		id: 4,
 		imageUrl: 'https://images.unsplash.com/photo-1607237138185-eedd9c632b0b?w=800&h=600&fit=crop',
 		latitude: 40.3441,
-		longitude: -74.6603,
-		placeName: 'East Pyne Hall'
+		longitude: -74.6603
 	},
 	{
 		id: 5,
 		imageUrl: 'https://images.unsplash.com/photo-1580537659466-0a9bfa916a54?w=800&h=600&fit=crop',
 		latitude: 40.3502,
-		longitude: -74.6512,
-		placeName: 'Frist Campus Center'
+		longitude: -74.6512
 	}
 ];
 

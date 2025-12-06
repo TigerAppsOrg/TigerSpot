@@ -70,8 +70,7 @@ export class AdminController {
 					req.file.originalname
 				);
 
-				// Get additional fields from request body
-				const placeName = req.body.placeName || 'Unknown Location';
+				// Get difficulty from request body
 				const difficulty = (req.body.difficulty as Difficulty) || 'MEDIUM';
 
 				// Create database record
@@ -80,7 +79,6 @@ export class AdminController {
 					imageUrl: uploadResult.url,
 					latitude,
 					longitude,
-					placeName,
 					difficulty,
 					uploadedBy: req.user!.username
 				});
@@ -115,13 +113,12 @@ export class AdminController {
 			return;
 		}
 
-		const { latitude, longitude, placeName, difficulty } = req.body;
+		const { latitude, longitude, difficulty } = req.body;
 
 		try {
 			const picture = await this.imageService.updatePicture(id, {
 				latitude,
 				longitude,
-				placeName,
 				difficulty
 			});
 

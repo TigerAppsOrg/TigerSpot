@@ -361,8 +361,7 @@ export class TournamentService {
 			distance: Math.round(distance),
 			points,
 			actualLat: templateRound.picture.latitude,
-			actualLng: templateRound.picture.longitude,
-			placeName: templateRound.picture.placeName
+			actualLng: templateRound.picture.longitude
 		};
 	}
 

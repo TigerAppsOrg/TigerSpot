@@ -100,7 +100,7 @@
 	{#if preview}
 		<!-- Preview Mode -->
 		<div class="relative brutal-border overflow-hidden">
-			<img src={preview} alt="Preview" class="w-full h-64 object-cover" />
+			<img src={preview} alt="Preview" class="w-full h-auto" />
 			<button
 				type="button"
 				onclick={handleClear}

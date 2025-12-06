@@ -13,7 +13,6 @@ export interface GameResult {
 	actualLng: number;
 	distance: number;
 	points: number;
-	placeName: string;
 }
 
 export interface DailyStatus {

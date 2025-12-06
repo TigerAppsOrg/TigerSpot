@@ -47,7 +47,6 @@ CREATE TABLE "Picture" (
     "imageUrl" VARCHAR(1024) NOT NULL,
     "latitude" DOUBLE PRECISION NOT NULL,
     "longitude" DOUBLE PRECISION NOT NULL,
-    "placeName" VARCHAR(255) NOT NULL,
     "difficulty" "Difficulty" NOT NULL DEFAULT 'MEDIUM',
     "uploadedBy" VARCHAR(255),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,

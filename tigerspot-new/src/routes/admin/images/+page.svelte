@@ -11,7 +11,6 @@
 	// Form state
 	let imagePreview = $state<string | null>(null);
 	let selectedFile = $state<File | null>(null);
-	let placeName = $state('');
 	let difficulty = $state<'EASY' | 'MEDIUM' | 'HARD'>('MEDIUM');
 	let coordinates = $state<{ lat: number; lng: number } | null>(null);
 	let hasGpsMetadata = $state(false);
@@ -80,44 +79,30 @@
 			alert('Please select an image');
 			return;
 		}
-		if (!placeName.trim()) {
-			alert('Please enter a place name');
+		if (!coordinates) {
+			alert('Please set the location on the map');
 			return;
 		}
 
 		uploading = true;
 
-		// Upload to server - it handles EXIF extraction and Cloudinary upload
-		// Pass coordinates if manually set on map (used as fallback if no EXIF GPS)
-		const result = await uploadImage(
-			selectedFile,
-			placeName.trim(),
-			difficulty,
-			coordinates ?? undefined
-		);
+		// Upload to server - it handles Cloudinary upload
+		const result = await uploadImage(selectedFile, difficulty, coordinates);
 
 		if (result?.success && result.picture) {
 			// Add to local list
 			images = [result.picture, ...images];
 
 			// Reset form
-			if (imagePreview) {
-				URL.revokeObjectURL(imagePreview);
-			}
 			imagePreview = null;
 			selectedFile = null;
-			placeName = '';
 			difficulty = 'MEDIUM';
 			coordinates = null;
+			hasGpsMetadata = false;
 
 			// Show success
 			showSuccess = true;
 			setTimeout(() => (showSuccess = false), 3000);
-		} else if (result?.requiresCoordinates) {
-			// No GPS in EXIF and no manual coordinates provided
-			alert(
-				'No GPS data found in image. Please click on the map to set coordinates, then try again.'
-			);
 		} else {
 			alert(result?.message || 'Failed to upload image');
 		}
@@ -163,23 +148,16 @@
 
 			<!-- Right Column: Location -->
 			<div>
-				{#if selectedFile && hasGpsMetadata}
-					<!-- GPS extracted from image -->
-					<label class="block text-sm font-bold uppercase mb-2"
-						>Location (from image metadata)</label
-					>
-					<div class="brutal-border bg-lime/20 p-6 h-64 flex flex-col items-center justify-center">
-						<div class="text-4xl mb-3">📍</div>
-						<p class="font-bold text-lg mb-2">GPS Found!</p>
-						{#if coordinates}
-							<p class="font-mono text-sm opacity-80">
-								{coordinates.lat.toFixed(6)}, {coordinates.lng.toFixed(6)}
-							</p>
-						{/if}
-					</div>
-				{:else if selectedFile && !hasGpsMetadata}
-					<!-- No GPS - show map for manual selection -->
-					<label class="block text-sm font-bold uppercase mb-2">Location (click on map)</label>
+				{#if selectedFile}
+					<label class="block text-sm font-bold uppercase mb-2">
+						Location {hasGpsMetadata ? '(from GPS - click to adjust)' : '(click on map)'}
+					</label>
+					{#if hasGpsMetadata}
+						<div class="brutal-border bg-lime/20 px-3 py-2 mb-2 flex items-center gap-2">
+							<span class="text-lg">📍</span>
+							<span class="font-bold text-sm">GPS Found!</span>
+						</div>
+					{/if}
 					<div class="brutal-border overflow-hidden h-64">
 						<Map onSelect={handleMapSelect} guessLocation={coordinates ?? undefined} />
 					</div>
@@ -199,37 +177,22 @@
 			</div>
 		</div>
 
-		<!-- Details Row -->
-		<div class="grid md:grid-cols-2 gap-6 mt-6">
-			<!-- Place Name -->
-			<div>
-				<label for="placeName" class="block text-sm font-bold uppercase mb-2">Place Name</label>
-				<input
-					id="placeName"
-					type="text"
-					bind:value={placeName}
-					placeholder="e.g., Nassau Hall"
-					class="w-full brutal-border px-4 py-3 font-bold focus:outline-none focus:ring-4 focus:ring-orange/50"
-				/>
-			</div>
-
-			<!-- Difficulty -->
-			<div>
-				<label class="block text-sm font-bold uppercase mb-2">Difficulty</label>
-				<div class="grid grid-cols-3 gap-2">
-					{#each difficultyOptions as option}
-						<button
-							type="button"
-							onclick={() => (difficulty = option.value as 'EASY' | 'MEDIUM' | 'HARD')}
-							class="brutal-border px-4 py-3 font-bold text-sm uppercase transition-all {difficulty ===
-							option.value
-								? `${option.color} text-white`
-								: 'bg-white hover:bg-gray/50'}"
-						>
-							{option.label}
-						</button>
-					{/each}
-				</div>
+		<!-- Difficulty -->
+		<div class="mt-6">
+			<label class="block text-sm font-bold uppercase mb-2">Difficulty</label>
+			<div class="grid grid-cols-3 gap-2 max-w-md">
+				{#each difficultyOptions as option}
+					<button
+						type="button"
+						onclick={() => (difficulty = option.value as 'EASY' | 'MEDIUM' | 'HARD')}
+						class="brutal-border px-4 py-3 font-bold text-sm uppercase transition-all {difficulty ===
+						option.value
+							? `${option.color} text-white`
+							: 'bg-white hover:bg-gray/50'}"
+					>
+						{option.label}
+					</button>
+				{/each}
 			</div>
 		</div>
 
@@ -258,8 +221,8 @@
 			{#each images as image}
 				<Card class="p-0 overflow-hidden">
 					<!-- Image -->
-					<div class="relative h-40 bg-gray">
-						<img src={image.imageUrl} alt={image.placeName} class="w-full h-full object-cover" />
+					<div class="relative bg-gray">
+						<img src={image.imageUrl} alt="Location" class="w-full h-auto" />
 						<span
 							class="absolute top-2 right-2 brutal-border px-2 py-0.5 text-xs font-bold uppercase text-white {difficultyColors[
 								image.difficulty
@@ -271,9 +234,8 @@
 
 					<!-- Info -->
 					<div class="p-4">
-						<h4 class="font-black mb-1">{image.placeName}</h4>
 						<p class="text-xs font-mono opacity-60 mb-3">
-							{image.latitude.toFixed(4)}, {image.longitude.toFixed(4)}
+							{image.latitude.toFixed(6)}, {image.longitude.toFixed(6)}
 						</p>
 						<Button variant="magenta" onclick={() => handleDelete(image.id)} class="w-full">
 							Delete

@@ -77,7 +77,6 @@ export class DailyService {
 			actualLng: number;
 			distance: number;
 			points: number;
-			placeName: string;
 		};
 	}> {
 		// Check if already played today
@@ -166,8 +165,7 @@ export class DailyService {
 				actualLat: picture.latitude,
 				actualLng: picture.longitude,
 				distance: Math.round(distance),
-				points,
-				placeName: picture.placeName
+				points
 			}
 		};
 	}
@@ -228,7 +226,6 @@ export class DailyService {
 			actualLng: dailyChallenge.picture.longitude,
 			distance: userDaily.distance,
 			points: userDaily.points,
-			placeName: dailyChallenge.picture.placeName,
 			currentStreak: userDaily.currentStreak
 		};
 	}

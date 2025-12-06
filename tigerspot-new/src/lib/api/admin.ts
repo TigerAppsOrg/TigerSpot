@@ -6,7 +6,6 @@ export interface Picture {
 	imageUrl: string;
 	latitude: number;
 	longitude: number;
-	placeName: string;
 	difficulty: 'EASY' | 'MEDIUM' | 'HARD';
 	createdAt: string;
 	uploader?: {
@@ -88,13 +87,11 @@ export async function listImages(): Promise<Picture[]> {
  */
 export async function uploadImage(
 	file: File,
-	placeName?: string,
 	difficulty?: 'EASY' | 'MEDIUM' | 'HARD',
 	coordinates?: { lat: number; lng: number }
 ): Promise<ImageUploadResult | null> {
 	const formData = new FormData();
 	formData.append('image', file);
-	if (placeName) formData.append('placeName', placeName);
 	if (difficulty) formData.append('difficulty', difficulty);
 	if (coordinates) {
 		formData.append('latitude', coordinates.lat.toString());
@@ -120,7 +117,6 @@ export async function updateImage(
 	updates: {
 		latitude?: number;
 		longitude?: number;
-		placeName?: string;
 		difficulty?: 'EASY' | 'MEDIUM' | 'HARD';
 	}
 ): Promise<Picture | null> {

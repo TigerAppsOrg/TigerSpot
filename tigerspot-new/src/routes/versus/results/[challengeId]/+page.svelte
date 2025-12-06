@@ -98,7 +98,6 @@
 								/>
 								<div class="flex-1">
 									<div class="font-black text-lg mb-1">Round {result.round}</div>
-									<div class="text-sm opacity-60">{result.picture.placeName}</div>
 								</div>
 							</div>
 

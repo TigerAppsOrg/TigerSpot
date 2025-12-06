@@ -57,7 +57,6 @@ model Picture {
   imageUrl     String     @db.VarChar(1024) // Full Cloudinary URL
   latitude     Float
   longitude    Float
-  placeName    String     @db.VarChar(255)
   difficulty   Difficulty @default(MEDIUM)
   uploadedBy   String?    @db.VarChar(255)
   createdAt    DateTime   @default(now())

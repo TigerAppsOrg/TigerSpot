@@ -239,7 +239,6 @@ export class ImageService {
 		imageUrl: string;
 		latitude: number;
 		longitude: number;
-		placeName: string;
 		difficulty: Difficulty;
 		uploadedBy: string;
 	}) {
@@ -256,7 +255,6 @@ export class ImageService {
 		data: {
 			latitude?: number;
 			longitude?: number;
-			placeName?: string;
 			difficulty?: Difficulty;
 		}
 	) {
@@ -309,7 +307,6 @@ export class ImageService {
 				imageUrl: true,
 				latitude: true,
 				longitude: true,
-				placeName: true,
 				difficulty: true
 			}
 		});

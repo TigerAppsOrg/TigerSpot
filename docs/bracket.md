@@ -26,6 +26,7 @@ Participants are shuffled randomly, then placed using standard bracket seeding:
 ### 2. Bracket Size
 
 The bracket is padded to the next power of 2:
+
 - 5-8 players → 8-slot bracket
 - 9-16 players → 16-slot bracket
 - etc.
@@ -35,6 +36,7 @@ Empty slots become **byes** (automatic wins for the opponent).
 ### 3. Match Structure
 
 Each match has:
+
 - `player1Id`, `player2Id`: The two competitors
 - `winnerId`: Set when match completes
 - `nextWinnerMatchId`: Where the winner advances to
@@ -150,6 +152,7 @@ PENDING → READY → COMPLETED
 ## Grand Final
 
 The grand final receives:
+
 - Winner from winners bracket final (0 losses)
 - Winner from losers bracket final (1 loss)
 
@@ -159,13 +162,13 @@ When the grand final completes, the tournament status is set to COMPLETED and th
 
 Key fields in `TournamentMatch`:
 
-| Field | Description |
-|-------|-------------|
-| `bracketType` | WINNERS, LOSERS, or GRAND_FINAL |
-| `roundNumber` | Round within the bracket type (1-indexed) |
-| `matchNumber` | Match position within the round (1-indexed) |
-| `nextWinnerMatchId` | FK to next match for winner |
-| `nextLoserMatchId` | FK to losers bracket match (winners only) |
+| Field               | Description                                 |
+| ------------------- | ------------------------------------------- |
+| `bracketType`       | WINNERS, LOSERS, or GRAND_FINAL             |
+| `roundNumber`       | Round within the bracket type (1-indexed)   |
+| `matchNumber`       | Match position within the round (1-indexed) |
+| `nextWinnerMatchId` | FK to next match for winner                 |
+| `nextLoserMatchId`  | FK to losers bracket match (winners only)   |
 
 ## Example: 7-Player Tournament
 

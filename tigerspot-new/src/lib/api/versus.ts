@@ -36,7 +36,6 @@ export interface RoundResult {
 	points: number;
 	actualLat: number;
 	actualLng: number;
-	placeName: string;
 }
 
 /**
