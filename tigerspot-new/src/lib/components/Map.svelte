@@ -9,6 +9,7 @@
 		guessLocation?: { lat: number; lng: number };
 		onSelect?: (coords: { lat: number; lng: number }) => void;
 		class?: string;
+		centerOnGuess?: boolean;
 	}
 
 	let {
@@ -16,7 +17,8 @@
 		showActualLocation,
 		guessLocation,
 		onSelect,
-		class: className = ''
+		class: className = '',
+		centerOnGuess = false
 	}: Props = $props();
 
 	let mapContainer: HTMLDivElement;
@@ -25,6 +27,8 @@
 	let actualMarker: L.Marker | null = null;
 	let connectingLine: L.Polyline | null = null;
 	let leaflet: typeof L;
+	let isInitialized = $state(false);
+	let lastClickedCoords: { lat: number; lng: number } | null = null;
 
 	onMount(async () => {
 		// Dynamic import to avoid SSR issues (Leaflet uses window)
@@ -74,6 +78,7 @@
 		if (!readonly) {
 			map.on('click', (e: L.LeafletMouseEvent) => {
 				const { lat, lng } = e.latlng;
+				lastClickedCoords = { lat, lng };
 				setGuessMarker(lat, lng, guessIcon);
 				onSelect?.({ lat, lng });
 			});
@@ -82,12 +87,34 @@
 		// Show existing markers if provided
 		if (guessLocation) {
 			setGuessMarker(guessLocation.lat, guessLocation.lng, guessIcon);
+			// Center map on GPS coordinates (only if centerOnGuess is enabled)
+			if (centerOnGuess) {
+				map.setView([guessLocation.lat, guessLocation.lng], 16);
+			}
 		}
 		if (showActualLocation) {
 			setActualMarker(showActualLocation.lat, showActualLocation.lng, actualIcon);
 			if (guessLocation) {
 				drawLine(guessLocation, showActualLocation);
 			}
+		}
+
+		isInitialized = true;
+	});
+
+	// Watch for changes to guessLocation and center the map (only if centerOnGuess is enabled)
+	$effect(() => {
+		if (isInitialized && guessLocation && map && centerOnGuess) {
+			// Don't auto-center if this change came from the user clicking on the map
+			const isFromUserClick =
+				lastClickedCoords &&
+				Math.abs(lastClickedCoords.lat - guessLocation.lat) < 0.000001 &&
+				Math.abs(lastClickedCoords.lng - guessLocation.lng) < 0.000001;
+
+			if (!isFromUserClick) {
+				map.flyTo([guessLocation.lat, guessLocation.lng], 16, { duration: 0.5 });
+			}
+			lastClickedCoords = null;
 		}
 	});
 

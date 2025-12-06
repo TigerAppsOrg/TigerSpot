@@ -159,7 +159,11 @@
 						</div>
 					{/if}
 					<div class="brutal-border overflow-hidden h-64">
-						<Map onSelect={handleMapSelect} guessLocation={coordinates ?? undefined} />
+						<Map
+							onSelect={handleMapSelect}
+							guessLocation={coordinates ?? undefined}
+							centerOnGuess={true}
+						/>
 					</div>
 					{#if coordinates}
 						<p class="mt-2 text-sm font-mono opacity-60">
