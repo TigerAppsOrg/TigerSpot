@@ -17,4 +17,7 @@ router.post('/submit', gameController.submit);
 // Check if user has played today
 router.get('/status', gameController.getStatus);
 
+// Get today's result (for users who have already played)
+router.get('/result', gameController.getTodayResult);
+
 export default router;

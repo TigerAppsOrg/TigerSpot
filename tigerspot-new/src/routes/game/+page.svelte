@@ -5,7 +5,12 @@
 	import Card from '$lib/components/Card.svelte';
 	import Timer from '$lib/components/Timer.svelte';
 	import Map from '$lib/components/Map.svelte';
-	import { getTodayChallenge, submitDailyGuess, type DailyChallenge } from '$lib/api/game';
+	import {
+		getTodayChallenge,
+		submitDailyGuess,
+		getTodayResult,
+		type DailyChallenge
+	} from '$lib/api/game';
 	import { gameResults } from '$lib/stores/gameResults';
 	import { userStore } from '$lib/stores/user.svelte';
 
@@ -25,9 +30,22 @@
 		challenge = await getTodayChallenge();
 		loading = false;
 
-		// If already played today, redirect to results
+		// If already played today, redirect to results page
 		if (challenge?.hasPlayed) {
-			goto('/menu');
+			const result = await getTodayResult();
+			if (result) {
+				gameResults.set({
+					guessLat: result.guessLat,
+					guessLng: result.guessLng,
+					actualLat: result.actualLat,
+					actualLng: result.actualLng,
+					distance: result.distance,
+					points: result.points
+				});
+				goto('/game/results');
+			} else {
+				goto('/menu');
+			}
 		}
 	});
 

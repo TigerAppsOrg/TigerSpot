@@ -11,6 +11,7 @@
 		description,
 		stat,
 		cta = 'Play',
+		completed = false,
 		class: className = ''
 	}: {
 		href: string;
@@ -20,13 +21,21 @@
 		description: string;
 		stat: string;
 		cta?: string;
+		completed?: boolean;
 		class?: string;
 	} = $props();
 </script>
 
 <a {href} class="block group {className}">
 	<Card {variant} hoverable class="h-full">
-		<div class="flex flex-col h-full">
+		<div class="flex flex-col h-full relative">
+			{#if completed}
+				<div
+					class="absolute -top-2 -right-2 bg-lime brutal-border px-3 py-1 text-xs font-black uppercase flex items-center gap-1"
+				>
+					<span>Done</span>
+				</div>
+			{/if}
 			<div class="text-5xl mb-6">{emoji}</div>
 			<h3 class="text-2xl font-black mb-4">{title}</h3>
 			<p class="opacity-80 mb-6 grow leading-relaxed">
@@ -39,7 +48,7 @@
 					{stat}
 				</span>
 				<span class="font-bold uppercase text-sm group-hover:translate-x-2 transition-transform">
-					{cta} →
+					{completed ? 'View Results' : cta} →
 				</span>
 			</div>
 		</div>

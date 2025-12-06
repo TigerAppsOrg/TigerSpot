@@ -9,10 +9,12 @@
 	import { getMyStats, type UserStats } from '$lib/api/leaderboard';
 	import { getChallenges } from '$lib/api/versus';
 	import { listTournaments } from '$lib/api/tournament';
+	import { getDailyStatus } from '$lib/api/game';
 
 	let stats = $state<UserStats | null>(null);
 	let pendingChallenges = $state(0);
 	let activeTournaments = $state(0);
+	let dailyCompleted = $state(false);
 
 	onMount(async () => {
 		// Redirect to login if not authenticated
@@ -33,6 +35,10 @@
 		activeTournaments = tournaments.filter(
 			(t) => t.status === 'open' || t.status === 'in_progress'
 		).length;
+
+		// Check if daily challenge is completed
+		const dailyStatus = await getDailyStatus();
+		dailyCompleted = dailyStatus?.hasPlayed ?? false;
 	});
 </script>
 
@@ -69,6 +75,7 @@
 					title="Daily Challenge"
 					description="One new location every day. How close can you get?"
 					stat="{stats?.currentStreak ?? 0} day streak"
+					completed={dailyCompleted}
 				/>
 
 				<GameModeCard

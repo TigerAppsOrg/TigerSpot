@@ -68,4 +68,21 @@ export class GameController {
 			res.status(500).json({ error: 'Failed to get status' });
 		}
 	};
+
+	/**
+	 * Get today's result for a user who has already played
+	 */
+	getTodayResult = async (req: AuthRequest, res: Response) => {
+		try {
+			const result = await this.dailyService.getTodayResult(req.user!.username);
+			if (!result) {
+				res.status(404).json({ error: 'No result found for today' });
+				return;
+			}
+			res.json(result);
+		} catch (error) {
+			console.error('Error getting today result:', error);
+			res.status(500).json({ error: 'Failed to get result' });
+		}
+	};
 }

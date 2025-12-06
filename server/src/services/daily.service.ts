@@ -133,7 +133,9 @@ export class DailyService {
 				played: true,
 				lastPlayed: new Date(),
 				currentStreak: newStreak,
-				maxStreak: userDaily ? Math.max(userDaily.maxStreak, newStreak) : newStreak
+				maxStreak: userDaily ? Math.max(userDaily.maxStreak, newStreak) : newStreak,
+				guessLat,
+				guessLng
 			},
 			create: {
 				username,
@@ -142,7 +144,9 @@ export class DailyService {
 				played: true,
 				lastPlayed: new Date(),
 				currentStreak: 1,
-				maxStreak: 1
+				maxStreak: 1,
+				guessLat,
+				guessLng
 			}
 		});
 
@@ -184,6 +188,48 @@ export class DailyService {
 			maxStreak: userDaily?.maxStreak || 0,
 			todayPoints: hasPlayed ? userDaily?.points : null,
 			todayDistance: hasPlayed ? userDaily?.distance : null
+		};
+	}
+
+	/**
+	 * Get today's result for a user who has already played
+	 */
+	async getTodayResult(username: string) {
+		const hasPlayed = await this.hasPlayedToday(username);
+		if (!hasPlayed) {
+			return null;
+		}
+
+		const userDaily = await prisma.userDaily.findUnique({
+			where: { username }
+		});
+
+		if (!userDaily || userDaily.guessLat === null || userDaily.guessLng === null) {
+			return null;
+		}
+
+		// Get today's challenge for actual location
+		const today = new Date();
+		today.setHours(0, 0, 0, 0);
+
+		const dailyChallenge = await prisma.dailyChallenge.findUnique({
+			where: { date: today },
+			include: { picture: true }
+		});
+
+		if (!dailyChallenge) {
+			return null;
+		}
+
+		return {
+			guessLat: userDaily.guessLat,
+			guessLng: userDaily.guessLng,
+			actualLat: dailyChallenge.picture.latitude,
+			actualLng: dailyChallenge.picture.longitude,
+			distance: userDaily.distance,
+			points: userDaily.points,
+			placeName: dailyChallenge.picture.placeName,
+			currentStreak: userDaily.currentStreak
 		};
 	}
 }

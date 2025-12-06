@@ -43,6 +43,8 @@ model UserDaily {
   lastPlayed    DateTime?
   currentStreak Int       @default(0)
   maxStreak     Int       @default(0)
+  guessLat      Float?    // Store last guess for results display
+  guessLng      Float?
 
   user User @relation(fields: [username], references: [username], onDelete: Cascade)
 }

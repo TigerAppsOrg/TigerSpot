@@ -65,3 +65,19 @@ export async function getDailyStatus(): Promise<DailyStatus | null> {
 	}
 	return data ?? null;
 }
+
+export interface TodayResult extends GameResult {
+	currentStreak: number;
+}
+
+/**
+ * Get today's result for a user who has already played
+ */
+export async function getTodayResult(): Promise<TodayResult | null> {
+	const { data, error } = await api.get<TodayResult>('/api/game/result');
+	if (error) {
+		console.error('Failed to get today result:', error);
+		return null;
+	}
+	return data ?? null;
+}
