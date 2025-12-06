@@ -5,11 +5,13 @@
 	import Button from '$lib/components/Button.svelte';
 	import Card from '$lib/components/Card.svelte';
 	import Header from '$lib/components/Header.svelte';
-	import { dummyActiveTournament, dummyUser } from '$lib/data/dummy';
+	import { userStore } from '$lib/stores/user.svelte';
 
 	const matchId = $page.params.matchId;
-	const tournament = dummyActiveTournament;
-	const currentUser = dummyUser;
+
+	// Get tournamentId from URL
+	const urlParams = new URLSearchParams(window.location.search);
+	const tournamentId = parseInt(urlParams.get('tournamentId') || '0');
 
 	// Results loaded from sessionStorage (set by match play page)
 	let results = $state<{
@@ -84,7 +86,7 @@
 					<!-- Your Score -->
 					<Card variant={isWinner ? 'lime' : 'default'} class="text-center py-6">
 						<div class="text-sm font-bold uppercase opacity-60 mb-2">You</div>
-						<div class="text-lg font-black mb-1">{currentUser.username}</div>
+						<div class="text-lg font-black mb-1">{userStore.user?.username ?? 'You'}</div>
 						<div class="text-4xl font-black">{results.yourTotal.toLocaleString()}</div>
 					</Card>
 
@@ -190,7 +192,7 @@
 
 				<!-- Actions -->
 				<div class="flex flex-wrap justify-center gap-4">
-					<Button variant="lime" href={`/tournament/${tournament.id}`}>View Bracket</Button>
+					<Button variant="lime" href={`/tournament/${tournamentId}`}>View Bracket</Button>
 					<Button variant="white" href="/tournament">Tournament Home</Button>
 					<Button variant="cyan" href="/menu">Main Menu</Button>
 				</div>

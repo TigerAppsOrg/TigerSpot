@@ -1,23 +1,25 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
+	import { onMount } from 'svelte';
 	import Button from '$lib/components/Button.svelte';
 	import Card from '$lib/components/Card.svelte';
 	import Timer from '$lib/components/Timer.svelte';
 	import Map from '$lib/components/Map.svelte';
-	import {
-		dummyCurrentMatch,
-		dummyActiveTournament,
-		dummyPictures,
-		dummyUser
-	} from '$lib/data/dummy';
-	import { calculateDistance, calculateVersusPoints } from '$lib/utils/distance';
+	import { getMatchRounds, submitMatchRound, type RoundPicture } from '$lib/api/tournament';
+	import { userStore } from '$lib/stores/user.svelte';
 
-	const matchId = $page.params.matchId;
-	const tournament = dummyActiveTournament;
-	const match = dummyCurrentMatch;
-	const pictures = dummyPictures;
-	const currentUser = dummyUser;
+	const matchId = parseInt($page.params.matchId);
+
+	// Extract tournamentId from URL search params or state
+	// For now, we'll need to get this from somewhere - let's check the page URL
+	const urlParams = new URLSearchParams(window.location.search);
+	const tournamentId = parseInt(urlParams.get('tournamentId') || '0');
+
+	let roundPictures = $state<RoundPicture[]>([]);
+	let loading = $state(true);
+	let timeLimit = $state(120); // Default 2 minutes
+	let opponentName = $state('Opponent');
 
 	// Game state
 	let currentRound = $state(1);
@@ -26,30 +28,54 @@
 	let roundScores = $state<number[]>([]);
 	let timerComponent: Timer;
 
-	const totalRounds = tournament.roundsPerMatch;
-	const currentPicture = $derived(pictures[(currentRound - 1) % pictures.length]);
+	const totalRounds = $derived(roundPictures.length || 5);
+	const currentPicture = $derived(roundPictures[currentRound - 1]);
+
+	// Load match rounds
+	onMount(async () => {
+		if (!tournamentId || !matchId) {
+			goto('/tournament');
+			return;
+		}
+
+		const rounds = await getMatchRounds(tournamentId, matchId);
+		if (rounds.length === 0) {
+			goto('/tournament');
+			return;
+		}
+
+		roundPictures = rounds;
+		loading = false;
+		roundStartTime = Date.now();
+	});
 
 	function handleMapSelect(coords: { lat: number; lng: number }) {
 		guessCoords = coords;
 	}
 
-	function submitRound() {
-		if (!guessCoords) return;
+	async function submitRound() {
+		if (!guessCoords || !currentPicture) return;
 
 		// Calculate time taken
 		const timeTaken = Math.floor((Date.now() - roundStartTime) / 1000);
 
-		// Calculate score
-		const distance = calculateDistance(
+		// Submit round to API
+		const result = await submitMatchRound(
+			tournamentId,
+			matchId,
+			currentRound,
 			guessCoords.lat,
 			guessCoords.lng,
-			currentPicture.latitude,
-			currentPicture.longitude
+			timeTaken
 		);
-		const points = calculateVersusPoints(distance, timeTaken);
+
+		if (!result) {
+			alert('Failed to submit guess. Please try again.');
+			return;
+		}
 
 		// Store round score
-		roundScores = [...roundScores, points];
+		roundScores = [...roundScores, result.points];
 
 		if (currentRound < totalRounds) {
 			// Move to next round
@@ -69,15 +95,15 @@
 				'tournamentMatchResults',
 				JSON.stringify({
 					matchId,
-					opponent: match.opponent,
+					opponent: opponentName,
 					yourScores: roundScores,
 					yourTotal: totalScore,
-					// Simulate opponent scores (in real app, this would come from backend)
-					opponentScores: roundScores.map(() => Math.floor(Math.random() * 800) + 200),
-					opponentTotal: Math.floor(Math.random() * 4000) + 2000
+					// Opponent scores will come from backend
+					opponentScores: [],
+					opponentTotal: 0
 				})
 			);
-			goto(`/tournament/results/${matchId}`);
+			goto(`/tournament/results/${matchId}?tournamentId=${tournamentId}`);
 		}
 	}
 
@@ -103,128 +129,134 @@
 					'tournamentMatchResults',
 					JSON.stringify({
 						matchId,
-						opponent: match.opponent,
+						opponent: opponentName,
 						yourScores: roundScores,
 						yourTotal: totalScore,
-						opponentScores: roundScores.map(() => Math.floor(Math.random() * 800) + 200),
-						opponentTotal: Math.floor(Math.random() * 4000) + 2000
+						opponentScores: [],
+						opponentTotal: 0
 					})
 				);
-				goto(`/tournament/results/${matchId}`);
+				goto(`/tournament/results/${matchId}?tournamentId=${tournamentId}`);
 			}
 		}
 	}
 </script>
 
 <svelte:head>
-	<title>Match vs {match.opponent} - TigerSpot</title>
+	<title>Tournament Match - TigerSpot</title>
 </svelte:head>
 
 <div class="min-h-screen bg-primary flex flex-col">
-	<!-- Fixed Header -->
-	<header class="header-fixed bg-white brutal-border">
-		<div class="w-full h-full px-4 md:px-6 flex items-center justify-between">
-			<div class="flex items-center gap-4">
-				<a href="/menu">
-					<img src="/logo.png" alt="TigerSpot Logo" class="inline-block w-32 md:w-40" />
-				</a>
-				<div class="brutal-border bg-magenta text-white px-3 py-1 font-bold text-sm">
-					vs {match.opponent}
-				</div>
-			</div>
-
-			<div class="flex items-center gap-4">
-				<!-- Round indicator -->
-				<div class="hidden md:flex items-center gap-2">
-					{#each Array(totalRounds) as _, i}
-						<div
-							class="w-3 h-3 brutal-border {i < currentRound - 1
-								? 'bg-lime'
-								: i === currentRound - 1
-									? 'bg-orange'
-									: 'bg-gray'}"
-						></div>
-					{/each}
-				</div>
-				<div class="brutal-border bg-white px-3 py-1 font-black text-sm">
-					Round {currentRound}/{totalRounds}
-				</div>
-				<Timer
-					bind:this={timerComponent}
-					duration={tournament.timeLimit}
-					onComplete={handleTimeUp}
-				/>
-			</div>
+	{#if loading || !currentPicture}
+		<!-- Loading state -->
+		<div class="flex items-center justify-center min-h-screen">
+			<Card class="text-center py-16">
+				<div class="text-4xl mb-4">⏳</div>
+				<p class="font-bold">Loading match...</p>
+			</Card>
 		</div>
-	</header>
+	{:else}
+		<!-- Fixed Header -->
+		<header class="header-fixed bg-white brutal-border">
+			<div class="w-full h-full px-4 md:px-6 flex items-center justify-between">
+				<div class="flex items-center gap-4">
+					<a href="/menu">
+						<img src="/logo.png" alt="TigerSpot Logo" class="inline-block w-32 md:w-40" />
+					</a>
+					<div class="brutal-border bg-magenta text-white px-3 py-1 font-bold text-sm">
+						vs {opponentName}
+					</div>
+				</div>
 
-	<!-- Game Area with padding for fixed header -->
-	<main class="grow pt-24 pb-6 px-4 flex items-center justify-center">
-		<div class="w-full max-w-6xl flex flex-col lg:flex-row gap-6">
-			<!-- Image Panel -->
-			<div class="lg:w-1/2 flex flex-col">
-				<Card class="grow flex flex-col p-0 overflow-hidden">
-					<div class="p-5 flex items-center justify-between">
-						<h2 class="text-xl font-black uppercase">Where is this?</h2>
-						<div class="text-sm font-bold text-black/60">
-							Round {currentRound} of {totalRounds}
+				<div class="flex items-center gap-4">
+					<!-- Round indicator -->
+					<div class="hidden md:flex items-center gap-2">
+						{#each Array(totalRounds) as _, i}
+							<div
+								class="w-3 h-3 brutal-border {i < currentRound - 1
+									? 'bg-lime'
+									: i === currentRound - 1
+										? 'bg-orange'
+										: 'bg-gray'}"
+							></div>
+						{/each}
+					</div>
+					<div class="brutal-border bg-white px-3 py-1 font-black text-sm">
+						Round {currentRound}/{totalRounds}
+					</div>
+					<Timer bind:this={timerComponent} duration={timeLimit} onComplete={handleTimeUp} />
+				</div>
+			</div>
+		</header>
+
+		<!-- Game Area with padding for fixed header -->
+		<main class="grow pt-24 pb-6 px-4 flex items-center justify-center">
+			<div class="w-full max-w-6xl flex flex-col lg:flex-row gap-6">
+				<!-- Image Panel -->
+				<div class="lg:w-1/2 flex flex-col">
+					<Card class="grow flex flex-col p-0 overflow-hidden">
+						<div class="p-5 flex items-center justify-between">
+							<h2 class="text-xl font-black uppercase">Where is this?</h2>
+							<div class="text-sm font-bold text-black/60">
+								Round {currentRound} of {totalRounds}
+							</div>
 						</div>
-					</div>
-					<div class="relative grow bg-gray w-full block min-h-[300px]">
-						<img
-							src={currentPicture.imageUrl}
-							alt="Where is this location?"
-							class="w-full h-full object-cover"
-						/>
-					</div>
-				</Card>
-			</div>
-
-			<!-- Map Panel -->
-			<div class="lg:w-1/2 flex flex-col">
-				<Card class="grow flex flex-col p-0 overflow-hidden">
-					<div class="p-5 flex items-center justify-between">
-						<h2 class="text-xl font-black uppercase">Click to guess</h2>
-						<span
-							class="brutal-border brutal-shadow-sm bg-lime px-4 py-2 text-sm font-bold {guessCoords
-								? 'visible'
-								: 'invisible'}"
-						>
-							Location selected
-						</span>
-					</div>
-					<div class="grow min-h-[300px] lg:min-h-0">
-						<Map onSelect={handleMapSelect} guessLocation={guessCoords ?? undefined} />
-					</div>
-				</Card>
-			</div>
-		</div>
-	</main>
-
-	<!-- Submit Bar -->
-	<footer class="bg-white brutal-border border-b-0 border-x-0 flex-shrink-0 py-5">
-		<div class="container-brutal flex items-center justify-between">
-			<div class="flex items-center gap-4">
-				<!-- Round scores -->
-				<div class="hidden md:flex items-center gap-2 text-sm">
-					<span class="font-bold opacity-60">Scores:</span>
-					{#each roundScores as score, i}
-						<span class="brutal-border bg-lime px-2 py-0.5 font-bold text-xs">
-							R{i + 1}: {score}
-						</span>
-					{/each}
+						<div class="relative grow bg-gray w-full block min-h-[300px]">
+							<img
+								src={currentPicture.imageUrl}
+								alt="Where is this location?"
+								class="w-full h-full object-cover"
+							/>
+						</div>
+					</Card>
 				</div>
-				{#if guessCoords}
-					<span class="font-mono font-bold text-sm opacity-60">
-						{guessCoords.lat.toFixed(4)}, {guessCoords.lng.toFixed(4)}
-					</span>
-				{:else}
-					<span class="text-sm opacity-60">Click on the map to place your guess</span>
-				{/if}
+
+				<!-- Map Panel -->
+				<div class="lg:w-1/2 flex flex-col">
+					<Card class="grow flex flex-col p-0 overflow-hidden">
+						<div class="p-5 flex items-center justify-between">
+							<h2 class="text-xl font-black uppercase">Click to guess</h2>
+							<span
+								class="brutal-border brutal-shadow-sm bg-lime px-4 py-2 text-sm font-bold {guessCoords
+									? 'visible'
+									: 'invisible'}"
+							>
+								Location selected
+							</span>
+						</div>
+						<div class="grow min-h-[300px] lg:min-h-0">
+							<Map onSelect={handleMapSelect} guessLocation={guessCoords ?? undefined} />
+						</div>
+					</Card>
+				</div>
 			</div>
-			<Button variant="black" size="lg" disabled={!guessCoords} onclick={submitRound}>
-				{currentRound < totalRounds ? 'Next Round' : 'Finish Match'}
-			</Button>
-		</div>
-	</footer>
+		</main>
+
+		<!-- Submit Bar -->
+		<footer class="bg-white brutal-border border-b-0 border-x-0 flex-shrink-0 py-5">
+			<div class="container-brutal flex items-center justify-between">
+				<div class="flex items-center gap-4">
+					<!-- Round scores -->
+					<div class="hidden md:flex items-center gap-2 text-sm">
+						<span class="font-bold opacity-60">Scores:</span>
+						{#each roundScores as score, i}
+							<span class="brutal-border bg-lime px-2 py-0.5 font-bold text-xs">
+								R{i + 1}: {score}
+							</span>
+						{/each}
+					</div>
+					{#if guessCoords}
+						<span class="font-mono font-bold text-sm opacity-60">
+							{guessCoords.lat.toFixed(4)}, {guessCoords.lng.toFixed(4)}
+						</span>
+					{:else}
+						<span class="text-sm opacity-60">Click on the map to place your guess</span>
+					{/if}
+				</div>
+				<Button variant="black" size="lg" disabled={!guessCoords} onclick={submitRound}>
+					{currentRound < totalRounds ? 'Next Round' : 'Finish Match'}
+				</Button>
+			</div>
+		</footer>
+	{/if}
 </div>

@@ -5,6 +5,7 @@
 	import Card from '$lib/components/Card.svelte';
 	import ImageUpload from '$lib/components/ImageUpload.svelte';
 	import Map from '$lib/components/Map.svelte';
+	import GamePreviewModal from '$lib/components/GamePreviewModal.svelte';
 	import { listImages, uploadImage, deleteImage, type Picture } from '$lib/api/admin';
 	import { userStore } from '$lib/stores/user.svelte';
 
@@ -20,6 +21,8 @@
 
 	// Images from API
 	let images = $state<Picture[]>([]);
+	let previewImage = $state<string | null>(null);
+	let previewCoords = $state<{ lat: number; lng: number } | null>(null);
 
 	const difficultyOptions = [
 		{ value: 'EASY', label: 'Easy', color: 'bg-lime' },
@@ -117,6 +120,16 @@
 				images = images.filter((img) => img.id !== id);
 			}
 		}
+	}
+
+	function showPreview(imageUrl: string, coords: { lat: number; lng: number }) {
+		previewImage = imageUrl;
+		previewCoords = coords;
+	}
+
+	function closePreview() {
+		previewImage = null;
+		previewCoords = null;
 	}
 </script>
 
@@ -241,12 +254,30 @@
 						<p class="text-xs font-mono opacity-60 mb-3">
 							{image.latitude.toFixed(6)}, {image.longitude.toFixed(6)}
 						</p>
-						<Button variant="magenta" onclick={() => handleDelete(image.id)} class="w-full">
-							Delete
-						</Button>
+						<div class="flex gap-2 flex-wrap">
+							<Button
+								variant="cyan"
+								onclick={() =>
+									showPreview(image.imageUrl, {
+										lat: image.latitude,
+										lng: image.longitude
+									})}
+								class="flex-1"
+							>
+								Preview
+							</Button>
+							<Button variant="magenta" onclick={() => handleDelete(image.id)} class="flex-1">
+								Delete
+							</Button>
+						</div>
 					</div>
 				</Card>
 			{/each}
 		</div>
 	{/if}
 </div>
+
+<!-- Preview Modal -->
+{#if previewImage && previewCoords}
+	<GamePreviewModal imageUrl={previewImage} coords={previewCoords} onClose={closePreview} />
+{/if}

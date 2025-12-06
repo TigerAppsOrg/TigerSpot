@@ -3,9 +3,9 @@
 	import Button from '$lib/components/Button.svelte';
 	import Card from '$lib/components/Card.svelte';
 	import Map from '$lib/components/Map.svelte';
-	import { dummyUser } from '$lib/data/dummy';
 	import { formatDistance } from '$lib/utils/distance';
 	import { gameResults } from '$lib/stores/gameResults';
+	import { userStore } from '$lib/stores/user.svelte';
 	import { get } from 'svelte/store';
 
 	// Get results from store
@@ -34,8 +34,9 @@
 		return { text: 'TRY AGAIN', color: 'magenta', emoji: '🤔' };
 	});
 
-	// Dummy streak increment
-	const newStreak = dummyUser.currentStreak + 1;
+	// Get current streak from user data
+	const currentStreak = userStore.user?.currentStreak ?? 0;
+	const newStreak = currentStreak;
 </script>
 
 <svelte:head>
@@ -129,7 +130,9 @@
 						</div>
 						<div class="flex justify-between items-center py-2">
 							<span class="opacity-60 text-sm">All-Time Points</span>
-							<span class="font-black">{(dummyUser.totalPoints + points).toLocaleString()}</span>
+							<span class="font-black"
+								>{((userStore.user?.totalPoints ?? 0) + points).toLocaleString()}</span
+							>
 						</div>
 					</div>
 				</Card>
