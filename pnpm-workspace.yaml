@@ -1,3 +1,9 @@
 packages:
-  - 'server'
-  - 'tigerspot-new'
+  - server
+  - tigerspot-new
+
+onlyBuiltDependencies:
+  - '@prisma/client'
+  - '@prisma/engines'
+  - esbuild
+  - prisma
