@@ -1,4 +1,4 @@
-import { getCurrentUser, login, logout, type User } from '$lib/api/auth.js';
+import { getCurrentUser, login, logout, devLogin, type User } from '$lib/api/auth.js';
 
 // User state using Svelte 5 runes pattern with a class
 class UserStore {
@@ -64,6 +64,25 @@ class UserStore {
 			return false;
 		}
 		return true;
+	}
+
+	/**
+	 * [DEV ONLY] Login as a specific user for testing
+	 */
+	async devLoginAs(username: string): Promise<boolean> {
+		this.loading = true;
+		try {
+			const success = await devLogin(username);
+			if (success) {
+				await this.load();
+				return true;
+			}
+			return false;
+		} catch {
+			return false;
+		} finally {
+			this.loading = false;
+		}
 	}
 }
 

@@ -42,3 +42,37 @@ export async function isAuthenticated(): Promise<boolean> {
 	const user = await getCurrentUser();
 	return user !== null;
 }
+
+// ============ DEV-ONLY FUNCTIONS ============
+
+export interface DevUser {
+	username: string;
+	displayName: string;
+	classYear?: string;
+	isAdmin?: boolean;
+	totalPoints?: number;
+}
+
+export interface DevUsersResponse {
+	existingUsers: DevUser[];
+	availableTestUsers: DevUser[];
+}
+
+/**
+ * [DEV ONLY] Get list of users for dev testing
+ */
+export async function getDevUsers(): Promise<DevUsersResponse | null> {
+	const { data, error } = await api.get<DevUsersResponse>('/api/auth/dev/users');
+	if (error) {
+		return null;
+	}
+	return data ?? null;
+}
+
+/**
+ * [DEV ONLY] Login as a specific user (creates if doesn't exist)
+ */
+export async function devLogin(username: string): Promise<boolean> {
+	const { error } = await api.post(`/api/auth/dev/login/${username}`, {});
+	return !error;
+}

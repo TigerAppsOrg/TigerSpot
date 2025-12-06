@@ -1,11 +1,20 @@
 <script lang="ts">
+	import { dev } from '$app/environment';
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import Button from '$lib/components/Button.svelte';
 	import Card from '$lib/components/Card.svelte';
 	import { userStore } from '$lib/stores/user.svelte';
+	import { getDevUsers, type DevUser } from '$lib/api/auth';
 
 	let mounted = $state(false);
+	let showDevPanel = $state(false);
+	let devUsers = $state<{ existing: DevUser[]; available: DevUser[] }>({
+		existing: [],
+		available: []
+	});
+	let customUsername = $state('');
+	let devLoading = $state(false);
 
 	onMount(async () => {
 		mounted = true;
@@ -14,10 +23,27 @@
 		if (userStore.isAuthenticated) {
 			goto('/menu');
 		}
+
+		// Load dev users if in dev mode
+		if (dev) {
+			const users = await getDevUsers();
+			if (users) {
+				devUsers = { existing: users.existingUsers, available: users.availableTestUsers };
+			}
+		}
 	});
 
 	function handleLogin() {
 		userStore.login();
+	}
+
+	async function handleDevLogin(username: string) {
+		devLoading = true;
+		const success = await userStore.devLoginAs(username);
+		devLoading = false;
+		if (success) {
+			goto('/menu');
+		}
 	}
 </script>
 
@@ -83,6 +109,73 @@
 				<Button variant="black" size="lg" onclick={handleLogin} class="text-xl">
 					Login with Princeton CAS
 				</Button>
+
+				{#if dev}
+					<div class="mt-6 pt-6 border-t-4 border-black">
+						<button
+							onclick={() => (showDevPanel = !showDevPanel)}
+							class="text-sm font-bold uppercase opacity-60 hover:opacity-100 transition-opacity"
+						>
+							{showDevPanel ? 'Hide' : 'Show'} Dev Login
+						</button>
+
+						{#if showDevPanel}
+							<div class="mt-4 text-left">
+								<p class="text-xs font-bold uppercase mb-2 opacity-60">Quick Login (Test Users)</p>
+								<div class="flex flex-wrap gap-2 mb-4">
+									{#each devUsers.available as user}
+										<button
+											onclick={() => handleDevLogin(user.username)}
+											disabled={devLoading}
+											class="brutal-border px-3 py-1.5 text-sm font-bold hover:bg-cyan transition-colors disabled:opacity-50
+												{user.isAdmin ? 'bg-magenta text-white' : 'bg-white'}"
+										>
+											{user.displayName}
+											{#if user.isAdmin}
+												<span class="text-xs">(Admin)</span>
+											{/if}
+										</button>
+									{/each}
+								</div>
+
+								{#if devUsers.existing.length > 0}
+									<p class="text-xs font-bold uppercase mb-2 opacity-60">Existing Users</p>
+									<div class="flex flex-wrap gap-2 mb-4">
+										{#each devUsers.existing as user}
+											<button
+												onclick={() => handleDevLogin(user.username)}
+												disabled={devLoading}
+												class="brutal-border px-3 py-1.5 text-sm font-bold bg-white hover:bg-lime transition-colors disabled:opacity-50"
+											>
+												{user.displayName}
+												{#if user.isAdmin}
+													<span class="text-xs text-magenta">(Admin)</span>
+												{/if}
+											</button>
+										{/each}
+									</div>
+								{/if}
+
+								<p class="text-xs font-bold uppercase mb-2 opacity-60">Custom Username</p>
+								<div class="flex gap-2">
+									<input
+										type="text"
+										bind:value={customUsername}
+										placeholder="Enter username..."
+										class="brutal-border px-3 py-1.5 text-sm font-bold flex-1"
+									/>
+									<button
+										onclick={() => customUsername && handleDevLogin(customUsername)}
+										disabled={devLoading || !customUsername}
+										class="brutal-border px-4 py-1.5 text-sm font-bold bg-cyan hover:bg-cyan/80 transition-colors disabled:opacity-50"
+									>
+										Login
+									</button>
+								</div>
+							</div>
+						{/if}
+					</div>
+				{/if}
 			</Card>
 		</div>
 
