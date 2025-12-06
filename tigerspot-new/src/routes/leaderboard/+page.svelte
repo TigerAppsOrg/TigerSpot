@@ -10,6 +10,7 @@
 		type UserStats
 	} from '$lib/api/leaderboard';
 	import { userStore } from '$lib/stores/user.svelte';
+	import Button from '$lib/components/Button.svelte';
 
 	let activeTab = $state<'daily' | 'alltime'>('alltime');
 	let leaderboard = $state<LeaderboardEntry[]>([]);
@@ -79,6 +80,17 @@
 					<div class="text-4xl mb-4">🐯</div>
 					<p class="font-bold">Loading leaderboard...</p>
 				</div>
+			{:else if leaderboard.length === 0}
+				<Card class="max-w-2xl mx-auto">
+					<div class="text-center py-12">
+						<div class="text-4xl mb-4">😿</div>
+						<p class="font-bold">No one has played today :(</p>
+
+						<Button variant="cyan" size="md" href="/game" class="mt-6">
+							Be the first to play!
+						</Button>
+					</div>
+				</Card>
 			{:else}
 				<!-- Top 3 Podium -->
 				<div class="flex justify-center items-end gap-6 mb-12 max-w-2xl mx-auto">
