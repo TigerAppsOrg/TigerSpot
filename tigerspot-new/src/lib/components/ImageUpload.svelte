@@ -1,6 +1,12 @@
 <script lang="ts">
+	import { processImagePreview } from '$lib/api/admin';
+
 	interface Props {
-		onSelect?: (file: File, previewUrl: string) => void;
+		onSelect?: (
+			file: File,
+			previewUrl: string,
+			gpsCoords: { lat: number; lng: number } | null
+		) => void;
 		preview?: string | null;
 		onClear?: () => void;
 		class?: string;
@@ -9,7 +15,7 @@
 	let { onSelect, preview = null, onClear, class: className = '' }: Props = $props();
 
 	let isDragging = $state(false);
-	let converting = $state(false);
+	let processing = $state(false);
 	let fileInput: HTMLInputElement;
 
 	function handleDragOver(e: DragEvent) {
@@ -58,55 +64,24 @@
 			return;
 		}
 
-		let previewUrl: string;
+		processing = true;
 
-		// Convert HEIC to JPEG for browser preview
-		if (isHeic(file)) {
-			converting = true;
-			try {
-				// Dynamic import to avoid SSR issues (heic2any uses window)
-				const heic2any = (await import('heic2any')).default;
-				const blob = await heic2any({
-					blob: file,
-					toType: 'image/jpeg',
-					quality: 0.8
-				});
-				// heic2any can return an array of blobs for multi-image HEIC
-				const resultBlob = Array.isArray(blob) ? blob[0] : blob;
-				previewUrl = URL.createObjectURL(resultBlob);
-			} catch (error) {
-				console.error('HEIC conversion error:', error);
-				// Fallback: try with lower quality or skip preview
-				try {
-					const heic2any = (await import('heic2any')).default;
-					const blob = await heic2any({
-						blob: file,
-						toType: 'image/jpeg',
-						quality: 0.5
-					});
-					const resultBlob = Array.isArray(blob) ? blob[0] : blob;
-					previewUrl = URL.createObjectURL(resultBlob);
-				} catch (retryError) {
-					console.error('HEIC retry failed:', retryError);
-					// Last resort: proceed without preview, server can still process it
-					converting = false;
-					const proceed = confirm(
-						'Could not generate preview for this HEIC image, but you can still upload it. Continue?'
-					);
-					if (proceed) {
-						// Use a placeholder and let server handle the actual image
-						onSelect?.(file, '/placeholder-heic.svg');
-					}
-					return;
-				}
+		try {
+			// Send to server for processing (handles all formats including HEIC)
+			const result = await processImagePreview(file);
+
+			if (result) {
+				// Server returns base64 preview and GPS coordinates
+				onSelect?.(file, result.previewBase64, result.gpsCoords);
+			} else {
+				alert('Failed to process image. Please try again.');
 			}
-			converting = false;
-		} else {
-			previewUrl = URL.createObjectURL(file);
+		} catch (error) {
+			console.error('Image processing error:', error);
+			alert('Failed to process image. Please try again.');
+		} finally {
+			processing = false;
 		}
-
-		// Pass the original file (for upload) and preview URL (for display)
-		onSelect?.(file, previewUrl);
 	}
 
 	function handleClear() {
@@ -134,12 +109,12 @@
 				×
 			</button>
 		</div>
-	{:else if converting}
-		<!-- Converting HEIC -->
+	{:else if processing}
+		<!-- Processing image -->
 		<div class="brutal-border border-dashed border-4 p-8 text-center bg-cyan/10 border-cyan">
 			<div class="text-5xl mb-4 animate-pulse">🔄</div>
-			<p class="font-bold text-lg mb-2">Converting HEIC...</p>
-			<p class="text-black/60 text-sm">This may take a moment</p>
+			<p class="font-bold text-lg mb-2">Processing image...</p>
+			<p class="text-black/60 text-sm">Extracting GPS data and generating preview</p>
 		</div>
 	{:else}
 		<!-- Upload Zone -->

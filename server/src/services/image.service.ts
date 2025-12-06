@@ -1,4 +1,6 @@
 import exifr from 'exifr';
+import sharp from 'sharp';
+import heicConvert from 'heic-convert';
 import { v2 as cloudinary } from 'cloudinary';
 import { Readable } from 'stream';
 import { config } from '../config/index.js';
@@ -24,6 +26,81 @@ interface UploadResult {
 }
 
 export class ImageService {
+	/**
+	 * Check if buffer is HEIC/HEIF format by checking magic bytes
+	 */
+	isHeic(buffer: Buffer): boolean {
+		// HEIC/HEIF files have 'ftyp' at offset 4 and 'heic', 'heix', 'hevc', 'hevx', 'mif1', 'msf1' at offset 8
+		if (buffer.length < 12) return false;
+		const ftyp = buffer.toString('ascii', 4, 8);
+		if (ftyp !== 'ftyp') return false;
+		const brand = buffer.toString('ascii', 8, 12);
+		return ['heic', 'heix', 'hevc', 'hevx', 'mif1', 'msf1'].includes(brand);
+	}
+
+	/**
+	 * Convert HEIC to JPEG buffer
+	 */
+	async convertHeicToJpeg(buffer: Buffer): Promise<Buffer> {
+		const outputBuffer = await heicConvert({
+			buffer: buffer,
+			format: 'JPEG',
+			quality: 0.85
+		});
+		return Buffer.from(outputBuffer);
+	}
+
+	/**
+	 * Convert any image format to JPEG
+	 * Handles HEIC separately, then uses sharp for other formats
+	 */
+	async convertToJpeg(buffer: Buffer): Promise<Buffer> {
+		// Handle HEIC separately since sharp doesn't support it
+		if (this.isHeic(buffer)) {
+			return this.convertHeicToJpeg(buffer);
+		}
+		return sharp(buffer).jpeg({ quality: 85 }).toBuffer();
+	}
+
+	/**
+	 * Process image to generate preview and extract GPS
+	 * Returns base64 JPEG preview and GPS coordinates
+	 */
+	async processImagePreview(buffer: Buffer): Promise<{
+		previewBase64: string;
+		gpsCoords: { lat: number; lng: number } | null;
+	}> {
+		// Extract GPS from original buffer (before conversion)
+		const exifData = await this.extractExifData(buffer);
+		const gpsCoords =
+			exifData.latitude !== null && exifData.longitude !== null
+				? { lat: exifData.latitude, lng: exifData.longitude }
+				: null;
+
+		let previewBuffer: Buffer;
+
+		// Handle HEIC separately since sharp doesn't support it
+		if (this.isHeic(buffer)) {
+			// Convert HEIC to JPEG first
+			const jpegBuffer = await this.convertHeicToJpeg(buffer);
+			// Then resize with sharp
+			previewBuffer = await sharp(jpegBuffer)
+				.resize(800, 600, { fit: 'inside', withoutEnlargement: true })
+				.jpeg({ quality: 80 })
+				.toBuffer();
+		} else {
+			// For other formats, sharp can handle directly
+			previewBuffer = await sharp(buffer)
+				.resize(800, 600, { fit: 'inside', withoutEnlargement: true })
+				.jpeg({ quality: 80 })
+				.toBuffer();
+		}
+
+		const previewBase64 = `data:image/jpeg;base64,${previewBuffer.toString('base64')}`;
+
+		return { previewBase64, gpsCoords };
+	}
+
 	/**
 	 * Extract GPS coordinates from image EXIF data
 	 * Supports JPEG, PNG, HEIC/HEIF, and other formats
@@ -74,8 +151,12 @@ export class ImageService {
 
 	/**
 	 * Upload image buffer to Cloudinary
+	 * Converts to JPEG first for consistent format
 	 */
 	async uploadToCloudinary(buffer: Buffer, filename: string): Promise<UploadResult> {
+		// Convert to JPEG first (handles HEIC, PNG, etc.)
+		const jpegBuffer = await this.convertToJpeg(buffer);
+
 		return new Promise((resolve, reject) => {
 			const uploadStream = cloudinary.uploader.upload_stream(
 				{
@@ -96,9 +177,9 @@ export class ImageService {
 				}
 			);
 
-			// Convert buffer to readable stream and pipe to Cloudinary
+			// Convert JPEG buffer to readable stream and pipe to Cloudinary
 			const readableStream = new Readable();
-			readableStream.push(buffer);
+			readableStream.push(jpegBuffer);
 			readableStream.push(null);
 			readableStream.pipe(uploadStream);
 		});

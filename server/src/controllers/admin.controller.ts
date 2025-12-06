@@ -23,6 +23,25 @@ export class AdminController {
 	};
 
 	/**
+	 * Process image to generate preview and extract GPS
+	 * Used for client-side preview of HEIC and other formats
+	 */
+	processImagePreview = async (req: AuthRequest, res: Response) => {
+		if (!req.file) {
+			res.status(400).json({ error: 'No image file provided' });
+			return;
+		}
+
+		try {
+			const result = await this.imageService.processImagePreview(req.file.buffer);
+			res.json(result);
+		} catch (error) {
+			console.error('Error processing image preview:', error);
+			res.status(500).json({ error: 'Failed to process image' });
+		}
+	};
+
+	/**
 	 * Upload image with EXIF extraction
 	 */
 	uploadImage = async (req: AuthRequest, res: Response) => {

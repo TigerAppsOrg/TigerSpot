@@ -14,6 +14,7 @@
 	let placeName = $state('');
 	let difficulty = $state<'EASY' | 'MEDIUM' | 'HARD'>('MEDIUM');
 	let coordinates = $state<{ lat: number; lng: number } | null>(null);
+	let hasGpsMetadata = $state(false);
 	let showSuccess = $state(false);
 	let uploading = $state(false);
 	let loading = $state(true);
@@ -43,9 +44,21 @@
 		loading = false;
 	});
 
-	function handleFileSelect(file: File, previewUrl: string) {
+	function handleFileSelect(
+		file: File,
+		previewUrl: string,
+		gpsCoords: { lat: number; lng: number } | null
+	) {
 		selectedFile = file;
 		imagePreview = previewUrl;
+
+		if (gpsCoords) {
+			coordinates = gpsCoords;
+			hasGpsMetadata = true;
+		} else {
+			coordinates = null;
+			hasGpsMetadata = false;
+		}
 	}
 
 	function handleClearImage() {
@@ -54,6 +67,8 @@
 		}
 		imagePreview = null;
 		selectedFile = null;
+		coordinates = null;
+		hasGpsMetadata = false;
 	}
 
 	function handleMapSelect(coords: { lat: number; lng: number }) {
@@ -148,14 +163,38 @@
 
 			<!-- Right Column: Location -->
 			<div>
-				<label class="block text-sm font-bold uppercase mb-2">Location (click on map)</label>
-				<div class="brutal-border overflow-hidden h-64">
-					<Map onSelect={handleMapSelect} guessLocation={coordinates ?? undefined} />
-				</div>
-				{#if coordinates}
-					<p class="mt-2 text-sm font-mono opacity-60">
-						{coordinates.lat.toFixed(6)}, {coordinates.lng.toFixed(6)}
-					</p>
+				{#if selectedFile && hasGpsMetadata}
+					<!-- GPS extracted from image -->
+					<label class="block text-sm font-bold uppercase mb-2"
+						>Location (from image metadata)</label
+					>
+					<div class="brutal-border bg-lime/20 p-6 h-64 flex flex-col items-center justify-center">
+						<div class="text-4xl mb-3">📍</div>
+						<p class="font-bold text-lg mb-2">GPS Found!</p>
+						{#if coordinates}
+							<p class="font-mono text-sm opacity-80">
+								{coordinates.lat.toFixed(6)}, {coordinates.lng.toFixed(6)}
+							</p>
+						{/if}
+					</div>
+				{:else if selectedFile && !hasGpsMetadata}
+					<!-- No GPS - show map for manual selection -->
+					<label class="block text-sm font-bold uppercase mb-2">Location (click on map)</label>
+					<div class="brutal-border overflow-hidden h-64">
+						<Map onSelect={handleMapSelect} guessLocation={coordinates ?? undefined} />
+					</div>
+					{#if coordinates}
+						<p class="mt-2 text-sm font-mono opacity-60">
+							{coordinates.lat.toFixed(6)}, {coordinates.lng.toFixed(6)}
+						</p>
+					{/if}
+				{:else}
+					<!-- No image selected yet -->
+					<label class="block text-sm font-bold uppercase mb-2">Location</label>
+					<div class="brutal-border bg-gray/20 p-6 h-64 flex flex-col items-center justify-center">
+						<div class="text-4xl mb-3 opacity-40">🗺️</div>
+						<p class="text-black/40 text-sm">Select an image first</p>
+					</div>
 				{/if}
 			</div>
 		</div>

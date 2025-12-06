@@ -44,6 +44,30 @@ export interface CreateTournamentData {
 	maxParticipants?: number;
 }
 
+export interface ImagePreviewResult {
+	previewBase64: string;
+	gpsCoords: { lat: number; lng: number } | null;
+}
+
+/**
+ * Process an image to generate preview and extract GPS
+ * Used for HEIC and other formats that browsers can't handle natively
+ */
+export async function processImagePreview(file: File): Promise<ImagePreviewResult | null> {
+	const formData = new FormData();
+	formData.append('image', file);
+
+	const { data, error } = await api.uploadFile<ImagePreviewResult>(
+		'/api/admin/images/preview',
+		formData
+	);
+	if (error) {
+		console.error('Failed to process image preview:', error);
+		return null;
+	}
+	return data ?? null;
+}
+
 /**
  * List all images
  * NOTE: Cloudinary credentials are never exposed - all image operations go through the server

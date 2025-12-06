@@ -14,7 +14,12 @@ const upload = multer({
 		fileSize: 10 * 1024 * 1024 // 10MB limit
 	},
 	fileFilter: (_req, file, cb) => {
-		if (file.mimetype.startsWith('image/')) {
+		// Accept image/* MIME types and HEIC/HEIF by extension (browsers may not set correct MIME)
+		const isImage = file.mimetype.startsWith('image/');
+		const isHeic =
+			file.originalname.toLowerCase().endsWith('.heic') ||
+			file.originalname.toLowerCase().endsWith('.heif');
+		if (isImage || isHeic) {
 			cb(null, true);
 		} else {
 			cb(new Error('Only image files are allowed'));
@@ -28,6 +33,7 @@ router.use(adminMiddleware);
 
 // Image management
 router.get('/images', adminController.listImages);
+router.post('/images/preview', upload.single('image'), adminController.processImagePreview);
 router.post('/images/upload', upload.single('image'), adminController.uploadImage);
 router.put('/images/:id', adminController.updateImage);
 router.delete('/images/:id', adminController.deleteImage);
