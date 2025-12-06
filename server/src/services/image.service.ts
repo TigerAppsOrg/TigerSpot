@@ -1,8 +1,12 @@
 import exifr from 'exifr';
 import sharp from 'sharp';
 import heicConvert from 'heic-convert';
+import { exiftool } from 'exiftool-vendored';
 import { v2 as cloudinary } from 'cloudinary';
 import { Readable } from 'stream';
+import { writeFile, unlink } from 'fs/promises';
+import { tmpdir } from 'os';
+import { join } from 'path';
 import { config } from '../config/index.js';
 import { prisma } from '../config/database.js';
 import type { Difficulty } from '@prisma/client';
@@ -102,16 +106,51 @@ export class ImageService {
 	}
 
 	/**
+	 * Extract GPS from HEIC using exiftool (more reliable than exifr for HEIC)
+	 */
+	async extractExifFromHeic(buffer: Buffer): Promise<ExifGpsData> {
+		const tempFile = join(tmpdir(), `heic-${Date.now()}.heic`);
+		try {
+			await writeFile(tempFile, buffer);
+			const tags = await exiftool.read(tempFile);
+
+			const latitude = tags.GPSLatitude ?? null;
+			const longitude = tags.GPSLongitude ?? null;
+			const dateTaken = tags.DateTimeOriginal ?? tags.CreateDate ?? null;
+
+			return {
+				latitude: typeof latitude === 'number' ? latitude : null,
+				longitude: typeof longitude === 'number' ? longitude : null,
+				dateTaken: dateTaken instanceof Date ? dateTaken : null
+			};
+		} catch (error) {
+			console.error('Exiftool HEIC extraction error:', error);
+			return { latitude: null, longitude: null, dateTaken: null };
+		} finally {
+			// Clean up temp file
+			try {
+				await unlink(tempFile);
+			} catch {
+				// Ignore cleanup errors
+			}
+		}
+	}
+
+	/**
 	 * Extract GPS coordinates from image EXIF data
-	 * Supports JPEG, PNG, HEIC/HEIF, and other formats
+	 * Uses exiftool for HEIC (more reliable), exifr for other formats
 	 */
 	async extractExifData(buffer: Buffer): Promise<ExifGpsData> {
+		// Use exiftool for HEIC files (more reliable)
+		if (this.isHeic(buffer)) {
+			return this.extractExifFromHeic(buffer);
+		}
+
 		try {
-			// First try to get GPS data directly (works for most formats including HEIC)
+			// For non-HEIC, use exifr (faster, no file I/O needed)
 			const gps = await exifr.gps(buffer);
 
 			if (gps && gps.latitude !== undefined && gps.longitude !== undefined) {
-				// Get additional metadata
 				const exif = await exifr.parse(buffer, {
 					pick: ['DateTimeOriginal', 'CreateDate', 'ModifyDate']
 				});
@@ -123,7 +162,7 @@ export class ImageService {
 				};
 			}
 
-			// Fallback: try full parse with all segments enabled (for edge cases)
+			// Fallback: try full parse
 			const fullExif = await exifr.parse(buffer, {
 				gps: true,
 				tiff: true,
