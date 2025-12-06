@@ -54,7 +54,7 @@
 	<div class="absolute inset-0 bg-stripes opacity-20"></div>
 
 	<!-- Main content -->
-	<div class="relative container-brutal min-h-screen py-16 px-4">
+	<div class="relative min-h-screen py-16 px-4 container-brutal">
 		<!-- Page Title -->
 		<div class="text-center mb-16 mt-8 {mounted ? 'animate-bounce-in' : 'opacity-0'}">
 			<h1 class="text-5xl md:text-6xl font-black mb-4">Meet the Team</h1>
@@ -67,25 +67,24 @@
 				<h2 class="text-2xl md:text-3xl font-bold mb-6">What is TigerSpot?</h2>
 				<p class="text-lg leading-relaxed opacity-80 mb-4">
 					TigerSpot is a location-guessing game that tests how well you know Princeton's campus.
-					From iconic landmarks to hidden corners, challenge yourself to identify locations from
-					photos and compete with fellow Tigers!
+					Like GeoGuessr, but for Princeton! From iconic landmarks to hidden corners, challenge
+					yourself to identify locations from photos and compete with fellow Tigers!
 				</p>
 				<p class="text-lg leading-relaxed opacity-80">
-					Originally created as a COS 333 project in Spring 2024, TigerSpot brings the Princeton
-					community together through friendly competition and campus exploration.
+					Originally created as a COS 333 project in Spring 2024.
 				</p>
 			</Card>
 		</div>
 
 		<!-- Team Grid -->
 		<div
-			class="flex flex-wrap justify-center gap-8 max-w-5xl mx-auto {mounted
+			class="flex flex-wrap justify-center gap-8 max-w-6xl mx-auto {mounted
 				? 'animate-slide-up delay-300'
 				: 'opacity-0'}"
 		>
 			{#each teamMembers as member, i}
 				<div
-					class="w-full sm:w-[calc(50%-1rem)] lg:w-[calc(33.333%-1.33rem)] transform transition-all duration-300 hover:scale-105"
+					class="w-full max-w-sm sm:w-[calc((100%-2rem)/2)] lg:w-[calc((100%-4rem)/3)] transform transition-all duration-300 hover:scale-105"
 					style="animation-delay: {300 + i * 100}ms"
 				>
 					<Card class="text-center h-full">
@@ -110,19 +109,18 @@
 		<!-- Current Maintainers Section -->
 		<div class="{mounted ? 'animate-slide-up delay-500' : 'opacity-0'} max-w-4xl mx-auto my-16">
 			<Card class="text-center">
-				<h2 class="text-2xl font-bold mb-4">Currently Maintained By</h2>
-				<a
-					href="https://tigerapps.org"
-					target="_blank"
-					rel="noopener noreferrer"
-					class="inline-block"
-				>
-					<span class="text-3xl font-black text-orange hover:underline">TigerApps</span>
-				</a>
-				<p class="mt-4 text-sm opacity-70">
-					TigerApps is a student organization that builds and maintains useful applications for the
-					Princeton community.
-				</p>
+				<h2 class="text-2xl font-bold">
+					Currently Maintained By
+
+					<a
+						href="https://tigerapps.org"
+						target="_blank"
+						rel="noopener noreferrer"
+						class="inline-block"
+					>
+						<span class="font-black text-orange hover:underline">TigerApps</span>
+					</a>
+				</h2>
 			</Card>
 		</div>
 	</div>
