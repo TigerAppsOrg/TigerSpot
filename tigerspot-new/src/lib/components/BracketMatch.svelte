@@ -1,21 +1,42 @@
 <script lang="ts">
-	import type { BracketMatch } from '$lib/data/dummy';
+	import type { BracketMatch } from '$lib/api/tournament';
 
 	interface Props {
 		match: BracketMatch;
 		currentUserId?: string;
 		compact?: boolean;
+		devMode?: boolean;
 		onPlay?: () => void;
+		onSimulate?: (winnerId: string) => void;
 	}
 
-	let { match, currentUserId = '', compact = false, onPlay }: Props = $props();
+	let {
+		match,
+		currentUserId = '',
+		compact = false,
+		devMode = false,
+		onPlay,
+		onSimulate
+	}: Props = $props();
 
 	const isCurrentUserMatch = $derived(
 		currentUserId && (match.player1 === currentUserId || match.player2 === currentUserId)
 	);
 
 	const canPlay = $derived(
-		isCurrentUserMatch && match.status === 'in_progress' && match.player1 && match.player2
+		isCurrentUserMatch &&
+			(match.status === 'ready' || match.status === 'in_progress') &&
+			match.player1 &&
+			match.player2
+	);
+
+	// Can simulate if both players are assigned and match is not completed
+	const canSimulate = $derived(
+		devMode &&
+			match.player1 &&
+			match.player2 &&
+			match.status !== 'completed' &&
+			match.status !== 'pending'
 	);
 
 	const getPlayerClass = (player: string | null, isWinner: boolean) => {
@@ -26,10 +47,17 @@
 		return 'text-black';
 	};
 
-	const statusColors = {
+	const statusColors: Record<string, string> = {
 		pending: 'bg-gray',
+		ready: 'bg-cyan',
 		in_progress: 'bg-orange',
 		completed: 'bg-lime'
+	};
+
+	const getStatusLabel = (status: string) => {
+		if (status === 'in_progress') return 'LIVE';
+		if (status === 'ready') return 'READY';
+		return status.toUpperCase();
 	};
 </script>
 
@@ -44,9 +72,11 @@
 			Match #{match.id}
 		</span>
 		<span
-			class="text-[10px] font-bold uppercase px-2 py-0.5 brutal-border {statusColors[match.status]}"
+			class="text-[10px] font-bold uppercase px-2 py-0.5 brutal-border {statusColors[
+				match.status
+			] || 'bg-gray'}"
 		>
-			{match.status === 'in_progress' ? 'LIVE' : match.status}
+			{getStatusLabel(match.status)}
 		</span>
 	</div>
 
@@ -60,14 +90,26 @@
 			)}"
 		>
 			<span class="truncate max-w-[120px]">
-				{match.player1 || 'TBD'}
+				{match.player1DisplayName || match.player1 || 'TBD'}
 				{#if match.player1 === currentUserId}
 					<span class="text-cyan">(you)</span>
 				{/if}
 			</span>
-			{#if match.player1Score !== null}
-				<span class="font-mono tabular-nums font-bold">{match.player1Score.toLocaleString()}</span>
-			{/if}
+			<div class="flex items-center gap-2">
+				{#if match.player1Score !== null}
+					<span class="font-mono tabular-nums font-bold">{match.player1Score.toLocaleString()}</span
+					>
+				{/if}
+				{#if canSimulate && onSimulate && match.player1}
+					<button
+						onclick={() => onSimulate(match.player1!)}
+						class="text-[10px] px-1.5 py-0.5 bg-orange text-white brutal-border hover:bg-orange/80"
+						title="Simulate {match.player1DisplayName || match.player1} wins"
+					>
+						WIN
+					</button>
+				{/if}
+			</div>
 		</div>
 
 		<!-- VS divider -->
@@ -81,14 +123,26 @@
 			)}"
 		>
 			<span class="truncate max-w-[120px]">
-				{match.player2 || 'TBD'}
+				{match.player2DisplayName || match.player2 || 'TBD'}
 				{#if match.player2 === currentUserId}
 					<span class="text-cyan">(you)</span>
 				{/if}
 			</span>
-			{#if match.player2Score !== null}
-				<span class="font-mono tabular-nums font-bold">{match.player2Score.toLocaleString()}</span>
-			{/if}
+			<div class="flex items-center gap-2">
+				{#if match.player2Score !== null}
+					<span class="font-mono tabular-nums font-bold">{match.player2Score.toLocaleString()}</span
+					>
+				{/if}
+				{#if canSimulate && onSimulate && match.player2}
+					<button
+						onclick={() => onSimulate(match.player2!)}
+						class="text-[10px] px-1.5 py-0.5 bg-orange text-white brutal-border hover:bg-orange/80"
+						title="Simulate {match.player2DisplayName || match.player2} wins"
+					>
+						WIN
+					</button>
+				{/if}
+			</div>
 		</div>
 	</div>
 

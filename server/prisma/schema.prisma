@@ -157,7 +157,7 @@ model Tournament {
   difficulty      Difficulty       @default(MEDIUM)
   timeLimit       Int              @default(120) // seconds per round
   roundsPerMatch  Int              @default(5)
-  maxParticipants Int              @default(8)
+  maxParticipants Int?             // null = unlimited
 
   createdBy   String    @db.VarChar(255)
   createdAt   DateTime  @default(now())

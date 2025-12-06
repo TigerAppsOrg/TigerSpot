@@ -190,7 +190,7 @@ export class AdminController {
 			difficulty = 'MEDIUM',
 			timeLimit = 120,
 			roundsPerMatch = 5,
-			maxParticipants = 8
+			maxParticipants // null = unlimited (no default)
 		} = req.body;
 
 		if (!name) {
@@ -205,7 +205,7 @@ export class AdminController {
 					difficulty,
 					timeLimit,
 					roundsPerMatch,
-					maxParticipants,
+					maxParticipants: maxParticipants ?? null,
 					createdBy: req.user!.username
 				}
 			});
@@ -288,6 +288,202 @@ export class AdminController {
 		} catch (error) {
 			console.error('Error cancelling tournament:', error);
 			res.status(500).json({ error: 'Failed to cancel tournament' });
+		}
+	};
+
+	/**
+	 * Delete a tournament permanently
+	 */
+	deleteTournament = async (req: AuthRequest, res: Response) => {
+		const id = parseInt(req.params.id, 10);
+		if (isNaN(id)) {
+			res.status(400).json({ error: 'Invalid tournament ID' });
+			return;
+		}
+
+		try {
+			const tournament = await prisma.tournament.findUnique({
+				where: { id }
+			});
+
+			if (!tournament) {
+				res.status(404).json({ error: 'Tournament not found' });
+				return;
+			}
+
+			// Delete related records first (matches, participants)
+			await prisma.tournamentMatch.deleteMany({
+				where: { tournamentId: id }
+			});
+
+			await prisma.tournamentParticipant.deleteMany({
+				where: { tournamentId: id }
+			});
+
+			// Delete the tournament
+			await prisma.tournament.delete({
+				where: { id }
+			});
+
+			res.json({ success: true });
+		} catch (error) {
+			console.error('Error deleting tournament:', error);
+			res.status(500).json({ error: 'Failed to delete tournament' });
+		}
+	};
+
+	// ==================== DEV-ONLY TEST ENDPOINTS ====================
+
+	/**
+	 * Add test players to a tournament (DEV ONLY)
+	 */
+	addTestPlayers = async (req: AuthRequest, res: Response) => {
+		if (process.env.NODE_ENV === 'production') {
+			res.status(403).json({ error: 'Not available in production' });
+			return;
+		}
+
+		const id = parseInt(req.params.id, 10);
+		const { count = 7 } = req.body;
+
+		if (isNaN(id)) {
+			res.status(400).json({ error: 'Invalid tournament ID' });
+			return;
+		}
+
+		try {
+			const tournament = await prisma.tournament.findUnique({
+				where: { id },
+				include: { participants: true }
+			});
+
+			if (!tournament) {
+				res.status(404).json({ error: 'Tournament not found' });
+				return;
+			}
+
+			if (tournament.status !== 'OPEN') {
+				res.status(400).json({ error: 'Tournament must be OPEN to add test players' });
+				return;
+			}
+
+			const addedPlayers: string[] = [];
+
+			for (let i = 1; i <= count; i++) {
+				const username = `test_player_${i}`;
+
+				// Check if test user exists, if not create them
+				await prisma.user.upsert({
+					where: { username },
+					update: {},
+					create: {
+						username,
+						displayName: `Test Player ${i}`,
+						email: null,
+						classYear: null,
+						isAdmin: false
+					}
+				});
+
+				// Check if already in tournament
+				const existing = tournament.participants.find((p) => p.username === username);
+				if (!existing) {
+					await prisma.tournamentParticipant.create({
+						data: {
+							tournamentId: id,
+							username
+						}
+					});
+					addedPlayers.push(username);
+				}
+			}
+
+			res.json({
+				success: true,
+				addedPlayers,
+				message: `Added ${addedPlayers.length} test players`
+			});
+		} catch (error) {
+			console.error('Error adding test players:', error);
+			res.status(500).json({ error: 'Failed to add test players' });
+		}
+	};
+
+	/**
+	 * Simulate a match result (DEV ONLY)
+	 */
+	simulateMatchWinner = async (req: AuthRequest, res: Response) => {
+		if (process.env.NODE_ENV === 'production') {
+			res.status(403).json({ error: 'Not available in production' });
+			return;
+		}
+
+		const tournamentId = parseInt(req.params.id, 10);
+		const matchId = parseInt(req.params.matchId, 10);
+		const { winnerId } = req.body;
+
+		if (isNaN(tournamentId) || isNaN(matchId)) {
+			res.status(400).json({ error: 'Invalid tournament or match ID' });
+			return;
+		}
+
+		if (!winnerId) {
+			res.status(400).json({ error: 'winnerId is required' });
+			return;
+		}
+
+		try {
+			const match = await prisma.tournamentMatch.findUnique({
+				where: { id: matchId }
+			});
+
+			if (!match) {
+				res.status(404).json({ error: 'Match not found' });
+				return;
+			}
+
+			if (match.tournamentId !== tournamentId) {
+				res.status(400).json({ error: 'Match does not belong to this tournament' });
+				return;
+			}
+
+			if (match.status === 'COMPLETED') {
+				res.status(400).json({ error: 'Match already completed' });
+				return;
+			}
+
+			if (match.player1Id !== winnerId && match.player2Id !== winnerId) {
+				res.status(400).json({ error: 'winnerId must be one of the match players' });
+				return;
+			}
+
+			// Set scores (winner gets higher score)
+			const player1Score = winnerId === match.player1Id ? 5000 : 3000;
+			const player2Score = winnerId === match.player2Id ? 5000 : 3000;
+
+			await prisma.tournamentMatch.update({
+				where: { id: matchId },
+				data: {
+					player1Score,
+					player2Score,
+					status: 'COMPLETED',
+					completedAt: new Date()
+				}
+			});
+
+			// Advance winner in bracket
+			await this.bracketService.advanceWinner(matchId, winnerId);
+
+			res.json({
+				success: true,
+				matchId,
+				winnerId,
+				player1Score,
+				player2Score
+			});
+		} catch (error) {
+			console.error('Error simulating match:', error);
+			res.status(500).json({ error: 'Failed to simulate match' });
 		}
 	};
 

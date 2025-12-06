@@ -11,12 +11,21 @@ export class BracketService {
 
 		// Pad to next power of 2 for proper bracket
 		const bracketSize = this.nextPowerOf2(shuffled.length);
-		const byes = bracketSize - shuffled.length;
+		const numByes = bracketSize - shuffled.length;
 
-		// Seed participants (with byes getting automatic first round wins)
-		const seeded: (string | null)[] = [];
-		for (let i = 0; i < bracketSize; i++) {
-			seeded.push(shuffled[i] || null);
+		// Create proper seeding with byes distributed so they never face each other
+		// Standard bracket seeding: 1v8, 4v5, 2v7, 3v6 for 8-player
+		// Byes go to top seeds (positions that would face the weakest opponents)
+		const seeded: (string | null)[] = new Array(bracketSize).fill(null);
+
+		// Generate standard bracket positions (1 vs bracketSize, 2 vs bracketSize-1, etc.)
+		// but with proper bracket ordering for fair matchups
+		const bracketPositions = this.generateBracketPositions(bracketSize);
+
+		// Place participants in bracket positions (top seeds get byes)
+		for (let i = 0; i < shuffled.length; i++) {
+			const position = bracketPositions[i];
+			seeded[position] = shuffled[i];
 		}
 
 		// Update participant seeds in database
@@ -55,6 +64,8 @@ export class BracketService {
 		}
 
 		// Set up first round with players
+		const byeWinners: { matchIndex: number; winnerId: string }[] = [];
+
 		for (let i = 0; i < winnersMatches[0].length; i++) {
 			const player1 = seeded[i * 2];
 			const player2 = seeded[i * 2 + 1];
@@ -77,6 +88,7 @@ export class BracketService {
 						status: 'COMPLETED'
 					}
 				});
+				byeWinners.push({ matchIndex: i, winnerId: player2 });
 			} else if (player1 && !player2) {
 				await prisma.tournamentMatch.update({
 					where: { id: winnersMatches[0][i] },
@@ -85,6 +97,7 @@ export class BracketService {
 						status: 'COMPLETED'
 					}
 				});
+				byeWinners.push({ matchIndex: i, winnerId: player1 });
 			}
 		}
 
@@ -98,6 +111,38 @@ export class BracketService {
 						nextWinnerMatchId: winnersMatches[round + 1][nextMatchIndex]
 					}
 				});
+			}
+		}
+
+		// Now advance bye winners to round 2 (after matches are linked)
+		for (const { matchIndex, winnerId } of byeWinners) {
+			const nextMatchIndex = Math.floor(matchIndex / 2);
+			const nextMatchId = winnersMatches[1]?.[nextMatchIndex];
+
+			if (nextMatchId) {
+				const nextMatch = await prisma.tournamentMatch.findUnique({
+					where: { id: nextMatchId }
+				});
+
+				if (nextMatch) {
+					// Fill the appropriate slot
+					const updateData = !nextMatch.player1Id
+						? { player1Id: winnerId }
+						: { player2Id: winnerId };
+
+					// Check if this completes the match (both players now assigned)
+					const willBeReady =
+						(!nextMatch.player1Id && nextMatch.player2Id) ||
+						(nextMatch.player1Id && !nextMatch.player2Id);
+
+					await prisma.tournamentMatch.update({
+						where: { id: nextMatchId },
+						data: {
+							...updateData,
+							status: willBeReady ? 'READY' : nextMatch.status
+						}
+					});
+				}
 			}
 		}
 
@@ -136,6 +181,10 @@ export class BracketService {
 		}
 
 		// Link losers to losers bracket from winners bracket
+		// WR1 (index 0) losers go to LR1 (index 0) - drop round
+		// Track which WR1 matches are byes (no loser to send)
+		const byeMatchIndices = new Set(byeWinners.map((b) => b.matchIndex));
+
 		for (let i = 0; i < winnersMatches[0].length; i++) {
 			if (losersMatches[0]) {
 				const loserMatchIndex = Math.floor(i / 2);
@@ -144,6 +193,69 @@ export class BracketService {
 						where: { id: winnersMatches[0][i] },
 						data: {
 							nextLoserMatchId: losersMatches[0][loserMatchIndex]
+						}
+					});
+				}
+			}
+		}
+
+		// Handle LR0 matches affected by byes
+		// For each LR0 match, check if its feeder WR1 matches are byes
+		if (losersMatches[0]) {
+			for (let lrMatchIdx = 0; lrMatchIdx < losersMatches[0].length; lrMatchIdx++) {
+				const feeder1Idx = lrMatchIdx * 2;
+				const feeder2Idx = lrMatchIdx * 2 + 1;
+				const feeder1IsBye = byeMatchIndices.has(feeder1Idx);
+				const feeder2IsBye = byeMatchIndices.has(feeder2Idx);
+
+				if (feeder1IsBye && feeder2IsBye) {
+					// Both feeders are byes - this LR0 match will never have players
+					// Mark as completed and auto-advance through losers bracket
+					await this.autoAdvanceEmptyLoserMatch(losersMatches[0][lrMatchIdx]);
+				}
+				// If only one feeder is a bye, we'll handle it in advanceWinner
+				// when the actual loser arrives (they'll auto-advance)
+			}
+		}
+
+		// WR2+ (index n >= 1) losers go to LR index (2n-1) - cross rounds
+		// where they face losers bracket survivors
+		for (let wRound = 1; wRound < winnersMatches.length; wRound++) {
+			const lRoundIndex = 2 * wRound - 1;
+			if (losersMatches[lRoundIndex]) {
+				for (let i = 0; i < winnersMatches[wRound].length; i++) {
+					// Map to corresponding losers match
+					const loserMatchIndex = i % losersMatches[lRoundIndex].length;
+					if (losersMatches[lRoundIndex][loserMatchIndex]) {
+						await prisma.tournamentMatch.update({
+							where: { id: winnersMatches[wRound][i] },
+							data: {
+								nextLoserMatchId: losersMatches[lRoundIndex][loserMatchIndex]
+							}
+						});
+					}
+				}
+			}
+		}
+
+		// Link losers bracket matches internally (winners advance to next round)
+		for (let round = 0; round < losersMatches.length - 1; round++) {
+			for (let matchNum = 0; matchNum < losersMatches[round].length; matchNum++) {
+				// Calculate next match index based on round sizes
+				let nextMatchIndex: number;
+				if (losersMatches[round + 1].length === losersMatches[round].length) {
+					// Same size: 1:1 mapping
+					nextMatchIndex = matchNum;
+				} else {
+					// Consolidation: 2:1 mapping
+					nextMatchIndex = Math.floor(matchNum / 2);
+				}
+
+				if (losersMatches[round + 1][nextMatchIndex]) {
+					await prisma.tournamentMatch.update({
+						where: { id: losersMatches[round][matchNum] },
+						data: {
+							nextWinnerMatchId: losersMatches[round + 1][nextMatchIndex]
 						}
 					});
 				}
@@ -306,6 +418,10 @@ export class BracketService {
 							status: loserMatch.player1Id || loserMatch.player2Id ? 'READY' : 'PENDING'
 						}
 					});
+
+					// Check if this loser should auto-advance (other feeder was a bye)
+					// This happens when only one WR1 match feeds a real loser to an LR0 match
+					await this.checkAndAutoAdvanceLoserMatch(match.nextLoserMatchId, match.tournamentId);
 				}
 
 				// Update participant loss count
@@ -356,5 +472,116 @@ export class BracketService {
 			power *= 2;
 		}
 		return power;
+	}
+
+	/**
+	 * Generate bracket positions for proper seeding
+	 * Returns array where index is seed (0-based) and value is bracket position
+	 * Standard bracket seeding ensures:
+	 * - 1 vs N, 2 vs N-1, etc. but arranged so 1 and 2 can only meet in finals
+	 * - Byes (highest seed numbers) face top seeds, so they auto-advance
+	 */
+	private generateBracketPositions(bracketSize: number): number[] {
+		// Standard bracket seeding algorithm
+		// For 8 players: 1v8, 4v5, 3v6, 2v7
+		// Positions: [1,8,4,5,3,6,2,7] -> seeds at positions 0-7
+
+		const numRounds = Math.log2(bracketSize);
+		const positions: number[] = new Array(bracketSize);
+
+		// Start with seed 1 at position 0
+		let seeds = [1];
+
+		// For each round, expand the bracket
+		for (let round = 0; round < numRounds; round++) {
+			const roundSize = Math.pow(2, round + 1);
+			const newSeeds: number[] = [];
+
+			for (const seed of seeds) {
+				newSeeds.push(seed);
+				newSeeds.push(roundSize + 1 - seed);
+			}
+
+			seeds = newSeeds;
+		}
+
+		// seeds array now contains the seed at each position
+		// Convert to positions array (index = seed-1, value = position)
+		for (let pos = 0; pos < bracketSize; pos++) {
+			positions[seeds[pos] - 1] = pos;
+		}
+
+		return positions;
+	}
+
+	/**
+	 * Auto-advance through an empty loser match (both feeders were byes)
+	 * Marks the match as completed and propagates the "empty" through the bracket
+	 */
+	private async autoAdvanceEmptyLoserMatch(matchId: number) {
+		const match = await prisma.tournamentMatch.findUnique({
+			where: { id: matchId }
+		});
+
+		if (!match) return;
+
+		// Mark this match as completed with no players
+		await prisma.tournamentMatch.update({
+			where: { id: matchId },
+			data: { status: 'COMPLETED' }
+		});
+
+		// If there's a next match, we need to check if it should also auto-advance
+		// This can happen in deeper losers bracket rounds
+		if (match.nextWinnerMatchId) {
+			await this.checkAndAutoAdvanceLoserMatch(match.nextWinnerMatchId, match.tournamentId);
+		}
+	}
+
+	/**
+	 * Check if a losers bracket match should auto-advance a single player
+	 * This happens when one feeder was a bye, leaving only one real player
+	 */
+	private async checkAndAutoAdvanceLoserMatch(matchId: number, tournamentId: number) {
+		const loserMatch = await prisma.tournamentMatch.findUnique({
+			where: { id: matchId }
+		});
+
+		if (!loserMatch || loserMatch.status === 'COMPLETED') return;
+
+		// Check if all feeder matches that point to this match are completed
+		const feederMatches = await prisma.tournamentMatch.findMany({
+			where: {
+				tournamentId,
+				OR: [{ nextLoserMatchId: matchId }, { nextWinnerMatchId: matchId }]
+			}
+		});
+
+		// If not all feeders are completed, we can't determine yet
+		const allFeedersCompleted = feederMatches.every((m) => m.status === 'COMPLETED');
+		if (!allFeedersCompleted) return;
+
+		// Re-fetch to get updated player info
+		const updatedMatch = await prisma.tournamentMatch.findUnique({
+			where: { id: matchId }
+		});
+
+		if (!updatedMatch) return;
+
+		// If exactly one player, auto-advance them
+		const hasPlayer1 = updatedMatch.player1Id !== null;
+		const hasPlayer2 = updatedMatch.player2Id !== null;
+
+		if (hasPlayer1 && !hasPlayer2) {
+			// Player 1 auto-advances
+			await this.advanceWinner(matchId, updatedMatch.player1Id!);
+		} else if (!hasPlayer1 && hasPlayer2) {
+			// Player 2 auto-advances
+			await this.advanceWinner(matchId, updatedMatch.player2Id!);
+		} else if (!hasPlayer1 && !hasPlayer2) {
+			// No players - mark as completed and propagate
+			await this.autoAdvanceEmptyLoserMatch(matchId);
+		}
+		// If both players exist, it's a normal match - do nothing
 	}
 }

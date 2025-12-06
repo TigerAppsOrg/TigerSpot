@@ -1,4 +1,6 @@
 import { api } from './client.js';
+import type { RoundPicture, RoundResult } from './versus.js';
+export type { RoundPicture, RoundResult };
 
 export interface Tournament {
 	id: number;
@@ -8,7 +10,7 @@ export interface Tournament {
 	timeLimit: number;
 	roundsPerMatch: number;
 	participants: number;
-	maxParticipants: number;
+	maxParticipants: number | null; // null = unlimited
 	createdAt: string;
 	winner?: string;
 }
@@ -39,27 +41,12 @@ export interface Bracket {
 	grandFinal: BracketMatch;
 }
 
-export interface TournamentDetails extends Tournament {
+export interface TournamentDetails extends Omit<Tournament, 'participants'> {
 	createdBy: string;
 	startedAt: string | null;
 	completedAt: string | null;
 	participants: TournamentParticipant[];
 	bracket: Bracket;
-}
-
-export interface RoundPicture {
-	roundNumber: number;
-	pictureId: number;
-	imageUrl: string;
-}
-
-export interface RoundResult {
-	roundNumber: number;
-	distance: number;
-	points: number;
-	actualLat: number;
-	actualLng: number;
-	placeName: string;
 }
 
 /**

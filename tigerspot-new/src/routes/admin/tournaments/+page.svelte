@@ -1,10 +1,16 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
+	import { dev } from '$app/environment';
 	import Button from '$lib/components/Button.svelte';
 	import Card from '$lib/components/Card.svelte';
 	import { listTournaments, type Tournament } from '$lib/api/tournament';
-	import { createTournament, startTournament, cancelTournament } from '$lib/api/admin';
+	import {
+		createTournament,
+		startTournament,
+		deleteTournament,
+		addTestPlayers
+	} from '$lib/api/admin';
 	import { userStore } from '$lib/stores/user.svelte';
 
 	// Form state
@@ -12,9 +18,11 @@
 	let difficulty = $state<'EASY' | 'MEDIUM' | 'HARD'>('MEDIUM');
 	let timeLimit = $state(30);
 	let roundsPerMatch = $state(5);
+	let testPlayerCount = $state(7);
 	let showSuccess = $state(false);
 	let creating = $state(false);
 	let loading = $state(true);
+	let addingTestPlayers = $state<number | null>(null);
 
 	// Tournaments from API
 	let tournaments = $state<Tournament[]>([]);
@@ -86,12 +94,25 @@
 	}
 
 	async function handleDelete(id: number) {
-		if (confirm('Are you sure you want to cancel this tournament?')) {
-			const success = await cancelTournament(id);
+		if (confirm('Are you sure you want to delete this tournament? This cannot be undone.')) {
+			const success = await deleteTournament(id);
 			if (success) {
 				tournaments = tournaments.filter((t) => t.id !== id);
 			}
 		}
+	}
+
+	async function handleAddTestPlayers(tournamentId: number) {
+		addingTestPlayers = tournamentId;
+		const result = await addTestPlayers(tournamentId, testPlayerCount);
+		if (result?.success) {
+			// Reload tournaments to update participant count
+			tournaments = await listTournaments();
+			alert(`Added ${result.addedPlayers.length} test players!`);
+		} else {
+			alert('Failed to add test players');
+		}
+		addingTestPlayers = null;
 	}
 </script>
 
@@ -124,8 +145,8 @@
 			</div>
 
 			<!-- Difficulty -->
-			<div>
-				<label class="block text-sm font-bold uppercase mb-2">Difficulty</label>
+			<fieldset>
+				<legend class="block text-sm font-bold uppercase mb-2">Difficulty</legend>
 				<div class="grid grid-cols-3 gap-2">
 					{#each difficultyOptions as option}
 						<button
@@ -140,7 +161,7 @@
 						</button>
 					{/each}
 				</div>
-			</div>
+			</fieldset>
 
 			<!-- Time Limit -->
 			<div>
@@ -174,7 +195,7 @@
 			<div class="flex items-center gap-3 text-black/60">
 				<span class="text-2xl">ℹ️</span>
 				<span class="text-sm"
-					>All tournaments use double elimination format with 8 participants</span
+					>All tournaments use double elimination format. Any number of participants can join.</span
 				>
 			</div>
 		</div>
@@ -219,23 +240,45 @@
 								<span class="font-bold">{tournament.difficulty}</span> difficulty
 							</span>
 							<span class="opacity-60">
-								<span class="font-bold">{tournament.participants}</span
-								>/{tournament.maxParticipants}
+								<span class="font-bold">{tournament.participants}</span>
+								{#if tournament.maxParticipants}
+									/{tournament.maxParticipants}
+								{/if}
 								participants
 							</span>
 							<span class="opacity-60">
 								<span class="font-bold">{tournament.timeLimit}s</span> per round
 							</span>
 						</div>
+
+						<!-- Dev-only test controls -->
+						{#if dev && tournament.status === 'open'}
+							<div class="flex items-center gap-2 mt-3 p-2 bg-orange/10 brutal-border">
+								<span class="text-xs font-bold uppercase text-orange">DEV:</span>
+								<input
+									type="number"
+									bind:value={testPlayerCount}
+									min="1"
+									max="31"
+									class="w-16 brutal-border px-2 py-1 text-sm font-bold"
+								/>
+								<Button
+									variant="orange"
+									size="sm"
+									onclick={() => handleAddTestPlayers(tournament.id)}
+									disabled={addingTestPlayers === tournament.id}
+								>
+									{addingTestPlayers === tournament.id ? 'Adding...' : 'Add Test Players'}
+								</Button>
+							</div>
+						{/if}
 					</div>
 
 					<div class="flex gap-2">
 						{#if tournament.status === 'open'}
 							<Button variant="lime" onclick={() => handleStart(tournament.id)}>Start</Button>
 						{/if}
-						{#if tournament.status !== 'in_progress'}
-							<Button variant="magenta" onclick={() => handleDelete(tournament.id)}>Delete</Button>
-						{/if}
+						<Button variant="magenta" onclick={() => handleDelete(tournament.id)}>Delete</Button>
 						{#if tournament.status === 'in_progress'}
 							<Button variant="cyan" href={`/tournament/${tournament.id}`}>View Bracket</Button>
 						{/if}

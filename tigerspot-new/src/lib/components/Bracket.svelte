@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { BracketMatch } from '$lib/data/dummy';
+	import type { BracketMatch } from '$lib/api/tournament';
 	import BracketMatchCard from './BracketMatch.svelte';
 
 	interface Props {
@@ -8,12 +8,34 @@
 		grandFinal: BracketMatch;
 		currentUserId?: string;
 		onPlayMatch?: (matchId: number) => void;
+		onSimulateWinner?: (matchId: number, winnerId: string) => void;
+		devMode?: boolean;
 	}
 
-	let { winners, losers, grandFinal, currentUserId = '', onPlayMatch }: Props = $props();
+	let {
+		winners,
+		losers,
+		grandFinal,
+		currentUserId = '',
+		onPlayMatch,
+		onSimulateWinner,
+		devMode = false
+	}: Props = $props();
 
-	const winnersRoundNames = ['Quarterfinals', 'Semifinals', 'Finals'];
-	const losersRoundNames = ['Losers R1', 'Losers R2', 'Losers SF', 'Losers Final'];
+	// Generate round names based on bracket size
+	const getWinnersRoundName = (roundIndex: number, totalRounds: number) => {
+		const fromEnd = totalRounds - roundIndex;
+		if (fromEnd === 1) return 'Finals';
+		if (fromEnd === 2) return 'Semifinals';
+		if (fromEnd === 3) return 'Quarterfinals';
+		return `Round ${roundIndex + 1}`;
+	};
+
+	const getLosersRoundName = (roundIndex: number, totalRounds: number) => {
+		if (roundIndex === totalRounds - 1) return 'Losers Final';
+		if (roundIndex === totalRounds - 2) return 'Losers SF';
+		return `Losers R${roundIndex + 1}`;
+	};
 </script>
 
 <div class="bracket-container">
@@ -24,26 +46,34 @@
 			Winners Bracket
 		</h3>
 
-		<div class="bracket-grid winners-bracket">
-			{#each winners as round, roundIndex}
-				<div class="bracket-round">
-					<div class="text-xs font-bold uppercase text-black/50 mb-4 text-center">
-						{winnersRoundNames[roundIndex] || `Round ${roundIndex + 1}`}
+		{#if winners.length === 0}
+			<div class="text-black/50 text-center py-8">No matches yet</div>
+		{:else}
+			<div class="bracket-grid winners-bracket">
+				{#each winners as round, roundIndex}
+					<div class="bracket-round">
+						<div class="text-xs font-bold uppercase text-black/50 mb-4 text-center">
+							{getWinnersRoundName(roundIndex, winners.length)}
+						</div>
+						<div class="bracket-matches" style="--matches: {round.length}">
+							{#each round as match}
+								<div class="bracket-match-wrapper">
+									<BracketMatchCard
+										{match}
+										{currentUserId}
+										{devMode}
+										onPlay={onPlayMatch ? () => onPlayMatch(match.id) : undefined}
+										onSimulate={onSimulateWinner
+											? (winnerId: string) => onSimulateWinner(match.id, winnerId)
+											: undefined}
+									/>
+								</div>
+							{/each}
+						</div>
 					</div>
-					<div class="bracket-matches" style="--matches: {round.length}">
-						{#each round as match}
-							<div class="bracket-match-wrapper">
-								<BracketMatchCard
-									{match}
-									{currentUserId}
-									onPlay={onPlayMatch ? () => onPlayMatch(match.id) : undefined}
-								/>
-							</div>
-						{/each}
-					</div>
-				</div>
-			{/each}
-		</div>
+				{/each}
+			</div>
+		{/if}
 	</div>
 
 	<!-- Losers Bracket -->
@@ -53,27 +83,35 @@
 			Losers Bracket
 		</h3>
 
-		<div class="bracket-grid losers-bracket">
-			{#each losers as round, roundIndex}
-				<div class="bracket-round">
-					<div class="text-xs font-bold uppercase text-black/50 mb-4 text-center">
-						{losersRoundNames[roundIndex] || `Round ${roundIndex + 1}`}
+		{#if losers.length === 0}
+			<div class="text-black/50 text-center py-8">No matches yet</div>
+		{:else}
+			<div class="bracket-grid losers-bracket">
+				{#each losers as round, roundIndex}
+					<div class="bracket-round">
+						<div class="text-xs font-bold uppercase text-black/50 mb-4 text-center">
+							{getLosersRoundName(roundIndex, losers.length)}
+						</div>
+						<div class="bracket-matches" style="--matches: {round.length}">
+							{#each round as match}
+								<div class="bracket-match-wrapper">
+									<BracketMatchCard
+										{match}
+										{currentUserId}
+										{devMode}
+										compact
+										onPlay={onPlayMatch ? () => onPlayMatch(match.id) : undefined}
+										onSimulate={onSimulateWinner
+											? (winnerId: string) => onSimulateWinner(match.id, winnerId)
+											: undefined}
+									/>
+								</div>
+							{/each}
+						</div>
 					</div>
-					<div class="bracket-matches" style="--matches: {round.length}">
-						{#each round as match}
-							<div class="bracket-match-wrapper">
-								<BracketMatchCard
-									{match}
-									{currentUserId}
-									compact
-									onPlay={onPlayMatch ? () => onPlayMatch(match.id) : undefined}
-								/>
-							</div>
-						{/each}
-					</div>
-				</div>
-			{/each}
-		</div>
+				{/each}
+			</div>
+		{/if}
 	</div>
 
 	<!-- Grand Final -->
@@ -87,7 +125,11 @@
 			<BracketMatchCard
 				match={grandFinal}
 				{currentUserId}
+				{devMode}
 				onPlay={onPlayMatch ? () => onPlayMatch(grandFinal.id) : undefined}
+				onSimulate={onSimulateWinner
+					? (winnerId: string) => onSimulateWinner(grandFinal.id, winnerId)
+					: undefined}
 			/>
 		</div>
 	</div>

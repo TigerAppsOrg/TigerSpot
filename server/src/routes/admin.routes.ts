@@ -40,6 +40,11 @@ router.patch('/users/:username', adminController.updateUser);
 router.post('/tournament', adminController.createTournament);
 router.post('/tournament/:id/start', adminController.startTournament);
 router.post('/tournament/:id/cancel', adminController.cancelTournament);
+router.delete('/tournament/:id', adminController.deleteTournament);
+
+// Dev-only tournament testing (guarded by NODE_ENV in controller)
+router.post('/tournament/:id/test-players', adminController.addTestPlayers);
+router.post('/tournament/:id/match/:matchId/simulate', adminController.simulateMatchWinner);
 
 // Daily challenge management
 router.post('/daily/set', adminController.setDailyChallenge);

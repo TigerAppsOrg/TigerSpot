@@ -84,7 +84,7 @@ export interface TournamentResponse {
 	timeLimit: number;
 	roundsPerMatch: number;
 	participants: number;
-	maxParticipants: number;
+	maxParticipants: number | null;
 	createdAt: Date;
 	winner?: string;
 }

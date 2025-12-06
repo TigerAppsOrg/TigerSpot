@@ -98,7 +98,10 @@ export class TournamentService {
 			throw new Error('Tournament is not open for registration');
 		}
 
-		if (tournament.participants.length >= tournament.maxParticipants) {
+		if (
+			tournament.maxParticipants !== null &&
+			tournament.participants.length >= tournament.maxParticipants
+		) {
 			throw new Error('Tournament is full');
 		}
 

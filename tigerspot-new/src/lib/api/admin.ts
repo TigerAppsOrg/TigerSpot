@@ -184,6 +184,18 @@ export async function cancelTournament(tournamentId: number): Promise<boolean> {
 }
 
 /**
+ * Delete a tournament permanently
+ */
+export async function deleteTournament(tournamentId: number): Promise<boolean> {
+	const { error } = await api.delete(`/api/admin/tournament/${tournamentId}`);
+	if (error) {
+		console.error('Failed to delete tournament:', error);
+		return false;
+	}
+	return true;
+}
+
+/**
  * Set daily challenge for a specific date
  */
 export async function setDailyChallenge(pictureId: number, date?: string): Promise<boolean> {
@@ -193,4 +205,57 @@ export async function setDailyChallenge(pictureId: number, date?: string): Promi
 		return false;
 	}
 	return true;
+}
+
+// ==================== DEV-ONLY TEST FUNCTIONS ====================
+
+export interface AddTestPlayersResult {
+	success: boolean;
+	addedPlayers: string[];
+	message: string;
+}
+
+export interface SimulateMatchResult {
+	success: boolean;
+	matchId: number;
+	winnerId: string;
+	player1Score: number;
+	player2Score: number;
+}
+
+/**
+ * Add test players to a tournament (DEV ONLY)
+ */
+export async function addTestPlayers(
+	tournamentId: number,
+	count: number = 7
+): Promise<AddTestPlayersResult | null> {
+	const { data, error } = await api.post<AddTestPlayersResult>(
+		`/api/admin/tournament/${tournamentId}/test-players`,
+		{ count }
+	);
+	if (error) {
+		console.error('Failed to add test players:', error);
+		return null;
+	}
+	return data ?? null;
+}
+
+/**
+ * Simulate a match winner (DEV ONLY)
+ */
+export async function simulateMatchWinner(
+	tournamentId: number,
+	matchId: number,
+	winnerId: string
+): Promise<SimulateMatchResult | null> {
+	const { data, error } = await api.post<SimulateMatchResult>(
+		`/api/admin/tournament/${tournamentId}/match/${matchId}/simulate`,
+		{ winnerId }
+	);
+	if (error) {
+		console.error('Failed to simulate match:', error);
+		return null;
+	}
+	return data ?? null;
 }

@@ -138,7 +138,11 @@
 												{tournament.difficulty}
 											</span>
 											<span class="opacity-60">
-												{tournament.participants}/{tournament.maxParticipants} players
+												{#if tournament.maxParticipants}
+													{tournament.participants}/{tournament.maxParticipants} players
+												{:else}
+													{tournament.participants} joined
+												{/if}
 											</span>
 											<span class="opacity-60">{tournament.timeLimit}s per round</span>
 											{#if tournament.roundsPerMatch}
@@ -150,7 +154,7 @@
 									<!-- Actions based on status -->
 									<div class="flex gap-2 flex-shrink-0">
 										{#if tournament.status === 'open'}
-											{#if tournament.participants < tournament.maxParticipants}
+											{#if !tournament.maxParticipants || tournament.participants < tournament.maxParticipants}
 												<Button
 													variant="lime"
 													onclick={() => handleJoin(tournament.id)}
