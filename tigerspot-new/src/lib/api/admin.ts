@@ -11,6 +11,9 @@ export interface Picture {
 	uploader?: {
 		displayName: string;
 	};
+	showInDaily: boolean;
+	showInVersus: boolean;
+	showInTournament: boolean;
 }
 
 export interface AdminUser {
@@ -37,7 +40,7 @@ export interface ImageUploadResult {
 
 export interface CreateTournamentData {
 	name: string;
-	difficulty?: 'EASY' | 'MEDIUM' | 'HARD';
+	// difficulty removed - tournaments use mixed difficulty that escalates through stages
 	timeLimit?: number;
 	roundsPerMatch?: number;
 	maxParticipants?: number;
@@ -88,7 +91,12 @@ export async function listImages(): Promise<Picture[]> {
 export async function uploadImage(
 	file: File,
 	difficulty?: 'EASY' | 'MEDIUM' | 'HARD',
-	coordinates?: { lat: number; lng: number }
+	coordinates?: { lat: number; lng: number },
+	visibility?: {
+		showInDaily?: boolean;
+		showInVersus?: boolean;
+		showInTournament?: boolean;
+	}
 ): Promise<ImageUploadResult | null> {
 	const formData = new FormData();
 	formData.append('image', file);
@@ -96,6 +104,16 @@ export async function uploadImage(
 	if (coordinates) {
 		formData.append('latitude', coordinates.lat.toString());
 		formData.append('longitude', coordinates.lng.toString());
+	}
+	// Add visibility flags
+	if (visibility?.showInDaily !== undefined) {
+		formData.append('showInDaily', visibility.showInDaily.toString());
+	}
+	if (visibility?.showInVersus !== undefined) {
+		formData.append('showInVersus', visibility.showInVersus.toString());
+	}
+	if (visibility?.showInTournament !== undefined) {
+		formData.append('showInTournament', visibility.showInTournament.toString());
 	}
 
 	const { data, error } = await api.uploadFile<ImageUploadResult>(
@@ -118,6 +136,9 @@ export async function updateImage(
 		latitude?: number;
 		longitude?: number;
 		difficulty?: 'EASY' | 'MEDIUM' | 'HARD';
+		showInDaily?: boolean;
+		showInVersus?: boolean;
+		showInTournament?: boolean;
 	}
 ): Promise<Picture | null> {
 	const { data, error } = await api.put<Picture>(`/api/admin/images/${id}`, updates);

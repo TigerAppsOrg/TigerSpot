@@ -61,6 +61,11 @@ model Picture {
   uploadedBy   String?    @db.VarChar(255)
   createdAt    DateTime   @default(now())
 
+  // Mode visibility flags
+  showInDaily      Boolean @default(true)
+  showInVersus     Boolean @default(true)
+  showInTournament Boolean @default(true)
+
   // Relations
   uploader         User?             @relation("PictureUploader", fields: [uploadedBy], references: [username])
   dailyChallenges  DailyChallenge[]
@@ -155,7 +160,7 @@ model Tournament {
   id              Int              @id @default(autoincrement())
   name            String           @db.VarChar(255)
   status          TournamentStatus @default(OPEN)
-  difficulty      Difficulty       @default(MEDIUM)
+  // difficulty removed - tournaments use mixed difficulty that escalates through stages
   timeLimit       Int              @default(120) // seconds per round
   roundsPerMatch  Int              @default(5)
   maxParticipants Int?             // null = unlimited

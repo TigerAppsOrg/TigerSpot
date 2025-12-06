@@ -73,6 +73,11 @@ export class AdminController {
 				// Get difficulty from request body
 				const difficulty = (req.body.difficulty as Difficulty) || 'MEDIUM';
 
+				// Get visibility flags from request body (default to true if not specified)
+				const showInDaily = req.body.showInDaily !== 'false';
+				const showInVersus = req.body.showInVersus !== 'false';
+				const showInTournament = req.body.showInTournament !== 'false';
+
 				// Create database record
 				const picture = await this.imageService.createPicture({
 					cloudinaryId: uploadResult.publicId,
@@ -80,7 +85,10 @@ export class AdminController {
 					latitude,
 					longitude,
 					difficulty,
-					uploadedBy: req.user!.username
+					uploadedBy: req.user!.username,
+					showInDaily,
+					showInVersus,
+					showInTournament
 				});
 
 				res.json({
@@ -113,13 +121,17 @@ export class AdminController {
 			return;
 		}
 
-		const { latitude, longitude, difficulty } = req.body;
+		const { latitude, longitude, difficulty, showInDaily, showInVersus, showInTournament } =
+			req.body;
 
 		try {
 			const picture = await this.imageService.updatePicture(id, {
 				latitude,
 				longitude,
-				difficulty
+				difficulty,
+				showInDaily,
+				showInVersus,
+				showInTournament
 			});
 
 			res.json(picture);
@@ -199,11 +211,11 @@ export class AdminController {
 
 	/**
 	 * Create a new tournament
+	 * Note: Tournaments use mixed difficulty that escalates through stages
 	 */
 	createTournament = async (req: AuthRequest, res: Response) => {
 		const {
 			name,
-			difficulty = 'MEDIUM',
 			timeLimit = 120,
 			roundsPerMatch = 5,
 			maxParticipants // null = unlimited (no default)
@@ -218,7 +230,6 @@ export class AdminController {
 			const tournament = await prisma.tournament.create({
 				data: {
 					name,
-					difficulty,
 					timeLimit,
 					roundsPerMatch,
 					maxParticipants: maxParticipants ?? null,

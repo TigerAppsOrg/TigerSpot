@@ -15,7 +15,6 @@
 
 	// Form state
 	let name = $state('');
-	let difficulty = $state<'EASY' | 'MEDIUM' | 'HARD'>('MEDIUM');
 	let timeLimit = $state(30);
 	let roundsPerMatch = $state(5);
 	let testPlayerCount = $state(7);
@@ -26,12 +25,6 @@
 
 	// Tournaments from API
 	let tournaments = $state<Tournament[]>([]);
-
-	const difficultyOptions = [
-		{ value: 'EASY', label: 'Easy', color: 'bg-lime' },
-		{ value: 'MEDIUM', label: 'Medium', color: 'bg-cyan' },
-		{ value: 'HARD', label: 'Hard', color: 'bg-magenta' }
-	];
 
 	const statusColors: Record<string, string> = {
 		open: 'bg-white text-black',
@@ -59,7 +52,6 @@
 
 		const result = await createTournament({
 			name: name.trim(),
-			difficulty,
 			timeLimit,
 			roundsPerMatch
 		});
@@ -70,7 +62,6 @@
 
 			// Reset form
 			name = '';
-			difficulty = 'MEDIUM';
 			timeLimit = 30;
 			roundsPerMatch = 5;
 
@@ -143,25 +134,6 @@
 					class="w-full brutal-border px-4 py-3 font-bold focus:outline-none focus:ring-4 focus:ring-orange/50"
 				/>
 			</div>
-
-			<!-- Difficulty -->
-			<fieldset>
-				<legend class="block text-sm font-bold uppercase mb-2">Difficulty</legend>
-				<div class="grid grid-cols-3 gap-2">
-					{#each difficultyOptions as option}
-						<button
-							type="button"
-							onclick={() => (difficulty = option.value as 'EASY' | 'MEDIUM' | 'HARD')}
-							class="brutal-border px-4 py-3 font-bold text-sm uppercase transition-all {difficulty ===
-							option.value
-								? `${option.color} text-white`
-								: 'bg-white hover:bg-gray/50'}"
-						>
-							{option.label}
-						</button>
-					{/each}
-				</div>
-			</fieldset>
 
 			<!-- Time Limit -->
 			<div>
@@ -237,7 +209,7 @@
 						</div>
 						<div class="flex flex-wrap gap-3 text-sm">
 							<span class="opacity-60">
-								<span class="font-bold">{tournament.difficulty}</span> difficulty
+								<span class="font-bold capitalize">{tournament.difficulty}</span> difficulty
 							</span>
 							<span class="opacity-60">
 								<span class="font-bold">{tournament.participants}</span>

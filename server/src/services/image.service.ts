@@ -9,7 +9,9 @@ import { tmpdir } from 'os';
 import { join } from 'path';
 import { config } from '../config/index.js';
 import { prisma } from '../config/database.js';
-import type { Difficulty } from '@prisma/client';
+import type { Difficulty, Prisma } from '@prisma/client';
+
+export type GameMode = 'daily' | 'versus' | 'tournament';
 
 // Configure Cloudinary
 cloudinary.config({
@@ -251,9 +253,22 @@ export class ImageService {
 		longitude: number;
 		difficulty: Difficulty;
 		uploadedBy: string;
+		showInDaily?: boolean;
+		showInVersus?: boolean;
+		showInTournament?: boolean;
 	}) {
 		return prisma.picture.create({
-			data
+			data: {
+				cloudinaryId: data.cloudinaryId,
+				imageUrl: data.imageUrl,
+				latitude: data.latitude,
+				longitude: data.longitude,
+				difficulty: data.difficulty,
+				uploadedBy: data.uploadedBy,
+				showInDaily: data.showInDaily ?? true,
+				showInVersus: data.showInVersus ?? true,
+				showInTournament: data.showInTournament ?? true
+			}
 		});
 	}
 
@@ -266,6 +281,9 @@ export class ImageService {
 			latitude?: number;
 			longitude?: number;
 			difficulty?: Difficulty;
+			showInDaily?: boolean;
+			showInVersus?: boolean;
+			showInTournament?: boolean;
 		}
 	) {
 		return prisma.picture.update({
@@ -305,10 +323,24 @@ export class ImageService {
 	}
 
 	/**
-	 * Get random pictures by difficulty
+	 * Get random pictures by difficulty and game mode
 	 */
-	async getRandomPictures(count: number, difficulty?: Difficulty) {
-		const where = difficulty ? { difficulty } : {};
+	async getRandomPictures(count: number, difficulty?: Difficulty, mode?: GameMode) {
+		const where: Prisma.PictureWhereInput = {};
+
+		// Filter by difficulty if specified
+		if (difficulty) {
+			where.difficulty = difficulty;
+		}
+
+		// Filter by mode visibility
+		if (mode === 'daily') {
+			where.showInDaily = true;
+		} else if (mode === 'versus') {
+			where.showInVersus = true;
+		} else if (mode === 'tournament') {
+			where.showInTournament = true;
+		}
 
 		const pictures = await prisma.picture.findMany({
 			where,

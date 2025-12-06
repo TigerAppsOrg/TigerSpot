@@ -19,6 +19,11 @@
 	let uploading = $state(false);
 	let loading = $state(true);
 
+	// Mode visibility flags
+	let showInDaily = $state(true);
+	let showInVersus = $state(true);
+	let showInTournament = $state(true);
+
 	// Images from API
 	let images = $state<Picture[]>([]);
 	let previewImage = $state<string | null>(null);
@@ -90,7 +95,11 @@
 		uploading = true;
 
 		// Upload to server - it handles Cloudinary upload
-		const result = await uploadImage(selectedFile, difficulty, coordinates);
+		const result = await uploadImage(selectedFile, difficulty, coordinates, {
+			showInDaily,
+			showInVersus,
+			showInTournament
+		});
 
 		if (result?.success && result.picture) {
 			// Add to local list
@@ -102,6 +111,9 @@
 			difficulty = 'MEDIUM';
 			coordinates = null;
 			hasGpsMetadata = false;
+			showInDaily = true;
+			showInVersus = true;
+			showInTournament = true;
 
 			// Show success
 			showSuccess = true;
@@ -213,6 +225,40 @@
 			</div>
 		</div>
 
+		<!-- Mode Visibility -->
+		<div class="mt-6">
+			<label class="block text-sm font-bold uppercase mb-2">Show In Game Modes</label>
+			<div class="flex flex-wrap gap-4">
+				<label class="flex items-center gap-2 cursor-pointer">
+					<input
+						type="checkbox"
+						bind:checked={showInDaily}
+						class="w-5 h-5 brutal-border accent-orange"
+					/>
+					<span class="font-bold">Daily</span>
+				</label>
+				<label class="flex items-center gap-2 cursor-pointer">
+					<input
+						type="checkbox"
+						bind:checked={showInVersus}
+						class="w-5 h-5 brutal-border accent-cyan"
+					/>
+					<span class="font-bold">Versus</span>
+				</label>
+				<label class="flex items-center gap-2 cursor-pointer">
+					<input
+						type="checkbox"
+						bind:checked={showInTournament}
+						class="w-5 h-5 brutal-border accent-magenta"
+					/>
+					<span class="font-bold">Tournament</span>
+				</label>
+			</div>
+			<p class="text-xs text-black/50 mt-1">
+				Uncheck a mode to hide this image from that game type
+			</p>
+		</div>
+
 		<div class="mt-8">
 			<Button variant="cyan" size="lg" onclick={handleAdd} disabled={uploading}>
 				{uploading ? 'Uploading...' : 'Add Image'}
@@ -251,9 +297,27 @@
 
 					<!-- Info -->
 					<div class="p-4">
-						<p class="text-xs font-mono opacity-60 mb-3">
+						<p class="text-xs font-mono opacity-60 mb-2">
 							{image.latitude.toFixed(6)}, {image.longitude.toFixed(6)}
 						</p>
+						<!-- Mode badges -->
+						<div class="flex gap-1 mb-3">
+							{#if image.showInDaily}
+								<span class="text-[10px] bg-orange brutal-border px-1.5 py-0.5 font-bold">D</span>
+							{/if}
+							{#if image.showInVersus}
+								<span class="text-[10px] bg-cyan brutal-border px-1.5 py-0.5 font-bold">V</span>
+							{/if}
+							{#if image.showInTournament}
+								<span
+									class="text-[10px] bg-magenta brutal-border px-1.5 py-0.5 font-bold text-white"
+									>T</span
+								>
+							{/if}
+							{#if !image.showInDaily && !image.showInVersus && !image.showInTournament}
+								<span class="text-[10px] text-black/40 italic">Hidden from all modes</span>
+							{/if}
+						</div>
 						<div class="flex gap-2 flex-wrap">
 							<Button
 								variant="cyan"

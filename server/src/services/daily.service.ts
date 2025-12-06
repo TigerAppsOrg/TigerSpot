@@ -16,7 +16,9 @@ export class DailyService {
 
 		// If no challenge set for today, pick a random picture
 		if (!dailyChallenge) {
-			const pictures = await prisma.picture.findMany();
+			const pictures = await prisma.picture.findMany({
+				where: { showInDaily: true }
+			});
 			if (pictures.length === 0) {
 				return null;
 			}

@@ -103,8 +103,12 @@ export class VersusService {
 			throw new Error('Active challenge already exists with this player');
 		}
 
-		// Get random pictures for the match
-		const pictures = await this.imageService.getRandomPictures(ROUNDS_PER_MATCH);
+		// Get random pictures for the match (filtered by versus mode visibility)
+		const pictures = await this.imageService.getRandomPictures(
+			ROUNDS_PER_MATCH,
+			undefined,
+			'versus'
+		);
 
 		if (pictures.length < ROUNDS_PER_MATCH) {
 			throw new Error('Not enough pictures available');
