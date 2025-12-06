@@ -17,7 +17,7 @@
 		class?: string;
 	} = $props();
 
-	const displayValue = typeof value === 'number' ? value.toLocaleString() : value;
+	let displayValue = $derived(typeof value === 'number' ? value.toLocaleString() : value);
 </script>
 
 <Card {variant} class="text-center py-6 {className}">
