@@ -251,6 +251,7 @@ export class TournamentController {
 
 	/**
 	 * Get match status (for polling)
+	 * Only participants and admins can view match status to prevent spying
 	 */
 	getMatchStatus = async (req: AuthRequest, res: Response) => {
 		const matchId = parseInt(req.params.matchId, 10);
@@ -265,6 +266,17 @@ export class TournamentController {
 				res.status(404).json({ error: 'Match not found' });
 				return;
 			}
+
+			// Authorization: only participants and admins can view match status
+			const isAdmin = req.user?.isAdmin ?? false;
+			const username = req.user?.username;
+			const isParticipant = username === status.player1Id || username === status.player2Id;
+
+			if (!isAdmin && !isParticipant) {
+				res.status(403).json({ error: 'Not authorized to view this match' });
+				return;
+			}
+
 			res.json(status);
 		} catch (error) {
 			console.error('Error getting match status:', error);

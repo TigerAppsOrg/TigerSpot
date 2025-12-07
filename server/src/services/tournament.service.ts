@@ -382,6 +382,36 @@ export class TournamentService {
 			throw new Error('You are not part of this match');
 		}
 
+		// Check if already submitted or started (must check BEFORE calculating score)
+		const existing = await prisma.tournamentRound.findFirst({
+			where: {
+				matchId,
+				roundNumber,
+				playerUsername: username
+			}
+		});
+
+		if (existing?.submittedAt) {
+			throw new Error('Already submitted this round');
+		}
+
+		// Anti-cheat: Calculate actual time from server-side startedAt
+		// Don't trust client-provided timeSeconds
+		let actualTimeSeconds = timeSeconds;
+		const GRACE_PERIOD_SECONDS = 5;
+		if (existing?.startedAt) {
+			const elapsedMs = Date.now() - existing.startedAt.getTime();
+			actualTimeSeconds = Math.floor(elapsedMs / 1000);
+
+			// Enforce submission deadline (time limit + grace period)
+			if (actualTimeSeconds > match.tournament.timeLimit + GRACE_PERIOD_SECONDS) {
+				throw new Error('Time limit exceeded');
+			}
+
+			// Cap at time limit for scoring purposes
+			actualTimeSeconds = Math.min(actualTimeSeconds, match.tournament.timeLimit);
+		}
+
 		// Get the round template
 		const templateRound = await prisma.tournamentRound.findFirst({
 			where: {
@@ -396,27 +426,14 @@ export class TournamentService {
 			throw new Error('Round not found');
 		}
 
-		// Calculate score
+		// Calculate score using server-verified time
 		const distance = calculateDistance(
 			latitude,
 			longitude,
 			templateRound.picture.latitude,
 			templateRound.picture.longitude
 		);
-		const points = calculateVersusPoints(distance, timeSeconds);
-
-		// Check if already submitted or started
-		const existing = await prisma.tournamentRound.findFirst({
-			where: {
-				matchId,
-				roundNumber,
-				playerUsername: username
-			}
-		});
-
-		if (existing?.submittedAt) {
-			throw new Error('Already submitted this round');
-		}
+		const points = calculateVersusPoints(distance, actualTimeSeconds);
 
 		if (existing) {
 			// Update existing record (started but not submitted)
@@ -427,7 +444,7 @@ export class TournamentService {
 					guessLng: longitude,
 					distance: Math.round(distance),
 					points,
-					timeSeconds,
+					timeSeconds: actualTimeSeconds,
 					submittedAt: new Date()
 				}
 			});
@@ -443,7 +460,7 @@ export class TournamentService {
 					guessLng: longitude,
 					distance: Math.round(distance),
 					points,
-					timeSeconds,
+					timeSeconds: actualTimeSeconds,
 					startedAt: new Date(),
 					submittedAt: new Date()
 				}
