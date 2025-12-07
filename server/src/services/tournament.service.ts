@@ -615,6 +615,25 @@ export class TournamentService {
 			throw new Error('You are not authorized to view these results');
 		}
 
+		// Anti-cheat: Only allow viewing results if match is completed OR
+		// the requesting player has submitted all their rounds
+		// This prevents players from seeing correct locations before answering
+		if (!isAdmin && match.status !== 'COMPLETED') {
+			const roundsForMatch = await this.getRoundsForMatchFromPictures(
+				match.tournamentId,
+				match.bracketType,
+				match.roundNumber,
+				match.tournament.roundsPerMatch
+			);
+			const playerSubmissions = match.rounds.filter(
+				(r) => r.playerUsername === username && r.submittedAt !== null
+			).length;
+
+			if (playerSubmissions < roundsForMatch) {
+				throw new Error('Cannot view results until you have completed all rounds');
+			}
+		}
+
 		// Determine which player is "you" and which is "opponent"
 		const isPlayer1 = match.player1Id === username;
 		const you = isPlayer1 ? match.player1 : match.player2;
