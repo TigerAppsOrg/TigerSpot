@@ -93,7 +93,7 @@
 					variant="lime"
 					emoji="🏆"
 					title="Tournament"
-					description="Bracket-style competition. Double elimination!"
+					description="Bracket-style competition!"
 					stat="{activeTournaments} active"
 					cta="Compete"
 					class="md:col-span-2 xl:col-span-1"
