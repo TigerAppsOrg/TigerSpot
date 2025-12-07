@@ -12,6 +12,7 @@
 		onAccept,
 		onDecline,
 		onStart,
+		onCancel,
 		class: className = ''
 	}: {
 		opponent: string;
@@ -20,20 +21,31 @@
 		onAccept?: () => void;
 		onDecline?: () => void;
 		onStart?: () => void;
+		onCancel?: () => void;
 		class?: string;
 	} = $props();
 
 	const bgClass = status === 'sent' ? 'bg-gray/30' : 'bg-white';
 </script>
 
-<div class="brutal-border p-4 {bgClass} {className}">
+<div class="brutal-border p-4 text-black {bgClass} {className}">
 	<div class="flex items-center justify-between gap-4 mb-3 flex-wrap">
 		<div>
 			<div class="font-black {status === 'pending' ? 'text-lg' : ''}">{opponent}</div>
 			<div class="text-xs opacity-60">{formatTimeAgo(createdAt)}</div>
 		</div>
 		{#if status === 'sent'}
-			<StatusBadge status="WAITING" variant="white" class="opacity-60" />
+			<div class="flex items-center gap-2">
+				<StatusBadge status="WAITING" variant="white" class="opacity-60" />
+				{#if onCancel}
+					<button
+						onclick={onCancel}
+						class="text-xs opacity-60 hover:opacity-100 hover:text-red-600 transition-opacity"
+					>
+						✕ Cancel
+					</button>
+				{/if}
+			</div>
 		{/if}
 	</div>
 

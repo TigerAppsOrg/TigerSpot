@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onMount, onDestroy } from 'svelte';
 	import { goto } from '$app/navigation';
 	import Button from '$lib/components/Button.svelte';
 	import Card from '$lib/components/Card.svelte';
@@ -11,8 +11,10 @@
 		getAvailablePlayers,
 		getChallenges,
 		createChallenge,
+		sendHeartbeat,
 		acceptChallenge as apiAcceptChallenge,
 		declineChallenge as apiDeclineChallenge,
+		cancelChallenge as apiCancelChallenge,
 		type Player,
 		type Challenge
 	} from '$lib/api/versus';
@@ -25,6 +27,9 @@
 	let completedMatches = $state<Challenge[]>([]);
 	let loading = $state(true);
 
+	let pollInterval: ReturnType<typeof setInterval> | null = null;
+	const POLL_INTERVAL_MS = 5000; // Poll every 5 seconds
+
 	onMount(async () => {
 		// Redirect to login if not authenticated
 		if (!userStore.isAuthenticated && !userStore.loading) {
@@ -32,10 +37,26 @@
 			return;
 		}
 		await loadData();
+		startPolling();
 	});
+
+	onDestroy(() => {
+		if (pollInterval) {
+			clearInterval(pollInterval);
+		}
+	});
+
+	function startPolling() {
+		// Poll for updates every 5 seconds
+		pollInterval = setInterval(async () => {
+			await refreshData();
+		}, POLL_INTERVAL_MS);
+	}
 
 	async function loadData() {
 		loading = true;
+		// Send heartbeat when loading data
+		await sendHeartbeat();
 		const [playersData, challengesData] = await Promise.all([
 			getAvailablePlayers(),
 			getChallenges()
@@ -46,6 +67,21 @@
 		activeMatches = challengesData.active;
 		completedMatches = challengesData.completed;
 		loading = false;
+	}
+
+	// Refresh without showing loading state
+	async function refreshData() {
+		// Send heartbeat on every refresh to maintain presence
+		await sendHeartbeat();
+		const [playersData, challengesData] = await Promise.all([
+			getAvailablePlayers(),
+			getChallenges()
+		]);
+		players = playersData;
+		receivedChallenges = challengesData.received;
+		sentChallenges = challengesData.sent;
+		activeMatches = challengesData.active;
+		completedMatches = challengesData.completed;
 	}
 
 	async function challengePlayer(username: string) {
@@ -70,6 +106,13 @@
 		const success = await apiDeclineChallenge(id);
 		if (success) {
 			receivedChallenges = receivedChallenges.filter((c) => c.id !== id);
+		}
+	}
+
+	async function handleCancelChallenge(id: number) {
+		const success = await apiCancelChallenge(id);
+		if (success) {
+			sentChallenges = sentChallenges.filter((c) => c.id !== id);
 		}
 	}
 
@@ -172,6 +215,7 @@
 										opponent={challenge.opponentDisplayName || challenge.opponent}
 										createdAt={new Date(challenge.createdAt)}
 										status="sent"
+										onCancel={() => handleCancelChallenge(challenge.id)}
 									/>
 								{/each}
 							</div>

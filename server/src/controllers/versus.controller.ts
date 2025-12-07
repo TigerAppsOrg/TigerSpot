@@ -6,10 +6,25 @@ export class VersusController {
 	private versusService = new VersusService();
 
 	/**
-	 * Get available players to challenge
+	 * Heartbeat to update user presence on versus page
+	 */
+	heartbeat = async (req: AuthRequest, res: Response) => {
+		try {
+			await this.versusService.updatePresence(req.user!.username);
+			res.json({ success: true });
+		} catch (error) {
+			console.error('Error updating presence:', error);
+			res.status(500).json({ error: 'Failed to update presence' });
+		}
+	};
+
+	/**
+	 * Get available players to challenge (only online users)
 	 */
 	getPlayers = async (req: AuthRequest, res: Response) => {
 		try {
+			// Update presence when fetching players
+			await this.versusService.updatePresence(req.user!.username);
 			const players = await this.versusService.getAvailablePlayers(req.user!.username);
 			res.json(players);
 		} catch (error) {
@@ -88,6 +103,25 @@ export class VersusController {
 			res.json(challenge);
 		} catch (error) {
 			console.error('Error declining challenge:', error);
+			res.status(400).json({ error: (error as Error).message });
+		}
+	};
+
+	/**
+	 * Cancel a sent challenge
+	 */
+	cancelChallenge = async (req: AuthRequest, res: Response) => {
+		const challengeId = parseInt(req.params.id, 10);
+		if (isNaN(challengeId)) {
+			res.status(400).json({ error: 'Invalid challenge ID' });
+			return;
+		}
+
+		try {
+			const result = await this.versusService.cancelChallenge(challengeId, req.user!.username);
+			res.json(result);
+		} catch (error) {
+			console.error('Error canceling challenge:', error);
 			res.status(400).json({ error: (error as Error).message });
 		}
 	};

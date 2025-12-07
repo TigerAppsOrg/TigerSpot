@@ -9,14 +9,15 @@ datasource db {
 // ==================== USERS ====================
 
 model User {
-  username    String   @id @db.VarChar(255) // Princeton NetID
-  displayName String   @db.VarChar(255)
-  email       String?  @db.VarChar(255)
-  classYear   String?  @db.VarChar(20) // "2026" or "Graduate"
-  totalPoints Int      @default(0)
-  isAdmin     Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  username       String    @id @db.VarChar(255) // Princeton NetID
+  displayName    String    @db.VarChar(255)
+  email          String?   @db.VarChar(255)
+  classYear      String?   @db.VarChar(20) // "2026" or "Graduate"
+  totalPoints    Int       @default(0)
+  isAdmin        Boolean   @default(false)
+  lastSeenVersus DateTime? // Presence tracking for versus mode
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   // Relations
   daily                  UserDaily?

@@ -39,7 +39,19 @@ export interface RoundResult {
 }
 
 /**
- * Get available players to challenge
+ * Send heartbeat to update presence on versus page
+ */
+export async function sendHeartbeat(): Promise<boolean> {
+	const { error } = await api.post('/api/versus/heartbeat');
+	if (error) {
+		console.error('Failed to send heartbeat:', error);
+		return false;
+	}
+	return true;
+}
+
+/**
+ * Get available players to challenge (only those currently on versus page)
  */
 export async function getAvailablePlayers(): Promise<Player[]> {
 	const { data, error } = await api.get<Player[]>('/api/versus/players');
@@ -95,6 +107,18 @@ export async function declineChallenge(challengeId: number): Promise<boolean> {
 	const { error } = await api.post(`/api/versus/${challengeId}/decline`);
 	if (error) {
 		console.error('Failed to decline challenge:', error);
+		return false;
+	}
+	return true;
+}
+
+/**
+ * Cancel a sent challenge
+ */
+export async function cancelChallenge(challengeId: number): Promise<boolean> {
+	const { error } = await api.delete(`/api/versus/${challengeId}`);
+	if (error) {
+		console.error('Failed to cancel challenge:', error);
 		return false;
 	}
 	return true;

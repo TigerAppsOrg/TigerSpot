@@ -4,17 +4,32 @@ import { calculateDistance, calculateVersusPoints } from '../utils/distance.js';
 import type { ChallengeResponse } from '../types/index.js';
 
 const ROUNDS_PER_MATCH = 5;
+const PRESENCE_TIMEOUT_SECONDS = 30; // Users are "online" if seen within this time
+const CHALLENGE_EXPIRY_MINUTES = 2; // Pending challenges expire after this time
 
 export class VersusService {
 	private imageService = new ImageService();
 
 	/**
-	 * Get available players to challenge
+	 * Update user's presence on versus page (heartbeat)
+	 */
+	async updatePresence(username: string) {
+		await prisma.user.update({
+			where: { username },
+			data: { lastSeenVersus: new Date() }
+		});
+	}
+
+	/**
+	 * Get available players to challenge (only those currently on versus page)
 	 */
 	async getAvailablePlayers(excludeUsername: string) {
+		const cutoffTime = new Date(Date.now() - PRESENCE_TIMEOUT_SECONDS * 1000);
+
 		const users = await prisma.user.findMany({
 			where: {
-				username: { not: excludeUsername }
+				username: { not: excludeUsername },
+				lastSeenVersus: { gte: cutoffTime }
 			},
 			select: {
 				username: true,
@@ -37,6 +52,16 @@ export class VersusService {
 		active: ChallengeResponse[];
 		completed: ChallengeResponse[];
 	}> {
+		// First, expire old pending challenges
+		const expiryTime = new Date(Date.now() - CHALLENGE_EXPIRY_MINUTES * 60 * 1000);
+		await prisma.challenge.updateMany({
+			where: {
+				status: 'PENDING',
+				createdAt: { lt: expiryTime }
+			},
+			data: { status: 'DECLINED' } // Mark expired as declined
+		});
+
 		const challenges = await prisma.challenge.findMany({
 			where: {
 				OR: [{ challengerId: username }, { challengeeId: username }]
@@ -85,9 +110,41 @@ export class VersusService {
 	}
 
 	/**
+	 * Cancel a sent challenge
+	 */
+	async cancelChallenge(challengeId: number, username: string) {
+		const challenge = await prisma.challenge.findUnique({
+			where: { id: challengeId }
+		});
+
+		if (!challenge) {
+			throw new Error('Challenge not found');
+		}
+
+		if (challenge.challengerId !== username) {
+			throw new Error('You can only cancel challenges you sent');
+		}
+
+		if (challenge.status !== 'PENDING') {
+			throw new Error('Can only cancel pending challenges');
+		}
+
+		// Delete the challenge and its rounds
+		await prisma.challengeRound.deleteMany({
+			where: { challengeId }
+		});
+
+		await prisma.challenge.delete({
+			where: { id: challengeId }
+		});
+
+		return { success: true };
+	}
+
+	/**
 	 * Create a new challenge
 	 */
-	async createChallenge(challengerId: string, challengeeId: string) {
+	async createChallenge(challengerId: string, challengeeId: string): Promise<ChallengeResponse> {
 		// Check if there's already an active challenge between these users
 		const existing = await prisma.challenge.findFirst({
 			where: {
@@ -137,7 +194,17 @@ export class VersusService {
 			});
 		}
 
-		return challenge;
+		// Return formatted response matching ChallengeResponse type
+		return {
+			id: challenge.id,
+			opponent: challengeeId,
+			opponentDisplayName: challenge.challengee.displayName,
+			status: 'pending',
+			isChallenger: true,
+			createdAt: challenge.createdAt,
+			yourScore: 0,
+			theirScore: 0
+		};
 	}
 
 	/**

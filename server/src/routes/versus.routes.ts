@@ -8,7 +8,10 @@ const versusController = new VersusController();
 // All versus routes require authentication
 router.use(authMiddleware);
 
-// List available opponents
+// Heartbeat to update presence
+router.post('/heartbeat', versusController.heartbeat);
+
+// List available opponents (also updates presence)
 router.get('/players', versusController.getPlayers);
 
 // Get user's challenges (sent, received, active, completed)
@@ -22,6 +25,9 @@ router.post('/:id/accept', versusController.acceptChallenge);
 
 // Decline a challenge
 router.post('/:id/decline', versusController.declineChallenge);
+
+// Cancel a sent challenge
+router.delete('/:id', versusController.cancelChallenge);
 
 // Get challenge details
 router.get('/:id', versusController.getChallenge);
