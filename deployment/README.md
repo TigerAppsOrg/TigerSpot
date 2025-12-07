@@ -37,6 +37,21 @@ Internet ──────────▶│  Nginx (80/443)                   
 - SSH key pair for EC2
 - GitHub repository with Actions enabled
 
+## System Dependencies
+
+The image service requires these system packages to be installed on the server:
+
+| Package | Purpose |
+| --- | --- |
+| `perl` | Required by `exiftool-vendored` for EXIF/GPS extraction from images (including HEIC) |
+| `libvips-dev` | Required by `sharp` for image processing and conversion |
+
+These are installed automatically by the `setup.sh` script. If setting up manually, run:
+
+```bash
+sudo apt install -y perl libvips-dev
+```
+
 ---
 
 ## CI/CD with GitHub Actions
@@ -229,6 +244,11 @@ sudo npm install -g pnpm pm2
 
 # Install Nginx and Certbot
 sudo apt install -y nginx certbot python3-certbot-nginx git
+
+# Install image processing dependencies
+# - perl: Required by exiftool-vendored for EXIF extraction from images
+# - libvips-dev: Required by sharp for image processing
+sudo apt install -y perl libvips-dev
 
 # Create directories
 mkdir -p ~/logs ~/tigerspot
@@ -492,6 +512,25 @@ psql "postgresql://postgres:PASSWORD@RDS_ENDPOINT:5432/tigerspot"
 
 ```bash
 sudo netstat -tlnp | grep -E '3000|4000|80|443'
+```
+
+### Image processing errors
+
+If you see errors related to EXIF extraction or image processing:
+
+```bash
+# Ensure Perl is installed (required by exiftool-vendored)
+perl -v
+
+# Ensure libvips is installed (required by sharp)
+vips --version
+
+# If missing, install them:
+sudo apt install -y perl libvips-dev
+
+# Then reinstall npm dependencies to rebuild native modules
+cd ~/tigerspot
+pnpm install --force
 ```
 
 ---

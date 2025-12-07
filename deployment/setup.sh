@@ -36,6 +36,12 @@ sudo apt install -y certbot python3-certbot-nginx
 echo "Installing Git..."
 sudo apt install -y git
 
+# Install dependencies for image processing
+# - perl: Required by exiftool-vendored for EXIF extraction
+# - libvips-dev: Required by sharp for image processing (optional, sharp has prebuilt binaries)
+echo "Installing image processing dependencies..."
+sudo apt install -y perl libvips-dev
+
 # Create logs directory
 echo "Creating logs directory..."
 mkdir -p ~/logs
