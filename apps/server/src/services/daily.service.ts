@@ -185,9 +185,10 @@ export class DailyService {
 			}
 		}
 
-		// Check if timed out today (startedAt is today and guessLat is null)
+		// Check if timed out today (startedAt is today, guessLat is null, AND played is true)
 		// This handles the case where user timed out but we didn't set lastPlayed
-		if (userDaily.startedAt && userDaily.guessLat === null) {
+		// We must check played === true to distinguish from users who started but haven't submitted yet
+		if (userDaily.startedAt && userDaily.guessLat === null && userDaily.played === true) {
 			const startedAt = new Date(userDaily.startedAt);
 			startedAt.setHours(0, 0, 0, 0);
 			if (startedAt.getTime() === today.getTime()) {
