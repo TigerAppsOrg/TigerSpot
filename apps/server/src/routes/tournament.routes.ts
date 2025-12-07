@@ -1,8 +1,8 @@
-import { Router } from 'express';
+import { Router, type Router as RouterType } from 'express';
 import { TournamentController } from '../controllers/tournament.controller.js';
 import { authMiddleware } from '../middleware/auth.js';
 
-const router = Router();
+const router: RouterType = Router();
 const tournamentController = new TournamentController();
 
 // All tournament routes require authentication

@@ -1,8 +1,8 @@
-import { Router } from 'express';
+import { Router, type Router as RouterType } from 'express';
 import { AuthController } from '../controllers/auth.controller.js';
 import { config } from '../config/index.js';
 
-const router = Router();
+const router: RouterType = Router();
 const authController = new AuthController();
 
 // Redirect to Princeton CAS login

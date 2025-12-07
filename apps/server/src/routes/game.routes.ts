@@ -1,8 +1,8 @@
-import { Router } from 'express';
+import { Router, type Router as RouterType } from 'express';
 import { GameController } from '../controllers/game.controller.js';
 import { authMiddleware } from '../middleware/auth.js';
 
-const router = Router();
+const router: RouterType = Router();
 const gameController = new GameController();
 
 // All game routes require authentication

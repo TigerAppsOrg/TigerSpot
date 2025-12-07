@@ -1,8 +1,8 @@
-import { Router } from 'express';
+import { Router, type Router as RouterType } from 'express';
 import { VersusController } from '../controllers/versus.controller.js';
 import { authMiddleware } from '../middleware/auth.js';
 
-const router = Router();
+const router: RouterType = Router();
 const versusController = new VersusController();
 
 // All versus routes require authentication

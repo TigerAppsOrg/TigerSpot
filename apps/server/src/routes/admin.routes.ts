@@ -1,10 +1,10 @@
-import { Router } from 'express';
+import { Router, type Router as RouterType } from 'express';
 import { AdminController } from '../controllers/admin.controller.js';
 import { authMiddleware } from '../middleware/auth.js';
 import { adminMiddleware } from '../middleware/admin.js';
 import multer from 'multer';
 
-const router = Router();
+const router: RouterType = Router();
 const adminController = new AdminController();
 
 // Configure multer for image uploads (memory storage for processing before Cloudinary)
