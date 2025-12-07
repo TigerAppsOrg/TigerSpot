@@ -43,6 +43,10 @@ export interface CreateTournamentData {
 	// difficulty removed - tournaments use mixed difficulty that escalates through stages
 	timeLimit?: number;
 	roundsPerMatch?: number;
+	// Special round counts for finals (null/undefined = use roundsPerMatch)
+	finalsRounds?: number;
+	losersFinalsRounds?: number;
+	grandFinalsRounds?: number;
 	maxParticipants?: number;
 }
 

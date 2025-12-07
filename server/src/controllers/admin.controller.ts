@@ -227,6 +227,9 @@ export class AdminController {
 			name,
 			timeLimit = 120,
 			roundsPerMatch = 5,
+			finalsRounds,
+			losersFinalsRounds,
+			grandFinalsRounds,
 			maxParticipants // null = unlimited (no default)
 		} = req.body;
 
@@ -252,6 +255,9 @@ export class AdminController {
 					joinCode,
 					timeLimit,
 					roundsPerMatch,
+					finalsRounds: finalsRounds ?? null,
+					losersFinalsRounds: losersFinalsRounds ?? null,
+					grandFinalsRounds: grandFinalsRounds ?? null,
 					maxParticipants: maxParticipants ?? null,
 					createdBy: req.user!.username
 				}

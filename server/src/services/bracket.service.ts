@@ -301,7 +301,12 @@ export class BracketService {
 		// Pre-select pictures for all bracket rounds
 		const tournament = await prisma.tournament.findUnique({
 			where: { id: tournamentId },
-			select: { roundsPerMatch: true }
+			select: {
+				roundsPerMatch: true,
+				finalsRounds: true,
+				losersFinalsRounds: true,
+				grandFinalsRounds: true
+			}
 		});
 		const roundsPerMatch = tournament?.roundsPerMatch || 5;
 
@@ -309,7 +314,10 @@ export class BracketService {
 			tournamentId,
 			winnersRounds,
 			losersRoundsCount,
-			roundsPerMatch
+			roundsPerMatch,
+			tournament?.finalsRounds ?? null,
+			tournament?.losersFinalsRounds ?? null,
+			tournament?.grandFinalsRounds ?? null
 		);
 
 		return { winnersMatches, losersMatches, grandFinalId: grandFinal.id };
@@ -616,15 +624,19 @@ export class BracketService {
 		tournamentId: number,
 		winnersRounds: number,
 		losersRoundsCount: number,
-		roundsPerMatch: number
+		roundsPerMatch: number,
+		finalsRounds: number | null,
+		losersFinalsRounds: number | null,
+		grandFinalsRounds: number | null
 	) {
 		const usedPictureIds = new Set<number>();
 
-		// Define all bracket rounds with their difficulty distribution
+		// Define all bracket rounds with their difficulty distribution and round count
 		const bracketRoundConfigs: {
 			bracketType: BracketType;
 			roundNumber: number;
 			distribution: DifficultyDistribution;
+			pictureCount: number;
 		}[] = [];
 
 		// Winners bracket rounds
@@ -635,10 +647,14 @@ export class BracketService {
 				winnersRounds,
 				losersRoundsCount
 			);
+			// Use finalsRounds for the last winners bracket round (winners final)
+			const isWinnersFinal = round === winnersRounds;
+			const pictureCount = isWinnersFinal && finalsRounds ? finalsRounds : roundsPerMatch;
 			bracketRoundConfigs.push({
 				bracketType: 'WINNERS',
 				roundNumber: round,
-				distribution
+				distribution,
+				pictureCount
 			});
 		}
 
@@ -650,24 +666,30 @@ export class BracketService {
 				winnersRounds,
 				losersRoundsCount
 			);
+			// Use losersFinalsRounds for the last losers bracket round (losers final)
+			const isLosersFinal = round === losersRoundsCount;
+			const pictureCount =
+				isLosersFinal && losersFinalsRounds ? losersFinalsRounds : roundsPerMatch;
 			bracketRoundConfigs.push({
 				bracketType: 'LOSERS',
 				roundNumber: round,
-				distribution
+				distribution,
+				pictureCount
 			});
 		}
 
-		// Grand Final
+		// Grand Final - use grandFinalsRounds if specified
 		bracketRoundConfigs.push({
 			bracketType: 'GRAND_FINAL',
 			roundNumber: 1,
-			distribution: { EASY: 0, MEDIUM: 0, HARD: 100 }
+			distribution: { EASY: 0, MEDIUM: 0, HARD: 100 },
+			pictureCount: grandFinalsRounds ?? roundsPerMatch
 		});
 
 		// Select pictures for each bracket round
 		for (const config of bracketRoundConfigs) {
 			const pictures = await this.selectPicturesForRound(
-				roundsPerMatch,
+				config.pictureCount,
 				config.distribution,
 				usedPictureIds
 			);

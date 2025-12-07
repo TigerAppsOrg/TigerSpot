@@ -165,6 +165,10 @@ model Tournament {
   // difficulty removed - tournaments use mixed difficulty that escalates through stages
   timeLimit       Int              @default(120) // seconds per round
   roundsPerMatch  Int              @default(5)
+  // Special round counts for finals (null = use roundsPerMatch)
+  finalsRounds       Int?          // Winners bracket final
+  losersFinalsRounds Int?          // Losers bracket final
+  grandFinalsRounds  Int?          // Grand final
   maxParticipants Int?             // null = unlimited
 
   createdBy   String    @db.VarChar(255)

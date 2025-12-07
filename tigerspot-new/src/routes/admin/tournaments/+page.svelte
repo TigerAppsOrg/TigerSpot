@@ -17,6 +17,9 @@
 	let name = $state('');
 	let timeLimit = $state(30);
 	let roundsPerMatch = $state(5);
+	let finalsRounds = $state<number | undefined>(undefined);
+	let losersFinalsRounds = $state<number | undefined>(undefined);
+	let grandFinalsRounds = $state<number | undefined>(undefined);
 	let testPlayerCount = $state(7);
 	let showSuccess = $state(false);
 	let creating = $state(false);
@@ -53,7 +56,10 @@
 		const result = await createTournament({
 			name: name.trim(),
 			timeLimit,
-			roundsPerMatch
+			roundsPerMatch,
+			finalsRounds,
+			losersFinalsRounds,
+			grandFinalsRounds
 		});
 
 		if (result) {
@@ -64,6 +70,9 @@
 			name = '';
 			timeLimit = 30;
 			roundsPerMatch = 5;
+			finalsRounds = undefined;
+			losersFinalsRounds = undefined;
+			grandFinalsRounds = undefined;
 
 			// Show success message
 			showSuccess = true;
@@ -169,6 +178,62 @@
 				<span class="text-sm"
 					>All tournaments use double elimination format. Any number of participants can join.</span
 				>
+			</div>
+
+			<!-- Finals Rounds Section -->
+			<div class="md:col-span-2 mt-4">
+				<h4 class="text-sm font-bold uppercase mb-4 text-black/60">
+					Finals Round Counts (Optional - leave blank to use default)
+				</h4>
+				<div class="grid md:grid-cols-3 gap-4">
+					<!-- Winners Finals Rounds -->
+					<div>
+						<label for="finalsRounds" class="block text-xs font-bold uppercase mb-2"
+							>Winners Final</label
+						>
+						<input
+							id="finalsRounds"
+							type="number"
+							bind:value={finalsRounds}
+							min="1"
+							max="15"
+							placeholder={roundsPerMatch.toString()}
+							class="w-full brutal-border px-4 py-3 font-bold focus:outline-none focus:ring-4 focus:ring-orange/50"
+						/>
+					</div>
+
+					<!-- Losers Finals Rounds -->
+					<div>
+						<label for="losersFinalsRounds" class="block text-xs font-bold uppercase mb-2"
+							>Losers Final</label
+						>
+						<input
+							id="losersFinalsRounds"
+							type="number"
+							bind:value={losersFinalsRounds}
+							min="1"
+							max="15"
+							placeholder={roundsPerMatch.toString()}
+							class="w-full brutal-border px-4 py-3 font-bold focus:outline-none focus:ring-4 focus:ring-orange/50"
+						/>
+					</div>
+
+					<!-- Grand Finals Rounds -->
+					<div>
+						<label for="grandFinalsRounds" class="block text-xs font-bold uppercase mb-2"
+							>Grand Final</label
+						>
+						<input
+							id="grandFinalsRounds"
+							type="number"
+							bind:value={grandFinalsRounds}
+							min="1"
+							max="15"
+							placeholder={roundsPerMatch.toString()}
+							class="w-full brutal-border px-4 py-3 font-bold focus:outline-none focus:ring-4 focus:ring-orange/50"
+						/>
+					</div>
+				</div>
 			</div>
 		</div>
 

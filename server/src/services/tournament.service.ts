@@ -207,6 +207,14 @@ export class TournamentService {
 			throw new Error('You are not authorized to access this match');
 		}
 
+		// Determine the correct number of rounds for this match by counting pre-selected pictures
+		const roundsForMatch = await this.getRoundsForMatchFromPictures(
+			match.tournament.id,
+			match.bracketType,
+			match.roundNumber,
+			match.tournament.roundsPerMatch
+		);
+
 		// Check if rounds already generated for this match
 		const existingRounds = await prisma.tournamentRound.findMany({
 			where: {
@@ -221,7 +229,7 @@ export class TournamentService {
 			orderBy: { roundNumber: 'asc' }
 		});
 
-		if (existingRounds.length === match.tournament.roundsPerMatch) {
+		if (existingRounds.length === roundsForMatch) {
 			return existingRounds.map((r) => ({
 				roundNumber: r.roundNumber,
 				pictureId: r.picture.id,
@@ -243,13 +251,13 @@ export class TournamentService {
 			orderBy: { pictureIndex: 'asc' }
 		});
 
-		if (bracketRoundPictures.length < match.tournament.roundsPerMatch) {
+		if (bracketRoundPictures.length < roundsForMatch) {
 			throw new Error('Pre-selected pictures not found for this bracket round');
 		}
 
 		// Create TournamentRound records for this match using the pre-selected pictures
 		const rounds = [];
-		for (let i = 0; i < match.tournament.roundsPerMatch; i++) {
+		for (let i = 0; i < roundsForMatch; i++) {
 			const round = await prisma.tournamentRound.create({
 				data: {
 					matchId,
@@ -356,6 +364,12 @@ export class TournamentService {
 		}
 
 		// Check if both players finished all rounds
+		const roundsForMatch = await this.getRoundsForMatchFromPictures(
+			match.tournamentId,
+			match.bracketType,
+			match.roundNumber,
+			match.tournament.roundsPerMatch
+		);
 		const player1Rounds = await prisma.tournamentRound.count({
 			where: { matchId, playerUsername: match.player1Id }
 		});
@@ -363,10 +377,7 @@ export class TournamentService {
 			where: { matchId, playerUsername: match.player2Id }
 		});
 
-		if (
-			player1Rounds === match.tournament.roundsPerMatch &&
-			player2Rounds === match.tournament.roundsPerMatch
-		) {
+		if (player1Rounds === roundsForMatch && player2Rounds === roundsForMatch) {
 			// Calculate totals
 			const player1Total = await this.calculatePlayerTotal(matchId, match.player1Id!);
 			const player2Total = await this.calculatePlayerTotal(matchId, match.player2Id!);
@@ -521,9 +532,15 @@ export class TournamentService {
 		const yourTotalTime = yourRounds.reduce((sum, r) => sum + (r.timeSeconds || 0), 0);
 		const opponentTotalTime = opponentRounds.reduce((sum, r) => sum + (r.timeSeconds || 0), 0);
 
-		// Check completion status
-		const yourFinished = yourRounds.length === match.tournament.roundsPerMatch;
-		const opponentFinished = opponentRounds.length === match.tournament.roundsPerMatch;
+		// Check completion status using actual round count for this match
+		const roundsForMatch = await this.getRoundsForMatchFromPictures(
+			match.tournamentId,
+			match.bracketType,
+			match.roundNumber,
+			match.tournament.roundsPerMatch
+		);
+		const yourFinished = yourRounds.length === roundsForMatch;
+		const opponentFinished = opponentRounds.length === roundsForMatch;
 
 		// Determine if tiebreaker was used
 		const tiebreaker = yourTotal === opponentTotal && match.winnerId ? 'time' : null;
@@ -604,6 +621,12 @@ export class TournamentService {
 
 		if (!match) return null;
 
+		const roundsForMatch = await this.getRoundsForMatchFromPictures(
+			match.tournamentId,
+			match.bracketType,
+			match.roundNumber,
+			match.tournament.roundsPerMatch
+		);
 		const player1Rounds = match.rounds.filter((r) => r.playerUsername === match.player1Id).length;
 		const player2Rounds = match.rounds.filter((r) => r.playerUsername === match.player2Id).length;
 
@@ -614,10 +637,30 @@ export class TournamentService {
 			player2Id: match.player2Id,
 			player1Progress: player1Rounds,
 			player2Progress: player2Rounds,
-			totalRounds: match.tournament.roundsPerMatch,
-			player1Finished: player1Rounds === match.tournament.roundsPerMatch,
-			player2Finished: player2Rounds === match.tournament.roundsPerMatch,
+			totalRounds: roundsForMatch,
+			player1Finished: player1Rounds === roundsForMatch,
+			player2Finished: player2Rounds === roundsForMatch,
 			winnerId: match.winnerId
 		};
+	}
+
+	/**
+	 * Helper to get rounds for a match by counting pre-selected pictures
+	 * This is the source of truth as the bracket service pre-selected the correct number
+	 */
+	private async getRoundsForMatchFromPictures(
+		tournamentId: number,
+		bracketType: string,
+		roundNumber: number,
+		fallback: number
+	): Promise<number> {
+		const count = await prisma.tournamentBracketRound.count({
+			where: {
+				tournamentId,
+				bracketType: bracketType as 'WINNERS' | 'LOSERS' | 'GRAND_FINAL',
+				roundNumber
+			}
+		});
+		return count > 0 ? count : fallback;
 	}
 }
