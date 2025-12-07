@@ -18,6 +18,10 @@
 	let loading = $state(true);
 	let submitting = $state(false);
 	let guessCoords = $state<{ lat: number; lng: number } | null>(null);
+	let mapComponent: Map;
+
+	// Image modal state
+	let showImageModal = $state(false);
 
 	onMount(async () => {
 		// Redirect to login if not authenticated
@@ -83,6 +87,14 @@
 			submitGuess();
 		}
 	}
+
+	function openImageModal() {
+		showImageModal = true;
+	}
+
+	function closeImageModal() {
+		showImageModal = false;
+	}
 </script>
 
 <svelte:head>
@@ -109,10 +121,15 @@
 	<div class="min-h-screen bg-primary flex flex-col">
 		<!-- Fixed Header -->
 		<header class="header-fixed bg-white brutal-border">
-			<div class="w-full h-full px-6 flex items-center justify-between">
-				<a href="/menu">
-					<img src="/logo.png" alt="TigerSpot Logo" class="inline-block w-40" />
-				</a>
+			<div class="w-full h-full px-4 md:px-6 flex items-center justify-between">
+				<div class="flex items-center gap-4">
+					<a href="/menu">
+						<img src="/logo.png" alt="TigerSpot Logo" class="inline-block w-32 md:w-40" />
+					</a>
+					<div class="brutal-border bg-orange text-white px-3 py-1 font-bold text-sm">
+						Daily Challenge
+					</div>
+				</div>
 				<Timer duration={120} onComplete={handleTimeUp} />
 			</div>
 		</header>
@@ -126,12 +143,34 @@
 						<div class="p-5 flex items-center justify-between">
 							<h2 class="text-xl font-black uppercase">Where is this?</h2>
 						</div>
-						<div class="relative grow bg-gray w-full block min-h-[300px]">
+						<div
+							class="relative bg-white w-full overflow-hidden flex items-center justify-center h-[40vh] lg:h-[50vh]"
+						>
 							<img
 								src={challenge.imageUrl}
 								alt="Where is this location?"
-								class="w-full h-full object-cover"
+								class="max-w-full max-h-full object-contain"
 							/>
+							<button
+								onclick={openImageModal}
+								class="absolute top-3 right-3 brutal-border brutal-shadow bg-white hover:bg-gray px-3 py-2 transition-colors"
+								title="Expand image"
+							>
+								<svg
+									xmlns="http://www.w3.org/2000/svg"
+									class="h-5 w-5"
+									fill="none"
+									viewBox="0 0 24 24"
+									stroke="currentColor"
+									stroke-width="2.5"
+								>
+									<path
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"
+									/>
+								</svg>
+							</button>
 						</div>
 					</Card>
 				</div>
@@ -150,7 +189,11 @@
 							</span>
 						</div>
 						<div class="grow min-h-[300px] lg:min-h-0">
-							<Map onSelect={handleMapSelect} guessLocation={guessCoords ?? undefined} />
+							<Map
+								bind:this={mapComponent}
+								onSelect={handleMapSelect}
+								guessLocation={guessCoords ?? undefined}
+							/>
 						</div>
 					</Card>
 				</div>
@@ -160,13 +203,13 @@
 		<!-- Submit Bar -->
 		<footer class="bg-white brutal-border border-b-0 border-x-0 flex-shrink-0 py-5">
 			<div class="container-brutal flex items-center justify-between">
-				<div class="text-sm opacity-60">
+				<div class="flex items-center gap-4">
 					{#if guessCoords}
-						<span class="font-mono font-bold">
+						<span class="font-mono font-bold text-sm opacity-60">
 							{guessCoords.lat.toFixed(4)}, {guessCoords.lng.toFixed(4)}
 						</span>
 					{:else}
-						Click on the map to place your guess
+						<span class="text-sm opacity-60">Click on the map to place your guess</span>
 					{/if}
 				</div>
 				<Button
@@ -180,4 +223,30 @@
 			</div>
 		</footer>
 	</div>
+
+	<!-- Image Modal -->
+	{#if showImageModal}
+		<div
+			class="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-[2000]"
+			onclick={closeImageModal}
+		>
+			<div
+				class="relative max-w-7xl max-h-[90vh] brutal-border brutal-shadow-lg bg-white p-4"
+				onclick={(e) => e.stopPropagation()}
+			>
+				<button
+					onclick={closeImageModal}
+					class="absolute -top-4 -right-4 brutal-border brutal-shadow bg-white hover:bg-gray px-4 py-3 font-black text-xl transition-colors"
+					title="Close"
+				>
+					✕
+				</button>
+				<img
+					src={challenge.imageUrl}
+					alt="Where is this location?"
+					class="max-w-full max-h-[85vh] object-contain"
+				/>
+			</div>
+		</div>
+	{/if}
 {/if}
