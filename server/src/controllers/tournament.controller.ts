@@ -119,7 +119,8 @@ export class TournamentController {
 		}
 
 		try {
-			const match = await this.tournamentService.getMatch(matchId);
+			const isAdmin = req.user?.isAdmin ?? false;
+			const match = await this.tournamentService.getMatch(matchId, req.user!.username, isAdmin);
 			if (!match) {
 				res.status(404).json({ error: 'Match not found' });
 				return;
@@ -127,7 +128,7 @@ export class TournamentController {
 			res.json(match);
 		} catch (error) {
 			console.error('Error getting match:', error);
-			res.status(500).json({ error: 'Failed to get match' });
+			res.status(400).json({ error: (error as Error).message });
 		}
 	};
 
@@ -142,11 +143,16 @@ export class TournamentController {
 		}
 
 		try {
-			const rounds = await this.tournamentService.getMatchRounds(matchId);
+			const isAdmin = req.user?.isAdmin ?? false;
+			const rounds = await this.tournamentService.getMatchRounds(
+				matchId,
+				req.user!.username,
+				isAdmin
+			);
 			res.json(rounds);
 		} catch (error) {
 			console.error('Error getting match rounds:', error);
-			res.status(500).json({ error: 'Failed to get match rounds' });
+			res.status(400).json({ error: (error as Error).message });
 		}
 	};
 
@@ -199,7 +205,12 @@ export class TournamentController {
 		}
 
 		try {
-			const results = await this.tournamentService.getMatchResults(matchId, req.user!.username);
+			const isAdmin = req.user?.isAdmin ?? false;
+			const results = await this.tournamentService.getMatchResults(
+				matchId,
+				req.user!.username,
+				isAdmin
+			);
 			res.json(results);
 		} catch (error) {
 			console.error('Error getting match results:', error);

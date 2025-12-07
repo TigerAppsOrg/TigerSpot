@@ -52,7 +52,8 @@
 		// Fetch match details to get opponent name and time limit
 		const matchDetails = await getMatch(tournamentId, matchId);
 		if (!matchDetails) {
-			goto('/tournament');
+			// Unauthorized or not found - redirect to bracket
+			goto(`/tournament/${tournamentId}`);
 			return;
 		}
 
@@ -100,7 +101,8 @@
 
 		const rounds = await getMatchRounds(tournamentId, matchId);
 		if (rounds.length === 0) {
-			goto('/tournament');
+			// Unauthorized or no rounds - redirect to bracket
+			goto(`/tournament/${tournamentId}`);
 			return;
 		}
 

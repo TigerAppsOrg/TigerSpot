@@ -185,12 +185,31 @@ export async function submitMatchRound(
 	return data ?? null;
 }
 
+export interface RoundDetail {
+	roundNumber: number;
+	imageUrl: string;
+	actual: { lat: number; lng: number };
+	you: {
+		guess: { lat: number; lng: number };
+		distance: number;
+		points: number;
+		time: number;
+	} | null;
+	opponent: {
+		guess: { lat: number; lng: number };
+		distance: number;
+		points: number;
+		time: number;
+	} | null;
+}
+
 export interface MatchResults {
 	matchId: number;
 	tournamentId: number;
 	status: string;
 	bracketType: 'WINNERS' | 'LOSERS' | 'GRAND_FINAL';
 	tiebreaker: 'time' | null;
+	rounds: RoundDetail[];
 	you: {
 		username: string;
 		displayName: string;

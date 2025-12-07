@@ -5,7 +5,7 @@
 	import Button from '$lib/components/Button.svelte';
 	import Card from '$lib/components/Card.svelte';
 	import Header from '$lib/components/Header.svelte';
-	import { userStore } from '$lib/stores/user.svelte';
+	import Map from '$lib/components/Map.svelte';
 	import { getMatchResults, type MatchResults } from '$lib/api/tournament';
 
 	const matchId = parseInt($page.params.matchId);
@@ -15,6 +15,23 @@
 
 	let loading = $state(true);
 	let results = $state<MatchResults | null>(null);
+
+	// Round review state
+	let reviewRoundIndex = $state(0);
+	const currentReviewRound = $derived(results?.rounds[reviewRoundIndex] ?? null);
+	const totalRounds = $derived(results?.rounds.length ?? 0);
+
+	function nextRound() {
+		if (reviewRoundIndex < totalRounds - 1) {
+			reviewRoundIndex++;
+		}
+	}
+
+	function prevRound() {
+		if (reviewRoundIndex > 0) {
+			reviewRoundIndex--;
+		}
+	}
 
 	onMount(async () => {
 		if (!tournamentId || !matchId) {
@@ -27,8 +44,8 @@
 		if (data) {
 			results = data;
 		} else {
-			// Failed to load - redirect back
-			goto('/tournament');
+			// Failed to load (unauthorized or not found) - redirect to bracket
+			goto(`/tournament/${tournamentId}`);
 		}
 		loading = false;
 	});
@@ -76,11 +93,6 @@
 		if (isEliminated) return "You've been knocked out of the tournament. Better luck next time!";
 		return "You've been moved to the losers bracket. Win your way back!";
 	});
-
-	// Pad scores arrays to same length for display
-	const maxRounds = $derived(
-		results ? Math.max(results.you.scores.length, results.opponent.scores.length) : 0
-	);
 </script>
 
 <svelte:head>
@@ -202,6 +214,144 @@
 						</div>
 					</div>
 				</Card>
+
+				<!-- Round Review -->
+				{#if currentReviewRound}
+					<Card class="mb-10">
+						<div class="flex items-center justify-between mb-6">
+							<h2 class="text-xl font-black uppercase">Review Rounds</h2>
+							<div class="flex items-center gap-4">
+								<button
+									onclick={prevRound}
+									disabled={reviewRoundIndex === 0}
+									class="brutal-border bg-white px-4 py-2 font-bold disabled:opacity-30 disabled:cursor-not-allowed hover:bg-gray transition-colors"
+								>
+									← Prev
+								</button>
+								<span class="font-black">
+									Round {reviewRoundIndex + 1} / {totalRounds}
+								</span>
+								<button
+									onclick={nextRound}
+									disabled={reviewRoundIndex >= totalRounds - 1}
+									class="brutal-border bg-white px-4 py-2 font-bold disabled:opacity-30 disabled:cursor-not-allowed hover:bg-gray transition-colors"
+								>
+									Next →
+								</button>
+							</div>
+						</div>
+
+						<div class="grid lg:grid-cols-2 gap-6">
+							<!-- Image -->
+							<div class="brutal-border overflow-hidden">
+								<img
+									src={currentReviewRound.imageUrl}
+									alt="Round {currentReviewRound.roundNumber} location"
+									class="w-full h-64 object-cover"
+								/>
+							</div>
+
+							<!-- Map with guesses -->
+							<div class="brutal-border h-64 overflow-hidden">
+								{#key reviewRoundIndex}
+									<Map
+										readonly
+										showActualLocation={currentReviewRound.actual}
+										guessLocation={currentReviewRound.you?.guess}
+										opponentGuessLocation={currentReviewRound.opponent?.guess}
+									/>
+								{/key}
+							</div>
+						</div>
+
+						<!-- Round Stats -->
+						<div class="grid md:grid-cols-2 gap-4 mt-6">
+							<!-- Your stats -->
+							<div
+								class="brutal-border p-4 {currentReviewRound.you &&
+								currentReviewRound.opponent &&
+								currentReviewRound.you.points > currentReviewRound.opponent.points
+									? 'bg-lime/20'
+									: 'bg-white'}"
+							>
+								<div class="flex items-center gap-2 mb-2">
+									<div class="w-4 h-4 bg-magenta brutal-border"></div>
+									<span class="font-bold">You</span>
+								</div>
+								{#if currentReviewRound.you}
+									<div class="grid grid-cols-3 gap-2 text-sm">
+										<div>
+											<div class="text-black/60 uppercase text-xs">Points</div>
+											<div class="font-black text-lg">
+												{currentReviewRound.you.points.toLocaleString()}
+											</div>
+										</div>
+										<div>
+											<div class="text-black/60 uppercase text-xs">Distance</div>
+											<div class="font-bold">{currentReviewRound.you.distance}m</div>
+										</div>
+										<div>
+											<div class="text-black/60 uppercase text-xs">Time</div>
+											<div class="font-bold">{formatTime(currentReviewRound.you.time)}</div>
+										</div>
+									</div>
+								{:else}
+									<div class="text-black/40">No submission</div>
+								{/if}
+							</div>
+
+							<!-- Opponent stats -->
+							<div
+								class="brutal-border p-4 {currentReviewRound.you &&
+								currentReviewRound.opponent &&
+								currentReviewRound.opponent.points > currentReviewRound.you.points
+									? 'bg-lime/20'
+									: 'bg-white'}"
+							>
+								<div class="flex items-center gap-2 mb-2">
+									<div class="w-4 h-4 bg-cyan brutal-border"></div>
+									<span class="font-bold">{results.opponent.displayName}</span>
+								</div>
+								{#if currentReviewRound.opponent}
+									<div class="grid grid-cols-3 gap-2 text-sm">
+										<div>
+											<div class="text-black/60 uppercase text-xs">Points</div>
+											<div class="font-black text-lg">
+												{currentReviewRound.opponent.points.toLocaleString()}
+											</div>
+										</div>
+										<div>
+											<div class="text-black/60 uppercase text-xs">Distance</div>
+											<div class="font-bold">{currentReviewRound.opponent.distance}m</div>
+										</div>
+										<div>
+											<div class="text-black/60 uppercase text-xs">Time</div>
+											<div class="font-bold">{formatTime(currentReviewRound.opponent.time)}</div>
+										</div>
+									</div>
+								{:else}
+									<div class="text-black/40">No submission</div>
+								{/if}
+							</div>
+						</div>
+
+						<!-- Legend -->
+						<div class="flex flex-wrap gap-4 mt-4 text-sm">
+							<div class="flex items-center gap-2">
+								<div class="w-4 h-4 bg-magenta brutal-border"></div>
+								<span>Your guess</span>
+							</div>
+							<div class="flex items-center gap-2">
+								<div class="w-4 h-4 bg-cyan brutal-border"></div>
+								<span>Opponent's guess</span>
+							</div>
+							<div class="flex items-center gap-2">
+								<div class="w-4 h-4 bg-lime brutal-border"></div>
+								<span>Actual location</span>
+							</div>
+						</div>
+					</Card>
+				{/if}
 
 				<!-- What's Next -->
 				<Card variant={isWinner ? 'lime' : 'magenta'} class="text-center py-8 mb-10">

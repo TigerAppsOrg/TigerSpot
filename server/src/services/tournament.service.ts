@@ -154,8 +154,8 @@ export class TournamentService {
 	/**
 	 * Get match details
 	 */
-	async getMatch(matchId: number) {
-		return prisma.tournamentMatch.findUnique({
+	async getMatch(matchId: number, username: string, isAdmin: boolean = false) {
+		const match = await prisma.tournamentMatch.findUnique({
 			where: { id: matchId },
 			include: {
 				player1: { select: { displayName: true } },
@@ -170,6 +170,18 @@ export class TournamentService {
 				}
 			}
 		});
+
+		if (!match) {
+			return null;
+		}
+
+		// Authorization check: user must be admin or a participant in this match
+		const isParticipant = match.player1Id === username || match.player2Id === username;
+		if (!isAdmin && !isParticipant) {
+			throw new Error('You are not authorized to access this match');
+		}
+
+		return match;
 	}
 
 	/**
@@ -177,7 +189,7 @@ export class TournamentService {
 	 * Uses pre-selected pictures from TournamentBracketRound
 	 * All matches in the same bracket round share the same pictures
 	 */
-	async getMatchRounds(matchId: number) {
+	async getMatchRounds(matchId: number, username: string, isAdmin: boolean = false) {
 		const match = await prisma.tournamentMatch.findUnique({
 			where: { id: matchId },
 			include: {
@@ -187,6 +199,12 @@ export class TournamentService {
 
 		if (!match) {
 			throw new Error('Match not found');
+		}
+
+		// Authorization check: user must be admin or a participant in this match
+		const isParticipant = match.player1Id === username || match.player2Id === username;
+		if (!isAdmin && !isParticipant) {
+			throw new Error('You are not authorized to access this match');
 		}
 
 		// Check if rounds already generated for this match
@@ -446,7 +464,7 @@ export class TournamentService {
 	/**
 	 * Get match results with both players' scores
 	 */
-	async getMatchResults(matchId: number, username: string) {
+	async getMatchResults(matchId: number, username: string, isAdmin: boolean = false) {
 		const match = await prisma.tournamentMatch.findUnique({
 			where: { id: matchId },
 			include: {
@@ -454,7 +472,11 @@ export class TournamentService {
 				player1: { select: { username: true, displayName: true } },
 				player2: { select: { username: true, displayName: true } },
 				rounds: {
-					where: { playerUsername: { not: null } },
+					include: {
+						picture: {
+							select: { id: true, imageUrl: true, latitude: true, longitude: true }
+						}
+					},
 					orderBy: [{ roundNumber: 'asc' }, { playerUsername: 'asc' }]
 				}
 			}
@@ -462,6 +484,12 @@ export class TournamentService {
 
 		if (!match) {
 			throw new Error('Match not found');
+		}
+
+		// Authorization check: user must be admin or a participant in this match
+		const isParticipant = match.player1Id === username || match.player2Id === username;
+		if (!isAdmin && !isParticipant) {
+			throw new Error('You are not authorized to view these results');
 		}
 
 		// Determine which player is "you" and which is "opponent"
@@ -477,6 +505,11 @@ export class TournamentService {
 			.sort((a, b) => a.roundNumber - b.roundNumber);
 		const opponentRounds = match.rounds
 			.filter((r) => r.playerUsername === opponentId)
+			.sort((a, b) => a.roundNumber - b.roundNumber);
+
+		// Get template rounds (for picture info)
+		const templateRounds = match.rounds
+			.filter((r) => r.playerUsername === null)
 			.sort((a, b) => a.roundNumber - b.roundNumber);
 
 		const yourScores = yourRounds.map((r) => r.points || 0);
@@ -495,12 +528,44 @@ export class TournamentService {
 		// Determine if tiebreaker was used
 		const tiebreaker = yourTotal === opponentTotal && match.winnerId ? 'time' : null;
 
+		// Build detailed round info for review
+		const rounds = templateRounds.map((template, i) => {
+			const yourRound = yourRounds.find((r) => r.roundNumber === template.roundNumber);
+			const opponentRound = opponentRounds.find((r) => r.roundNumber === template.roundNumber);
+
+			return {
+				roundNumber: template.roundNumber,
+				imageUrl: template.picture.imageUrl,
+				actual: {
+					lat: template.picture.latitude,
+					lng: template.picture.longitude
+				},
+				you: yourRound
+					? {
+							guess: { lat: yourRound.guessLat!, lng: yourRound.guessLng! },
+							distance: yourRound.distance || 0,
+							points: yourRound.points || 0,
+							time: yourRound.timeSeconds || 0
+						}
+					: null,
+				opponent: opponentRound
+					? {
+							guess: { lat: opponentRound.guessLat!, lng: opponentRound.guessLng! },
+							distance: opponentRound.distance || 0,
+							points: opponentRound.points || 0,
+							time: opponentRound.timeSeconds || 0
+						}
+					: null
+			};
+		});
+
 		return {
 			matchId: match.id,
 			tournamentId: match.tournament.id,
 			status: match.status,
 			bracketType: match.bracketType, // WINNERS, LOSERS, or GRAND_FINAL
 			tiebreaker, // 'time' if tiebreaker was used, null otherwise
+			rounds, // Detailed round info for review
 			you: {
 				username: you?.username || '',
 				displayName: you?.displayName || 'Unknown',

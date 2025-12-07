@@ -6,6 +6,7 @@
 		readonly?: boolean;
 		showActualLocation?: { lat: number; lng: number };
 		guessLocation?: { lat: number; lng: number };
+		opponentGuessLocation?: { lat: number; lng: number };
 		onSelect?: (coords: { lat: number; lng: number }) => void;
 		class?: string;
 		centerOnGuess?: boolean;
@@ -15,6 +16,7 @@
 		readonly = false,
 		showActualLocation,
 		guessLocation,
+		opponentGuessLocation,
 		onSelect,
 		class: className = '',
 		centerOnGuess = false
@@ -23,8 +25,10 @@
 	let mapContainer: HTMLDivElement;
 	let map: L.Map;
 	let guessMarker: L.Marker | null = null;
+	let opponentMarker: L.Marker | null = null;
 	let actualMarker: L.Marker | null = null;
 	let connectingLine: L.Polyline | null = null;
+	let opponentConnectingLine: L.Polyline | null = null;
 	let leaflet: typeof L;
 	let isInitialized = $state(false);
 	let lastClickedCoords: { lat: number; lng: number } | null = null;
@@ -49,6 +53,15 @@
 		const guessIcon = leaflet.divIcon({
 			className: 'guess-marker',
 			html: `<div class="w-8 h-8 bg-magenta brutal-border brutal-shadow-sm flex items-center justify-center">
+				<span class="text-white font-bold">?</span>
+			</div>`,
+			iconSize: [32, 32],
+			iconAnchor: [16, 16]
+		});
+
+		const opponentIcon = leaflet.divIcon({
+			className: 'opponent-marker',
+			html: `<div class="w-8 h-8 bg-cyan brutal-border brutal-shadow-sm flex items-center justify-center">
 				<span class="text-white font-bold">?</span>
 			</div>`,
 			iconSize: [32, 32],
@@ -102,10 +115,25 @@
 				map.setView([guessLocation.lat, guessLocation.lng], 16);
 			}
 		}
+		if (opponentGuessLocation) {
+			setOpponentMarker(opponentGuessLocation.lat, opponentGuessLocation.lng, opponentIcon);
+		}
 		if (showActualLocation) {
 			setActualMarker(showActualLocation.lat, showActualLocation.lng, actualIcon);
 			if (guessLocation) {
-				drawLine(guessLocation, showActualLocation);
+				drawLine(guessLocation, showActualLocation, '#FF6600'); // Orange for your guess
+			}
+			if (opponentGuessLocation) {
+				drawOpponentLine(opponentGuessLocation, showActualLocation, '#4a8a9a'); // Cyan for opponent
+			}
+			// Fit bounds to show all markers
+			if (guessLocation || opponentGuessLocation) {
+				const points: [number, number][] = [[showActualLocation.lat, showActualLocation.lng]];
+				if (guessLocation) points.push([guessLocation.lat, guessLocation.lng]);
+				if (opponentGuessLocation)
+					points.push([opponentGuessLocation.lat, opponentGuessLocation.lng]);
+				const bounds = leaflet.latLngBounds(points);
+				map.fitBounds(bounds, { padding: [60, 60], maxZoom: 17 });
 			}
 		}
 
@@ -135,6 +163,13 @@
 		guessMarker = leaflet.marker([lat, lng], { icon }).addTo(map);
 	}
 
+	function setOpponentMarker(lat: number, lng: number, icon: L.DivIcon) {
+		if (opponentMarker) {
+			map.removeLayer(opponentMarker);
+		}
+		opponentMarker = leaflet.marker([lat, lng], { icon }).addTo(map);
+	}
+
 	function setActualMarker(lat: number, lng: number, icon: L.DivIcon) {
 		if (actualMarker) {
 			map.removeLayer(actualMarker);
@@ -142,7 +177,11 @@
 		actualMarker = leaflet.marker([lat, lng], { icon }).addTo(map);
 	}
 
-	function drawLine(from: { lat: number; lng: number }, to: { lat: number; lng: number }) {
+	function drawLine(
+		from: { lat: number; lng: number },
+		to: { lat: number; lng: number },
+		color: string = '#FF6600'
+	) {
 		if (connectingLine) {
 			map.removeLayer(connectingLine);
 		}
@@ -154,19 +193,36 @@
 					[to.lat, to.lng]
 				],
 				{
-					color: '#FF6600',
+					color,
 					weight: 4,
 					dashArray: '8, 8'
 				}
 			)
 			.addTo(map);
+	}
 
-		// Fit bounds to show both markers
-		const bounds = leaflet.latLngBounds([
-			[from.lat, from.lng],
-			[to.lat, to.lng]
-		]);
-		map.fitBounds(bounds, { padding: [80, 80], maxZoom: 17 });
+	function drawOpponentLine(
+		from: { lat: number; lng: number },
+		to: { lat: number; lng: number },
+		color: string = '#4a8a9a'
+	) {
+		if (opponentConnectingLine) {
+			map.removeLayer(opponentConnectingLine);
+		}
+
+		opponentConnectingLine = leaflet
+			.polyline(
+				[
+					[from.lat, from.lng],
+					[to.lat, to.lng]
+				],
+				{
+					color,
+					weight: 4,
+					dashArray: '8, 8'
+				}
+			)
+			.addTo(map);
 	}
 
 	export function clearMarker() {
