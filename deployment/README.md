@@ -41,10 +41,10 @@ Internet ──────────▶│  Nginx (80/443)                   
 
 The image service requires these system packages to be installed on the server:
 
-| Package | Purpose |
-| --- | --- |
-| `perl` | Required by `exiftool-vendored` for EXIF/GPS extraction from images (including HEIC) |
-| `libvips-dev` | Required by `sharp` for image processing and conversion |
+| Package       | Purpose                                                                              |
+| ------------- | ------------------------------------------------------------------------------------ |
+| `perl`        | Required by `exiftool-vendored` for EXIF/GPS extraction from images (including HEIC) |
+| `libvips-dev` | Required by `sharp` for image processing and conversion                              |
 
 These are installed automatically by the `setup.sh` script. If setting up manually, run:
 
@@ -67,6 +67,7 @@ Push/PR → CI (lint, typecheck, build) → Deploy (on main only)
 ### CI Pipeline
 
 Every push and pull request triggers:
+
 - **Lint**: Prettier format check
 - **Typecheck**: Frontend (svelte-check) + Backend (tsc)
 - **Build**: Verify frontend builds successfully
@@ -258,7 +259,7 @@ mkdir -p ~/logs ~/tigerspot
 
 ```bash
 cd ~/tigerspot
-git clone https://github.com/YOUR_USERNAME/tigerspot.git .
+git clone https://github.com/TigerAppsOrg/tigerspot.git .
 # Or use deploy keys for private repos
 ```
 
