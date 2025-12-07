@@ -247,23 +247,42 @@
 					<div class="space-y-3">
 						{#each completedMatches as match}
 							{@const won =
-								match.yourScore !== undefined &&
-								match.theirScore !== undefined &&
-								match.yourScore > match.theirScore}
+								match.theyForfeited ||
+								(!match.youForfeited &&
+									match.yourScore !== undefined &&
+									match.theirScore !== undefined &&
+									match.yourScore > match.theirScore)}
 							<div
 								class="brutal-border p-4 flex items-center justify-between gap-4 {won
 									? 'bg-lime/20'
-									: 'bg-gray/30'} flex-wrap"
+									: match.youForfeited
+										? 'bg-orange/20'
+										: 'bg-gray/30'} flex-wrap"
 							>
 								<div class="flex items-center gap-3">
-									<span class="text-2xl">{won ? '🏆' : '💔'}</span>
+									<span class="text-2xl">{match.youForfeited ? '🏳️' : won ? '🏆' : '💔'}</span>
 									<div>
 										<div class="font-black">
-											{won ? 'Victory' : 'Defeat'} vs {match.opponentDisplayName || match.opponent}
+											{#if match.youForfeited}
+												Forfeited vs {match.opponentDisplayName || match.opponent}
+											{:else if match.theyForfeited}
+												Victory vs {match.opponentDisplayName || match.opponent}
+											{:else}
+												{won ? 'Victory' : 'Defeat'} vs {match.opponentDisplayName ||
+													match.opponent}
+											{/if}
 										</div>
 										<div class="text-sm">
-											<span class="font-bold">{match.yourScore ?? 0}</span> -
-											<span class="font-bold">{match.theirScore ?? 0}</span>
+											{#if match.youForfeited}
+												<span class="text-orange font-bold">Forfeited</span> -
+												<span class="font-bold">{match.theirScore ?? 0}</span>
+											{:else if match.theyForfeited}
+												<span class="font-bold">{match.yourScore ?? 0}</span> -
+												<span class="text-orange font-bold">Forfeited</span>
+											{:else}
+												<span class="font-bold">{match.yourScore ?? 0}</span> -
+												<span class="font-bold">{match.theirScore ?? 0}</span>
+											{/if}
 										</div>
 									</div>
 								</div>

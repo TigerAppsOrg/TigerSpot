@@ -55,6 +55,8 @@ export interface ChallengeResponse {
 	createdAt: Date;
 	yourScore?: number;
 	theirScore?: number;
+	youForfeited?: boolean;
+	theyForfeited?: boolean;
 }
 
 // Tournament types

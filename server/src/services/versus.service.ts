@@ -99,6 +99,10 @@ export class VersusService {
 				? c.challengee.displayName
 				: c.challenger.displayName;
 
+			// Determine if either player forfeited
+			const youForfeited = c.forfeitedBy === username;
+			const theyForfeited = c.forfeitedBy !== null && c.forfeitedBy !== username;
+
 			return {
 				id: c.id,
 				opponent,
@@ -107,7 +111,9 @@ export class VersusService {
 				isChallenger,
 				createdAt: c.createdAt,
 				yourScore: isChallenger ? c.challengerPoints : c.challengeePoints,
-				theirScore: isChallenger ? c.challengeePoints : c.challengerPoints
+				theirScore: isChallenger ? c.challengeePoints : c.challengerPoints,
+				youForfeited,
+				theyForfeited
 			};
 		};
 
@@ -190,11 +196,12 @@ export class VersusService {
 			data: {
 				status: 'COMPLETED',
 				winnerId,
+				forfeitedBy: username,
 				completedAt: new Date()
 			}
 		});
 
-		return { success: true, winnerId };
+		return { success: true, winnerId, forfeitedBy: username };
 	}
 
 	/**
@@ -742,10 +749,17 @@ export class VersusService {
 			};
 		});
 
+		// Determine forfeit info
+		const youForfeited = challenge.forfeitedBy === yourId;
+		const opponentForfeited = challenge.forfeitedBy === opponentId;
+
 		return {
 			challengeId: challenge.id,
 			status: challenge.status,
 			tiebreaker,
+			forfeitedBy: challenge.forfeitedBy,
+			youForfeited,
+			opponentForfeited,
 			rounds,
 			you: {
 				username: you.username,

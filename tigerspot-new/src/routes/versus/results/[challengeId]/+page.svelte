@@ -47,13 +47,25 @@
 	// Winner determination
 	const isWinner = $derived(results ? results.winnerId === results.you.username : false);
 	const usedTiebreaker = $derived(results?.tiebreaker === 'time');
+	const youForfeited = $derived(results?.youForfeited ?? false);
+	const opponentForfeited = $derived(results?.opponentForfeited ?? false);
 
-	const resultEmoji = $derived(isWinner ? '🏆' : '💔');
+	const resultEmoji = $derived.by(() => {
+		if (youForfeited) return '🏳️';
+		if (opponentForfeited) return '🏆';
+		return isWinner ? '🏆' : '💔';
+	});
 	const resultText = $derived.by(() => {
+		if (youForfeited) return 'YOU FORFEITED';
+		if (opponentForfeited) return 'OPPONENT FORFEITED';
 		if (isWinner) return usedTiebreaker ? 'YOU WIN (TIEBREAKER)!' : 'YOU WIN!';
 		return 'YOU LOSE';
 	});
-	const resultColor = $derived(isWinner ? 'lime' : 'magenta');
+	const resultColor = $derived.by(() => {
+		if (youForfeited) return 'orange';
+		if (opponentForfeited) return 'lime';
+		return isWinner ? 'lime' : 'magenta';
+	});
 
 	// Format time as mm:ss
 	const formatTime = (seconds: number) => {
@@ -77,6 +89,12 @@
 	// Result message
 	const resultMessage = $derived.by(() => {
 		if (!results) return '';
+		if (youForfeited) {
+			return 'You forfeited the match. Your opponent wins by default.';
+		}
+		if (opponentForfeited) {
+			return `${results.opponent.displayName} forfeited the match. You win by default!`;
+		}
 		if (isWinner) {
 			if (usedTiebreaker) {
 				return `Scores tied! You won with faster time (${formatTime(results.you.totalTime)} vs ${formatTime(results.opponent.totalTime)}).`;

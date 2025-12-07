@@ -15,6 +15,8 @@ export interface Challenge {
 	createdAt: string;
 	yourScore?: number;
 	theirScore?: number;
+	youForfeited?: boolean;
+	theyForfeited?: boolean;
 }
 
 export interface ChallengesResponse {
@@ -79,6 +81,9 @@ export interface ChallengeResults {
 	challengeId: number;
 	status: string;
 	tiebreaker: 'time' | null;
+	forfeitedBy: string | null;
+	youForfeited: boolean;
+	opponentForfeited: boolean;
 	rounds: VersusRoundDetail[];
 	you: {
 		username: string;
