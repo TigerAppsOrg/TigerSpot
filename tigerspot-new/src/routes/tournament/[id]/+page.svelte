@@ -19,13 +19,6 @@
 	let simulating = $state(false);
 	let pollInterval: ReturnType<typeof setInterval> | null = null;
 
-	const difficultyColors: Record<string, string> = {
-		easy: 'bg-lime',
-		medium: 'bg-cyan',
-		hard: 'bg-magenta',
-		mixed: 'bg-orange'
-	};
-
 	const statusColors: Record<string, string> = {
 		open: 'bg-white',
 		in_progress: 'bg-orange',
@@ -255,13 +248,6 @@
 									]}"
 								>
 									{tournament.status === 'in_progress' ? 'LIVE' : tournament.status}
-								</span>
-								<span
-									class="brutal-border brutal-shadow-sm px-3 py-1 text-sm font-bold uppercase {difficultyColors[
-										tournament.difficulty
-									]}"
-								>
-									{tournament.difficulty}
 								</span>
 								<span class="text-sm text-black/60">
 									{tournament.timeLimit}s per round • {tournament.roundsPerMatch} rounds per match

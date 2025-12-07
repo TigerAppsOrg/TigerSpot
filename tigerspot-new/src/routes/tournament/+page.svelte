@@ -25,13 +25,6 @@
 		tournamentName: string;
 	} | null>(null);
 
-	const difficultyColors: Record<string, string> = {
-		easy: 'bg-lime',
-		medium: 'bg-cyan',
-		hard: 'bg-magenta',
-		mixed: 'bg-orange'
-	};
-
 	const statusConfig: Record<string, { color: string; label: string; icon: string }> = {
 		open: { color: 'bg-white text-black', label: 'OPEN', icon: '📋' },
 		in_progress: { color: 'bg-orange text-white', label: 'LIVE', icon: '🔥' },
@@ -162,13 +155,6 @@
 										</div>
 
 										<div class="flex flex-wrap gap-3 text-sm">
-											<span
-												class="brutal-border px-2 py-1 text-xs font-bold uppercase {difficultyColors[
-													tournament.difficulty
-												]} text-white"
-											>
-												{tournament.difficulty}
-											</span>
 											<span class="opacity-60">
 												{#if tournament.maxParticipants}
 													{tournament.participants}/{tournament.maxParticipants} players

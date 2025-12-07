@@ -181,10 +181,6 @@
 							<span class="text-black/60">Format:</span>
 							<span class="font-bold ml-2">Double Elimination</span>
 						</div>
-						<div>
-							<span class="text-black/60">Difficulty:</span>
-							<span class="font-bold ml-2 capitalize">{tournament.difficulty}</span>
-						</div>
 					</div>
 				</Card>
 
