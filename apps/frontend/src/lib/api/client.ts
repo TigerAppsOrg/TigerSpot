@@ -3,10 +3,12 @@
 
 // Use same hostname as frontend so it works on local network
 const getApiBaseUrl = () => {
-	if (import.meta.env.VITE_API_URL) {
+	// In production, VITE_API_URL is empty string (same origin, Nginx proxies /api)
+	// Check for undefined specifically since empty string is valid
+	if (import.meta.env.VITE_API_URL !== undefined) {
 		return import.meta.env.VITE_API_URL;
 	}
-	// In browser, use same host as frontend (works for localhost and local network IP)
+	// Dev fallback: use same host as frontend with backend port
 	if (typeof window !== 'undefined') {
 		return `http://${window.location.hostname}:3001`;
 	}
