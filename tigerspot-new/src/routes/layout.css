@@ -161,7 +161,7 @@ h6,
 	left: 8px;
 	right: 8px;
 	height: 70px;
-	z-index: 1000;
+	z-index: 1100; /* Higher than Leaflet controls (1000) */
 	display: flex;
 	align-items: center;
 }
