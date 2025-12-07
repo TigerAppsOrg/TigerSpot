@@ -14,23 +14,25 @@ export class DailyService {
 			include: { picture: true }
 		});
 
-		// If no challenge set for today, pick a random picture
+		// If no challenge set for today, pick a picture using smart selection
 		if (!dailyChallenge) {
-			const pictures = await prisma.picture.findMany({
-				where: { showInDaily: true }
-			});
-			if (pictures.length === 0) {
+			const selectedPicture = await this.selectDailyPicture();
+			if (!selectedPicture) {
 				return null;
 			}
-
-			const randomPicture = pictures[Math.floor(Math.random() * pictures.length)];
 
 			dailyChallenge = await prisma.dailyChallenge.create({
 				data: {
 					date: today,
-					pictureId: randomPicture.id
+					pictureId: selectedPicture.id
 				},
 				include: { picture: true }
+			});
+
+			// Mark the picture as used
+			await prisma.picture.update({
+				where: { id: selectedPicture.id },
+				data: { usedInDaily: true }
 			});
 		}
 
@@ -39,6 +41,70 @@ export class DailyService {
 			imageUrl: dailyChallenge.picture.imageUrl
 			// Don't expose actual coordinates until after submission
 		};
+	}
+
+	/**
+	 * Smart selection of daily picture:
+	 * 1. First try to pick from unused pictures (usedInDaily: false)
+	 * 2. If all pictures have been used, reset usedInDaily and exclude last 21 days
+	 */
+	private async selectDailyPicture() {
+		// First, try to get an unused picture
+		const unusedPictures = await prisma.picture.findMany({
+			where: {
+				showInDaily: true,
+				usedInDaily: false
+			}
+		});
+
+		if (unusedPictures.length > 0) {
+			// Pick random from unused pictures
+			return unusedPictures[Math.floor(Math.random() * unusedPictures.length)];
+		}
+
+		// All pictures have been used - reset the usedInDaily flag for all
+		await prisma.picture.updateMany({
+			where: { showInDaily: true },
+			data: { usedInDaily: false }
+		});
+
+		// Get picture IDs used in the last 21 days to exclude them
+		const twentyOneDaysAgo = new Date();
+		twentyOneDaysAgo.setDate(twentyOneDaysAgo.getDate() - 21);
+		twentyOneDaysAgo.setHours(0, 0, 0, 0);
+
+		const recentChallenges = await prisma.dailyChallenge.findMany({
+			where: {
+				date: { gte: twentyOneDaysAgo }
+			},
+			select: { pictureId: true }
+		});
+
+		const recentPictureIds = recentChallenges.map((c) => c.pictureId);
+
+		// Get pictures excluding recent ones
+		const availablePictures = await prisma.picture.findMany({
+			where: {
+				showInDaily: true,
+				id: { notIn: recentPictureIds.length > 0 ? recentPictureIds : [-1] }
+			}
+		});
+
+		if (availablePictures.length > 0) {
+			return availablePictures[Math.floor(Math.random() * availablePictures.length)];
+		}
+
+		// Fallback: if somehow all pictures were used in last 21 days (very small pool),
+		// just pick the oldest one from recent challenges
+		const allPictures = await prisma.picture.findMany({
+			where: { showInDaily: true }
+		});
+
+		if (allPictures.length === 0) {
+			return null;
+		}
+
+		return allPictures[Math.floor(Math.random() * allPictures.length)];
 	}
 
 	/**

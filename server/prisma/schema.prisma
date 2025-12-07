@@ -66,6 +66,9 @@ model Picture {
   showInVersus     Boolean @default(true)
   showInTournament Boolean @default(true)
 
+  // Track if picture has been used in daily challenge (reset when all pictures exhausted)
+  usedInDaily Boolean @default(false)
+
   // Relations
   uploader              User?                    @relation("PictureUploader", fields: [uploadedBy], references: [username])
   dailyChallenges       DailyChallenge[]
