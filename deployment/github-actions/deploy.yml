@@ -1,0 +1,30 @@
+# Deploy Workflow - Copy to .github/workflows/deploy.yml to activate
+#
+# Prerequisites:
+# 1. Set up a self-hosted GitHub Actions runner on EC2
+# 2. Runner must have access to: pnpm, pm2, and the app directory
+#
+# Triggers on push to main, runs CI first, then deploys on success.
+
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  ci:
+    name: Run CI Checks
+    uses: ./.github/workflows/ci.yml
+
+  deploy:
+    name: Deploy to Production
+    needs: ci
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy to production
+        run: ./deployment/deploy.sh
+        env:
+          NODE_ENV: production

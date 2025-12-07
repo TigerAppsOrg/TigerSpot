@@ -1,6 +1,8 @@
 # TigerSpot AWS Deployment Guide
 
-This guide covers deploying TigerSpot on AWS with:
+This guide covers deploying TigerSpot on AWS with CI/CD:
+
+- **GitHub Actions** for automated CI/CD
 
 - **EC2** for the SvelteKit frontend + Express backend
 - **RDS** for PostgreSQL database
@@ -33,6 +35,100 @@ Internet ──────────▶│  Nginx (80/443)                   
 - AWS Account
 - Domain name (pointed to your EC2's IP)
 - SSH key pair for EC2
+- GitHub repository with Actions enabled
+
+---
+
+## CI/CD with GitHub Actions
+
+TigerSpot uses GitHub Actions for automated testing and deployment:
+
+```
+Push/PR → CI (lint, typecheck, build) → Deploy (on main only)
+                    ↓                           ↓
+           GitHub-hosted runner          Self-hosted runner (EC2)
+```
+
+### CI Pipeline
+
+Every push and pull request triggers:
+- **Lint**: Prettier format check
+- **Typecheck**: Frontend (svelte-check) + Backend (tsc)
+- **Build**: Verify frontend builds successfully
+
+### Automatic Deployment
+
+Pushes to `main` that pass CI automatically deploy to production.
+
+### Setup Instructions
+
+#### 1. Copy workflow files
+
+```bash
+mkdir -p .github/workflows
+cp deployment/github-actions/ci.yml .github/workflows/
+cp deployment/github-actions/deploy.yml .github/workflows/
+```
+
+#### 2. Set up self-hosted runner on EC2
+
+1. Go to your GitHub repo → **Settings** → **Actions** → **Runners**
+2. Click **New self-hosted runner** → Select **Linux**
+3. SSH into your EC2 instance and run the provided commands:
+
+```bash
+# Create a folder for the runner
+mkdir ~/actions-runner && cd ~/actions-runner
+
+# Download and extract (get latest URL from GitHub)
+curl -o actions-runner-linux-x64.tar.gz -L https://github.com/actions/runner/releases/download/v2.321.0/actions-runner-linux-x64-2.321.0.tar.gz
+tar xzf ./actions-runner-linux-x64.tar.gz
+
+# Configure (use the token from GitHub)
+./config.sh --url https://github.com/YOUR_ORG/tigerspot --token YOUR_TOKEN
+
+# Install and start as a service
+sudo ./svc.sh install
+sudo ./svc.sh start
+```
+
+#### 3. Make deploy script executable
+
+```bash
+chmod +x deployment/deploy.sh
+```
+
+#### 4. Test the pipeline
+
+1. Create a PR and verify CI checks pass
+2. Merge to main and verify automatic deployment
+
+### Manual Deployment
+
+If needed, you can still deploy manually:
+
+```bash
+ssh ubuntu@YOUR_EC2_IP
+cd ~/tigerspot
+./deployment/deploy.sh
+```
+
+### Rollback
+
+To rollback to a previous version:
+
+```bash
+cd ~/tigerspot
+git checkout <previous-commit-sha>
+pm2 reload all
+```
+
+Or revert the commit and push:
+
+```bash
+git revert HEAD
+git push origin main
+```
 
 ---
 
