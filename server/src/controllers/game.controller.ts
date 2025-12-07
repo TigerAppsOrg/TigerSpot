@@ -47,15 +47,21 @@ export class GameController {
 	 * Submit guess for daily challenge
 	 */
 	submit = async (req: AuthRequest, res: Response) => {
-		const { latitude, longitude } = req.body;
+		const { latitude, longitude, timedOut } = req.body;
 
-		if (typeof latitude !== 'number' || typeof longitude !== 'number') {
+		// For timeouts, coords can be anything (we ignore them)
+		if (!timedOut && (typeof latitude !== 'number' || typeof longitude !== 'number')) {
 			res.status(400).json({ error: 'Invalid coordinates' });
 			return;
 		}
 
 		try {
-			const result = await this.dailyService.submitGuess(req.user!.username, latitude, longitude);
+			const result = await this.dailyService.submitGuess(
+				req.user!.username,
+				latitude ?? 0,
+				longitude ?? 0,
+				timedOut === true
+			);
 
 			if (!result.success) {
 				res.status(400).json({ error: result.error });

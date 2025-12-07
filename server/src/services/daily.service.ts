@@ -169,36 +169,55 @@ export class DailyService {
 			where: { username }
 		});
 
-		if (!userDaily || !userDaily.lastPlayed) {
+		if (!userDaily) {
 			return false;
 		}
 
 		const today = new Date();
 		today.setHours(0, 0, 0, 0);
 
-		const lastPlayed = new Date(userDaily.lastPlayed);
-		lastPlayed.setHours(0, 0, 0, 0);
+		// Check if played today (normal submission)
+		if (userDaily.lastPlayed) {
+			const lastPlayed = new Date(userDaily.lastPlayed);
+			lastPlayed.setHours(0, 0, 0, 0);
+			if (lastPlayed.getTime() === today.getTime()) {
+				return true;
+			}
+		}
 
-		return lastPlayed.getTime() === today.getTime();
+		// Check if timed out today (startedAt is today and guessLat is null)
+		// This handles the case where user timed out but we didn't set lastPlayed
+		if (userDaily.startedAt && userDaily.guessLat === null) {
+			const startedAt = new Date(userDaily.startedAt);
+			startedAt.setHours(0, 0, 0, 0);
+			if (startedAt.getTime() === today.getTime()) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	/**
 	 * Submit a guess for today's challenge
+	 * @param timedOut - If true, user timed out without guessing. This won't affect streak.
 	 */
 	async submitGuess(
 		username: string,
 		guessLat: number,
-		guessLng: number
+		guessLng: number,
+		timedOut: boolean = false
 	): Promise<{
 		success: boolean;
 		error?: string;
 		result?: {
-			guessLat: number;
-			guessLng: number;
+			guessLat: number | null;
+			guessLng: number | null;
 			actualLat: number;
 			actualLng: number;
 			distance: number;
 			points: number;
+			timedOut: boolean;
 		};
 	}> {
 		// Check if already played today
@@ -222,7 +241,41 @@ export class DailyService {
 
 		const picture = dailyChallenge.picture;
 
-		// Calculate distance and points
+		// Handle timeout - mark as played but don't affect streak
+		if (timedOut) {
+			await prisma.userDaily.upsert({
+				where: { username },
+				update: {
+					played: true,
+					distance: 0,
+					// Don't update lastPlayed - streak stays frozen
+					// Don't update points/currentStreak/maxStreak
+					guessLat: null,
+					guessLng: null
+				},
+				create: {
+					username,
+					played: true,
+					distance: 0
+					// Don't set lastPlayed, currentStreak, maxStreak - they stay at defaults
+				}
+			});
+
+			return {
+				success: true,
+				result: {
+					guessLat: null,
+					guessLng: null,
+					actualLat: picture.latitude,
+					actualLng: picture.longitude,
+					distance: 0,
+					points: 0,
+					timedOut: true
+				}
+			};
+		}
+
+		// Normal submission - calculate distance and points
 		const distance = calculateDistance(guessLat, guessLng, picture.latitude, picture.longitude);
 		const points = calculateDailyPoints(distance);
 
@@ -287,7 +340,8 @@ export class DailyService {
 				actualLat: picture.latitude,
 				actualLng: picture.longitude,
 				distance: Math.round(distance),
-				points
+				points,
+				timedOut: false
 			}
 		};
 	}
@@ -324,7 +378,7 @@ export class DailyService {
 			where: { username }
 		});
 
-		if (!userDaily || userDaily.guessLat === null || userDaily.guessLng === null) {
+		if (!userDaily) {
 			return null;
 		}
 
@@ -341,14 +395,18 @@ export class DailyService {
 			return null;
 		}
 
+		// Check if this was a timeout (null coords)
+		const timedOut = userDaily.guessLat === null || userDaily.guessLng === null;
+
 		return {
 			guessLat: userDaily.guessLat,
 			guessLng: userDaily.guessLng,
 			actualLat: dailyChallenge.picture.latitude,
 			actualLng: dailyChallenge.picture.longitude,
-			distance: userDaily.distance,
-			points: userDaily.points,
-			currentStreak: userDaily.currentStreak
+			distance: timedOut ? 0 : userDaily.distance,
+			points: timedOut ? 0 : userDaily.points,
+			currentStreak: userDaily.currentStreak,
+			timedOut
 		};
 	}
 }

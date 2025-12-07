@@ -225,7 +225,7 @@ export class AdminController {
 	createTournament = async (req: AuthRequest, res: Response) => {
 		const {
 			name,
-			timeLimit = 120,
+			timeLimit = 30,
 			roundsPerMatch = 5,
 			finalsRounds,
 			losersFinalsRounds,

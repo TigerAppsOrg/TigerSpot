@@ -50,7 +50,8 @@
 					actualLat: result.actualLat,
 					actualLng: result.actualLng,
 					distance: result.distance,
-					points: result.points
+					points: result.points,
+					timedOut: result.timedOut
 				});
 				goto('/game/results');
 			} else {
@@ -115,8 +116,8 @@
 		if (submitting) return;
 		submitting = true;
 
-		// Submit with 0,0 coordinates (will result in 0 points)
-		const result = await submitDailyGuess(0, 0);
+		// Submit as timeout - won't affect streak
+		const result = await submitDailyGuess(0, 0, true);
 
 		if (result) {
 			gameResults.set({
@@ -125,7 +126,8 @@
 				actualLat: result.actualLat,
 				actualLng: result.actualLng,
 				distance: result.distance,
-				points: result.points
+				points: result.points,
+				timedOut: true
 			});
 			goto('/game/results');
 		} else {

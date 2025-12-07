@@ -24,7 +24,7 @@
 
 	let roundPictures = $state<RoundPicture[]>([]);
 	let loading = $state(true);
-	let timeLimit = $state(120); // Default 2 minutes
+	let timeLimit = $state(30); // Default 30 seconds
 	let opponentName = $state('Opponent');
 
 	// Game state

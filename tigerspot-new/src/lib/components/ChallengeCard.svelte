@@ -60,7 +60,7 @@
 		<div class="flex items-center justify-between gap-4 mt-0 flex-wrap">
 			<div class="flex items-center gap-3">
 				<span class="text-2xl">⚔️</span>
-				<div class="text-xs opacity-60">5 rounds • 120s each</div>
+				<div class="text-xs opacity-60">5 rounds • 30s each</div>
 			</div>
 			<div class="flex items-center gap-2">
 				{#if onForfeit}

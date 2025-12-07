@@ -7,12 +7,13 @@ export interface DailyChallenge {
 }
 
 export interface GameResult {
-	guessLat: number;
-	guessLng: number;
+	guessLat: number | null;
+	guessLng: number | null;
 	actualLat: number;
 	actualLng: number;
 	distance: number;
 	points: number;
+	timedOut?: boolean;
 }
 
 export interface DailyStatus {
@@ -55,14 +56,17 @@ export async function startDailyChallenge(): Promise<StartChallengeResponse | nu
 
 /**
  * Submit guess for daily challenge
+ * @param timedOut - If true, user timed out without guessing
  */
 export async function submitDailyGuess(
 	latitude: number,
-	longitude: number
+	longitude: number,
+	timedOut: boolean = false
 ): Promise<GameResult | null> {
 	const { data, error } = await api.post<GameResult>('/api/game/submit', {
 		latitude,
-		longitude
+		longitude,
+		timedOut
 	});
 	if (error) {
 		console.error('Failed to submit guess:', error);
@@ -85,6 +89,7 @@ export async function getDailyStatus(): Promise<DailyStatus | null> {
 
 export interface TodayResult extends GameResult {
 	currentStreak: number;
+	timedOut: boolean;
 }
 
 /**

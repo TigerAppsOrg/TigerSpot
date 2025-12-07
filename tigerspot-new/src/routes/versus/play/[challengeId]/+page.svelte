@@ -29,7 +29,7 @@
 	let currentRound = $state(1);
 	let guessCoords = $state<{ lat: number; lng: number } | null>(null);
 	let roundScores = $state<number[]>([]);
-	let remainingSeconds = $state(120); // Server-controlled timer
+	let remainingSeconds = $state(30); // Server-controlled timer
 	let roundReady = $state(false); // Wait for server before showing round
 	let timerComponent: Timer;
 	let mapComponent: Map;
@@ -51,7 +51,7 @@
 		if (startResult) {
 			remainingSeconds = startResult.remainingSeconds;
 		} else {
-			remainingSeconds = 120; // Fallback
+			remainingSeconds = 30; // Fallback
 		}
 		roundReady = true;
 
@@ -142,7 +142,7 @@
 		if (!guessCoords || !currentPicture) return;
 
 		// Time is calculated server-side from startedAt, but pass client estimate as fallback
-		const clientTimeTaken = 120 - remainingSeconds;
+		const clientTimeTaken = 30 - remainingSeconds;
 
 		const result = await submitChallengeRound(
 			challengeId,
@@ -193,8 +193,8 @@
 	}
 
 	async function submitRoundWithNoGuess() {
-		// Time will be 120 seconds (timeout) - server calculates from startedAt
-		const result = await submitChallengeRound(challengeId, currentRound, 0, 0, 120);
+		// Time will be 30 seconds (timeout) - server calculates from startedAt
+		const result = await submitChallengeRound(challengeId, currentRound, 0, 0, 30);
 
 		roundScores = [...roundScores, result?.points || 0];
 
@@ -306,7 +306,7 @@
 					</div>
 					<Timer
 						bind:this={timerComponent}
-						duration={120}
+						duration={30}
 						initialRemaining={remainingSeconds}
 						onComplete={handleTimeUp}
 					/>

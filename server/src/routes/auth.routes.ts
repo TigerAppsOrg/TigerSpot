@@ -11,8 +11,8 @@ router.get('/login', authController.login);
 // CAS callback - validate ticket and create session
 router.get('/callback', authController.callback);
 
-// Logout
-router.post('/logout', authController.logout);
+// Logout (GET because frontend uses window.location.href redirect)
+router.get('/logout', authController.logout);
 
 // Get current user
 router.get('/me', authController.me);

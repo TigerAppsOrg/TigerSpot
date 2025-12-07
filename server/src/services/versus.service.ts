@@ -361,7 +361,7 @@ export class VersusService {
 		challengeId: number,
 		username: string,
 		roundNumber: number,
-		timeLimit: number = 120
+		timeLimit: number = 30
 	): Promise<{ startedAt: Date; elapsedSeconds: number; remainingSeconds: number }> {
 		const challenge = await prisma.challenge.findUnique({
 			where: { id: challengeId }
@@ -487,8 +487,8 @@ export class VersusService {
 		if (existingRound?.startedAt) {
 			const elapsedMs = Date.now() - existingRound.startedAt.getTime();
 			actualTimeSeconds = Math.floor(elapsedMs / 1000);
-			// Cap at 120 seconds (time limit)
-			actualTimeSeconds = Math.min(actualTimeSeconds, 120);
+			// Cap at 30 seconds (time limit)
+			actualTimeSeconds = Math.min(actualTimeSeconds, 30);
 		}
 
 		// Calculate distance and points using server-verified time
