@@ -250,7 +250,9 @@
 				<div class="brutal-border bg-lime p-4 mb-6">
 					<div class="text-sm font-bold uppercase opacity-60 mb-1">Your Total Score</div>
 					<div class="text-3xl font-black">
-						{roundScores.reduce((a, b) => a + b, 0).toLocaleString()}
+						{roundScores.reduce((a, b) => a + b, 0).toLocaleString()}<span
+							class="text-xl opacity-60">/{(totalRounds * 1000).toLocaleString()}</span
+						>
 					</div>
 				</div>
 
