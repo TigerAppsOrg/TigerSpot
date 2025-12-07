@@ -2,6 +2,7 @@
 	"name": "tigerspot",
 	"private": true,
 	"scripts": {
+		"install:all": "pnpm install && pnpm --filter tigerspot-server install && pnpm --filter tigerspot-new install",
 		"dev": "concurrently -n server,client -c blue,green \"pnpm --filter tigerspot-server dev\" \"pnpm --filter tigerspot-new dev\"",
 		"dev:server": "pnpm --filter tigerspot-server dev",
 		"dev:client": "pnpm --filter tigerspot-new dev",
@@ -26,7 +27,7 @@
 		"prettier-plugin-tailwindcss": "^0.7.1"
 	},
 	"lint-staged": {
-		"tigerspot-new/**/*.{js,ts,svelte,css,html,json,md}": "prettier --write",
-		"server/**/*.{js,ts,json,md}": "prettier --write"
+		"apps/frontend/**/*.{js,ts,svelte,css,html,json,md}": "prettier --write",
+		"apps/server/**/*.{js,ts,json,md}": "prettier --write"
 	}
 }

@@ -5,7 +5,7 @@ module.exports = {
   apps: [
     {
       name: 'tigerspot-frontend',
-      cwd: '/home/ubuntu/tigerspot/tigerspot-new',
+      cwd: '/home/ubuntu/tigerspot/apps/frontend',
       script: 'pnpm',
       args: 'preview --host --port 3000',
       env: {
@@ -22,7 +22,7 @@ module.exports = {
     },
     {
       name: 'tigerspot-backend',
-      cwd: '/home/ubuntu/tigerspot/server',
+      cwd: '/home/ubuntu/tigerspot/apps/server',
       script: 'pnpm',
       args: 'start',
       env: {

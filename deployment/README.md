@@ -247,7 +247,7 @@ git clone https://github.com/YOUR_USERNAME/tigerspot.git .
 **Backend (.env):**
 
 ```bash
-nano ~/tigerspot/server/.env
+nano ~/tigerspot/apps/server/.env
 ```
 
 ```env
@@ -265,7 +265,7 @@ CLOUDINARY_API_SECRET="your-api-secret"
 **Frontend (.env):**
 
 ```bash
-nano ~/tigerspot/tigerspot-new/.env
+nano ~/tigerspot/apps/frontend/.env
 ```
 
 ```env
@@ -275,16 +275,18 @@ PUBLIC_API_URL=""
 ### 3.5 Install Dependencies and Build
 
 ```bash
-# Backend
-cd ~/tigerspot/server
+# Install all dependencies from root
+cd ~/tigerspot
 pnpm install
+
+# Backend
+cd ~/tigerspot/apps/server
 pnpm prisma generate
 pnpm prisma migrate deploy  # Run database migrations
 pnpm build
 
 # Frontend
-cd ~/tigerspot/tigerspot-new
-pnpm install
+cd ~/tigerspot/apps/frontend
 pnpm build
 ```
 
@@ -433,15 +435,14 @@ pm2 restart tigerspot-backend
 ```bash
 cd ~/tigerspot
 git pull
+pnpm install
 
 # Rebuild frontend
-cd tigerspot-new
-pnpm install
+cd apps/frontend
 pnpm build
 
 # Rebuild backend (if needed)
 cd ../server
-pnpm install
 pnpm build
 pnpm prisma migrate deploy  # If there are new migrations
 

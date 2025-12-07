@@ -1,9 +1,10 @@
 packages:
-  - server
-  - tigerspot-new
+  - apps/server
+  - apps/frontend
 
 onlyBuiltDependencies:
   - '@prisma/client'
   - '@prisma/engines'
   - esbuild
   - prisma
+  - sharp

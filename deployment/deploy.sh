@@ -26,7 +26,7 @@ pnpm install --frozen-lockfile
 
 # Backend: Generate Prisma client and run migrations
 echo ">>> Running database migrations..."
-cd server
+cd apps/server
 pnpm db:generate
 pnpm prisma migrate deploy
 
@@ -36,7 +36,7 @@ pnpm build
 
 # Frontend: Build SvelteKit
 echo ">>> Building frontend..."
-cd ../tigerspot-new
+cd ../frontend
 pnpm build
 
 # Restart PM2 with zero-downtime reload
