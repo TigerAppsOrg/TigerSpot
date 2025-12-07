@@ -332,11 +332,11 @@
 								Round {currentRound} of {totalRounds}
 							</div>
 						</div>
-						<div class="relative grow bg-gray w-full block min-h-[300px]">
+						<div class="relative bg-white w-full block h-[300px] lg:h-auto lg:grow lg:max-h-[50vh]">
 							<img
 								src={currentPicture.imageUrl}
 								alt="Where is this location?"
-								class="w-full h-full object-cover"
+								class="w-full h-full object-contain"
 							/>
 						</div>
 					</Card>
