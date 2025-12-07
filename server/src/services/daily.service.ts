@@ -108,6 +108,60 @@ export class DailyService {
 	}
 
 	/**
+	 * Start today's challenge - records server-side start time (anti-cheat)
+	 * Returns elapsed/remaining seconds if already started
+	 */
+	async startChallenge(
+		username: string,
+		timeLimit: number = 120
+	): Promise<{ startedAt: Date; elapsedSeconds: number; remainingSeconds: number }> {
+		// Check if user has already played
+		const hasPlayed = await this.hasPlayedToday(username);
+		if (hasPlayed) {
+			// Already submitted - no time remaining
+			return {
+				startedAt: new Date(),
+				elapsedSeconds: timeLimit,
+				remainingSeconds: 0
+			};
+		}
+
+		// Get or create UserDaily record
+		let userDaily = await prisma.userDaily.findUnique({
+			where: { username }
+		});
+
+		if (userDaily?.startedAt) {
+			// Check if startedAt is from today
+			const today = new Date();
+			today.setHours(0, 0, 0, 0);
+			const startedDate = new Date(userDaily.startedAt);
+			startedDate.setHours(0, 0, 0, 0);
+
+			if (startedDate.getTime() === today.getTime()) {
+				// Already started today - calculate elapsed time
+				const elapsedMs = Date.now() - userDaily.startedAt.getTime();
+				const elapsedSeconds = Math.floor(elapsedMs / 1000);
+				const remainingSeconds = Math.max(0, timeLimit - elapsedSeconds);
+				return { startedAt: userDaily.startedAt, elapsedSeconds, remainingSeconds };
+			}
+		}
+
+		// Start new challenge
+		const now = new Date();
+		await prisma.userDaily.upsert({
+			where: { username },
+			update: { startedAt: now },
+			create: {
+				username,
+				startedAt: now
+			}
+		});
+
+		return { startedAt: now, elapsedSeconds: 0, remainingSeconds: timeLimit };
+	}
+
+	/**
 	 * Check if user has played today's challenge
 	 */
 	async hasPlayedToday(username: string): Promise<boolean> {

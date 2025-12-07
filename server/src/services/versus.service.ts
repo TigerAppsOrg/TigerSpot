@@ -6,6 +6,7 @@ import type { ChallengeResponse } from '../types/index.js';
 const ROUNDS_PER_MATCH = 5;
 const PRESENCE_TIMEOUT_SECONDS = 30; // Users are "online" if seen within this time
 const CHALLENGE_EXPIRY_MINUTES = 2; // Pending challenges expire after this time
+const ACTIVE_MATCH_EXPIRY_MINUTES = 10; // Active matches expire after this time
 
 export class VersusService {
 	private imageService = new ImageService();
@@ -52,14 +53,32 @@ export class VersusService {
 		active: ChallengeResponse[];
 		completed: ChallengeResponse[];
 	}> {
-		// First, expire old pending challenges
-		const expiryTime = new Date(Date.now() - CHALLENGE_EXPIRY_MINUTES * 60 * 1000);
+		// Expire old pending challenges
+		const pendingExpiryTime = new Date(Date.now() - CHALLENGE_EXPIRY_MINUTES * 60 * 1000);
 		await prisma.challenge.updateMany({
 			where: {
 				status: 'PENDING',
-				createdAt: { lt: expiryTime }
+				createdAt: { lt: pendingExpiryTime }
 			},
 			data: { status: 'DECLINED' } // Mark expired as declined
+		});
+
+		// Expire old active matches (ACCEPTED or IN_PROGRESS older than 10 minutes)
+		const activeExpiryTime = new Date(Date.now() - ACTIVE_MATCH_EXPIRY_MINUTES * 60 * 1000);
+		await prisma.challenge.updateMany({
+			where: {
+				status: { in: ['ACCEPTED', 'IN_PROGRESS'] },
+				OR: [
+					{ startedAt: { lt: activeExpiryTime } },
+					// Fallback to createdAt if startedAt is null
+					{ startedAt: null, createdAt: { lt: activeExpiryTime } }
+				]
+			},
+			data: {
+				status: 'COMPLETED',
+				completedAt: new Date()
+				// No winner - match expired
+			}
 		});
 
 		const challenges = await prisma.challenge.findMany({
@@ -139,6 +158,43 @@ export class VersusService {
 		});
 
 		return { success: true };
+	}
+
+	/**
+	 * Forfeit an active match (opponent wins)
+	 */
+	async forfeitMatch(challengeId: number, username: string) {
+		const challenge = await prisma.challenge.findUnique({
+			where: { id: challengeId }
+		});
+
+		if (!challenge) {
+			throw new Error('Match not found');
+		}
+
+		if (challenge.challengerId !== username && challenge.challengeeId !== username) {
+			throw new Error('You are not part of this match');
+		}
+
+		if (challenge.status !== 'ACCEPTED' && challenge.status !== 'IN_PROGRESS') {
+			throw new Error('Can only forfeit active matches');
+		}
+
+		// Determine the winner (the opponent of the person forfeiting)
+		const winnerId =
+			challenge.challengerId === username ? challenge.challengeeId : challenge.challengerId;
+
+		// Mark the match as completed with the opponent as winner
+		await prisma.challenge.update({
+			where: { id: challengeId },
+			data: {
+				status: 'COMPLETED',
+				winnerId,
+				completedAt: new Date()
+			}
+		});
+
+		return { success: true, winnerId };
 	}
 
 	/**
@@ -291,6 +347,84 @@ export class VersusService {
 	}
 
 	/**
+	 * Start a round for a player - creates a record with startedAt timestamp
+	 * Returns elapsed seconds if round was already started (anti-cheat)
+	 */
+	async startRound(
+		challengeId: number,
+		username: string,
+		roundNumber: number,
+		timeLimit: number = 120
+	): Promise<{ startedAt: Date; elapsedSeconds: number; remainingSeconds: number }> {
+		const challenge = await prisma.challenge.findUnique({
+			where: { id: challengeId }
+		});
+
+		if (!challenge) {
+			throw new Error('Challenge not found');
+		}
+
+		if (challenge.challengerId !== username && challenge.challengeeId !== username) {
+			throw new Error('You are not part of this challenge');
+		}
+
+		// Check if player already started this round
+		const existingRound = await prisma.challengeRound.findFirst({
+			where: {
+				challengeId,
+				roundNumber,
+				playerUsername: username
+			}
+		});
+
+		if (existingRound) {
+			// Already started - calculate elapsed time
+			if (existingRound.submittedAt) {
+				// Already submitted - no time remaining
+				return {
+					startedAt: existingRound.startedAt || existingRound.submittedAt,
+					elapsedSeconds: timeLimit,
+					remainingSeconds: 0
+				};
+			}
+
+			const startedAt = existingRound.startedAt || new Date();
+			const elapsedMs = Date.now() - startedAt.getTime();
+			const elapsedSeconds = Math.floor(elapsedMs / 1000);
+			const remainingSeconds = Math.max(0, timeLimit - elapsedSeconds);
+
+			return { startedAt, elapsedSeconds, remainingSeconds };
+		}
+
+		// Get the template round to get the pictureId
+		const templateRound = await prisma.challengeRound.findFirst({
+			where: {
+				challengeId,
+				roundNumber,
+				playerUsername: null
+			}
+		});
+
+		if (!templateRound) {
+			throw new Error('Round not found');
+		}
+
+		// Create a new round record with startedAt
+		const now = new Date();
+		await prisma.challengeRound.create({
+			data: {
+				challengeId,
+				roundNumber,
+				pictureId: templateRound.pictureId,
+				playerUsername: username,
+				startedAt: now
+			}
+		});
+
+		return { startedAt: now, elapsedSeconds: 0, remainingSeconds: timeLimit };
+	}
+
+	/**
 	 * Submit a round guess
 	 */
 	async submitRound(
@@ -299,7 +433,7 @@ export class VersusService {
 		roundNumber: number,
 		latitude: number,
 		longitude: number,
-		timeSeconds: number
+		timeSeconds: number // Client-provided, but we verify with server-side startedAt
 	) {
 		const challenge = await prisma.challenge.findUnique({
 			where: { id: challengeId }
@@ -328,17 +462,8 @@ export class VersusService {
 			throw new Error('Round not found');
 		}
 
-		// Calculate distance and points
-		const distance = calculateDistance(
-			latitude,
-			longitude,
-			templateRound.picture.latitude,
-			templateRound.picture.longitude
-		);
-		const points = calculateVersusPoints(distance, timeSeconds);
-
-		// Check if player already submitted this round
-		const existing = await prisma.challengeRound.findFirst({
+		// Check if player already started/submitted this round
+		const existingRound = await prisma.challengeRound.findFirst({
 			where: {
 				challengeId,
 				roundNumber,
@@ -346,25 +471,59 @@ export class VersusService {
 			}
 		});
 
-		if (existing) {
+		if (existingRound?.submittedAt) {
 			throw new Error('Already submitted this round');
 		}
 
-		// Create player's round submission
-		await prisma.challengeRound.create({
-			data: {
-				challengeId,
-				roundNumber,
-				pictureId: templateRound.pictureId,
-				playerUsername: username,
-				guessLat: latitude,
-				guessLng: longitude,
-				distance: Math.round(distance),
-				points,
-				timeSeconds,
-				submittedAt: new Date()
-			}
-		});
+		// Calculate actual time from server-side startedAt (anti-cheat)
+		let actualTimeSeconds = timeSeconds;
+		if (existingRound?.startedAt) {
+			const elapsedMs = Date.now() - existingRound.startedAt.getTime();
+			actualTimeSeconds = Math.floor(elapsedMs / 1000);
+			// Cap at 120 seconds (time limit)
+			actualTimeSeconds = Math.min(actualTimeSeconds, 120);
+		}
+
+		// Calculate distance and points using server-verified time
+		const distance = calculateDistance(
+			latitude,
+			longitude,
+			templateRound.picture.latitude,
+			templateRound.picture.longitude
+		);
+		const points = calculateVersusPoints(distance, actualTimeSeconds);
+
+		if (existingRound) {
+			// Update existing round record (created by startRound)
+			await prisma.challengeRound.update({
+				where: { id: existingRound.id },
+				data: {
+					guessLat: latitude,
+					guessLng: longitude,
+					distance: Math.round(distance),
+					points,
+					timeSeconds: actualTimeSeconds,
+					submittedAt: new Date()
+				}
+			});
+		} else {
+			// Create new round record (fallback if startRound wasn't called)
+			await prisma.challengeRound.create({
+				data: {
+					challengeId,
+					roundNumber,
+					pictureId: templateRound.pictureId,
+					playerUsername: username,
+					guessLat: latitude,
+					guessLng: longitude,
+					distance: Math.round(distance),
+					points,
+					timeSeconds: actualTimeSeconds,
+					startedAt: new Date(),
+					submittedAt: new Date()
+				}
+			});
+		}
 
 		// Update challenge status to IN_PROGRESS if not already
 		if (challenge.status === 'ACCEPTED') {
@@ -461,12 +620,20 @@ export class VersusService {
 			throw new Error('Challenge not found');
 		}
 
-		// Get round counts for each player
+		// Get round counts for each player (only count SUBMITTED rounds)
 		const challengerRounds = await prisma.challengeRound.count({
-			where: { challengeId, playerUsername: challenge.challengerId }
+			where: {
+				challengeId,
+				playerUsername: challenge.challengerId,
+				submittedAt: { not: null }
+			}
 		});
 		const challengeeRounds = await prisma.challengeRound.count({
-			where: { challengeId, playerUsername: challenge.challengeeId }
+			where: {
+				challengeId,
+				playerUsername: challenge.challengeeId,
+				submittedAt: { not: null }
+			}
 		});
 
 		const isChallenger = challenge.challengerId === username;

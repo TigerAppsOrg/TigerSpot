@@ -46,6 +46,7 @@ model UserDaily {
   maxStreak     Int       @default(0)
   guessLat      Float?    // Store last guess for results display
   guessLng      Float?
+  startedAt     DateTime? // Anti-cheat: when today's challenge was started
 
   user User @relation(fields: [username], references: [username], onDelete: Cascade)
 }
@@ -148,6 +149,7 @@ model ChallengeRound {
   distance       Int? // meters
   points         Int?
   timeSeconds    Int?
+  startedAt      DateTime? // Anti-cheat: when round was started
   submittedAt    DateTime?
 
   // Relations

@@ -31,6 +31,19 @@ export class GameController {
 	};
 
 	/**
+	 * Start today's challenge (anti-cheat: records server-side start time)
+	 */
+	startChallenge = async (req: AuthRequest, res: Response) => {
+		try {
+			const result = await this.dailyService.startChallenge(req.user!.username);
+			res.json(result);
+		} catch (error) {
+			console.error('Error starting challenge:', error);
+			res.status(500).json({ error: 'Failed to start challenge' });
+		}
+	};
+
+	/**
 	 * Submit guess for daily challenge
 	 */
 	submit = async (req: AuthRequest, res: Response) => {

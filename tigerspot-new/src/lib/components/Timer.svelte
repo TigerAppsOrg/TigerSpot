@@ -51,9 +51,9 @@
 		}
 	}
 
-	function reset() {
+	function reset(newDuration?: number) {
 		stop();
-		timeRemaining = duration;
+		timeRemaining = newDuration ?? duration;
 	}
 
 	function setRemaining(seconds: number) {

@@ -11,6 +11,9 @@ router.use(authMiddleware);
 // Get today's challenge
 router.get('/today', gameController.getToday);
 
+// Start challenge (anti-cheat: records server-side start time)
+router.post('/start', gameController.startChallenge);
+
 // Submit guess for daily challenge
 router.post('/submit', gameController.submit);
 

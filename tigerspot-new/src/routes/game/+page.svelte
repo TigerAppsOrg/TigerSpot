@@ -9,6 +9,7 @@
 		getTodayChallenge,
 		submitDailyGuess,
 		getTodayResult,
+		startDailyChallenge,
 		type DailyChallenge
 	} from '$lib/api/game';
 	import { gameResults } from '$lib/stores/gameResults';
@@ -19,6 +20,11 @@
 	let submitting = $state(false);
 	let guessCoords = $state<{ lat: number; lng: number } | null>(null);
 	let mapComponent: Map;
+	let timerComponent: Timer;
+
+	// Anti-cheat timer state
+	let remainingSeconds = $state(120);
+	let challengeReady = $state(false);
 
 	// Image modal state
 	let showImageModal = $state(false);
@@ -50,6 +56,20 @@
 			} else {
 				goto('/menu');
 			}
+			return;
+		}
+
+		// Start challenge with server-side timer (anti-cheat)
+		if (challenge) {
+			const startResult = await startDailyChallenge();
+			if (startResult) {
+				remainingSeconds = startResult.remainingSeconds;
+				// If time already expired, still allow them to play but with 0 time bonus
+				if (remainingSeconds <= 0) {
+					remainingSeconds = 1; // Give them at least 1 second to submit
+				}
+			}
+			challengeReady = true;
 		}
 	});
 
@@ -85,6 +105,32 @@
 	function handleTimeUp() {
 		if (guessCoords) {
 			submitGuess();
+		} else {
+			// Time ran out without a guess - submit with default location (0 points)
+			submitWithNoGuess();
+		}
+	}
+
+	async function submitWithNoGuess() {
+		if (submitting) return;
+		submitting = true;
+
+		// Submit with 0,0 coordinates (will result in 0 points)
+		const result = await submitDailyGuess(0, 0);
+
+		if (result) {
+			gameResults.set({
+				guessLat: result.guessLat,
+				guessLng: result.guessLng,
+				actualLat: result.actualLat,
+				actualLng: result.actualLng,
+				distance: result.distance,
+				points: result.points
+			});
+			goto('/game/results');
+		} else {
+			submitting = false;
+			alert('Failed to submit. Please try again.');
 		}
 	}
 
@@ -101,7 +147,7 @@
 	<title>Daily Challenge - TigerSpot</title>
 </svelte:head>
 
-{#if loading}
+{#if loading || !challengeReady}
 	<div class="min-h-screen bg-primary flex items-center justify-center">
 		<div class="text-center">
 			<div class="text-4xl mb-4">🐯</div>
@@ -130,7 +176,12 @@
 						Daily Challenge
 					</div>
 				</div>
-				<Timer duration={120} onComplete={handleTimeUp} />
+				<Timer
+					bind:this={timerComponent}
+					duration={120}
+					initialRemaining={remainingSeconds}
+					onComplete={handleTimeUp}
+				/>
 			</div>
 		</header>
 

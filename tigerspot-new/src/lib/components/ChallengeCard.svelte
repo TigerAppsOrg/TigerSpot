@@ -13,6 +13,7 @@
 		onDecline,
 		onStart,
 		onCancel,
+		onForfeit,
 		class: className = ''
 	}: {
 		opponent: string;
@@ -22,6 +23,7 @@
 		onDecline?: () => void;
 		onStart?: () => void;
 		onCancel?: () => void;
+		onForfeit?: () => void;
 		class?: string;
 	} = $props();
 
@@ -60,7 +62,17 @@
 				<span class="text-2xl">⚔️</span>
 				<div class="text-xs opacity-60">5 rounds • 120s each</div>
 			</div>
-			<Button variant="black" onclick={onStart}>Start Game</Button>
+			<div class="flex items-center gap-2">
+				{#if onForfeit}
+					<button
+						onclick={onForfeit}
+						class="text-xs opacity-60 hover:opacity-100 hover:text-red-600 transition-opacity"
+					>
+						Forfeit
+					</button>
+				{/if}
+				<Button variant="black" onclick={onStart}>Start Game</Button>
+			</div>
 		</div>
 	{/if}
 </div>

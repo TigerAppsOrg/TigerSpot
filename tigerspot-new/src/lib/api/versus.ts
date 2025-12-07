@@ -30,6 +30,12 @@ export interface RoundPicture {
 	imageUrl: string;
 }
 
+export interface StartRoundResponse {
+	startedAt: string;
+	elapsedSeconds: number;
+	remainingSeconds: number;
+}
+
 export interface RoundResult {
 	roundNumber: number;
 	distance: number;
@@ -181,6 +187,18 @@ export async function cancelChallenge(challengeId: number): Promise<boolean> {
 }
 
 /**
+ * Forfeit an active match (opponent wins)
+ */
+export async function forfeitMatch(challengeId: number): Promise<boolean> {
+	const { error } = await api.post(`/api/versus/${challengeId}/forfeit`);
+	if (error) {
+		console.error('Failed to forfeit match:', error);
+		return false;
+	}
+	return true;
+}
+
+/**
  * Get challenge details
  */
 export async function getChallenge(challengeId: number): Promise<Challenge | null> {
@@ -202,6 +220,24 @@ export async function getChallengeRounds(challengeId: number): Promise<RoundPict
 		return [];
 	}
 	return data ?? [];
+}
+
+/**
+ * Start a round (anti-cheat: records server-side start time)
+ */
+export async function startChallengeRound(
+	challengeId: number,
+	roundNumber: number
+): Promise<StartRoundResponse | null> {
+	const { data, error } = await api.post<StartRoundResponse>(
+		`/api/versus/${challengeId}/start-round`,
+		{ roundNumber }
+	);
+	if (error) {
+		console.error('Failed to start round:', error);
+		return null;
+	}
+	return data ?? null;
 }
 
 /**

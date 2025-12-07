@@ -117,7 +117,7 @@
 					<!-- 1st Place -->
 					{#if leaderboard[0]}
 						<div class="flex-1 text-center">
-							<Card variant="lime" class="pb-14 -mb-4">
+							<Card variant="lime" class="pb-14 mb-12">
 								<div class="text-5xl mb-4">&#x1F947;</div>
 								<div class="font-black text-xl">
 									{leaderboard[0].displayName || leaderboard[0].username}
@@ -158,7 +158,7 @@
 				<!-- Full Leaderboard -->
 				<Card class="max-w-2xl mx-auto">
 					<div class="divide-y-4 divide-black">
-						{#each leaderboard as entry, i}
+						{#each leaderboard.slice(0, 25) as entry, i}
 							<div class="relative flex items-center gap-6 py-5 first:pt-0 last:pb-0">
 								{#if entry.username === currentUsername}
 									<div class="absolute inset-y-0 -inset-x-8 bg-cyan/20"></div>
@@ -212,8 +212,8 @@
 					</div>
 				</Card>
 
-				<!-- Your Position (if not in top 10) -->
-				{#if myStats && userRank > 10}
+				<!-- Your Position (if not in top 25) -->
+				{#if myStats && userRank > 25}
 					<Card class="max-w-2xl mx-auto mt-6 bg-cyan/20">
 						<div class="flex items-center gap-6">
 							<div class="w-14 text-center text-2xl font-black">

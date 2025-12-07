@@ -127,6 +127,25 @@ export class VersusController {
 	};
 
 	/**
+	 * Forfeit an active match
+	 */
+	forfeitMatch = async (req: AuthRequest, res: Response) => {
+		const challengeId = parseInt(req.params.id, 10);
+		if (isNaN(challengeId)) {
+			res.status(400).json({ error: 'Invalid challenge ID' });
+			return;
+		}
+
+		try {
+			const result = await this.versusService.forfeitMatch(challengeId, req.user!.username);
+			res.json(result);
+		} catch (error) {
+			console.error('Error forfeiting match:', error);
+			res.status(400).json({ error: (error as Error).message });
+		}
+	};
+
+	/**
 	 * Get challenge details
 	 */
 	getChallenge = async (req: AuthRequest, res: Response) => {
@@ -172,6 +191,35 @@ export class VersusController {
 		} catch (error) {
 			console.error('Error getting challenge:', error);
 			res.status(500).json({ error: 'Failed to get challenge' });
+		}
+	};
+
+	/**
+	 * Start a round (anti-cheat: records server-side start time)
+	 */
+	startRound = async (req: AuthRequest, res: Response) => {
+		const challengeId = parseInt(req.params.id, 10);
+		if (isNaN(challengeId)) {
+			res.status(400).json({ error: 'Invalid challenge ID' });
+			return;
+		}
+
+		const { roundNumber } = req.body;
+		if (typeof roundNumber !== 'number') {
+			res.status(400).json({ error: 'Round number is required' });
+			return;
+		}
+
+		try {
+			const result = await this.versusService.startRound(
+				challengeId,
+				req.user!.username,
+				roundNumber
+			);
+			res.json(result);
+		} catch (error) {
+			console.error('Error starting round:', error);
+			res.status(400).json({ error: (error as Error).message });
 		}
 	};
 

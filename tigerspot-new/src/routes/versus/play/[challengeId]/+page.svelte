@@ -12,6 +12,7 @@
 		getChallengeStatus,
 		getChallengeResults,
 		submitChallengeRound,
+		startChallengeRound,
 		type Challenge,
 		type RoundPicture
 	} from '$lib/api/versus';
@@ -27,8 +28,9 @@
 	// Game state
 	let currentRound = $state(1);
 	let guessCoords = $state<{ lat: number; lng: number } | null>(null);
-	let roundStartTime = $state(Date.now());
 	let roundScores = $state<number[]>([]);
+	let remainingSeconds = $state(120); // Server-controlled timer
+	let roundReady = $state(false); // Wait for server before showing round
 	let timerComponent: Timer;
 	let mapComponent: Map;
 
@@ -42,6 +44,23 @@
 
 	const totalRounds = $derived(roundPictures.length || 5);
 	const currentPicture = $derived(roundPictures[currentRound - 1]);
+
+	async function initializeRound(roundNum: number) {
+		// Call server to start round and get remaining time
+		const startResult = await startChallengeRound(challengeId, roundNum);
+		if (startResult) {
+			remainingSeconds = startResult.remainingSeconds;
+		} else {
+			remainingSeconds = 120; // Fallback
+		}
+		roundReady = true;
+
+		// Start or reset timer with server-provided time
+		if (timerComponent) {
+			timerComponent.reset(remainingSeconds);
+			timerComponent.start();
+		}
+	}
 
 	onMount(async () => {
 		const [challengeData, rounds] = await Promise.all([
@@ -88,7 +107,8 @@
 		}
 
 		loading = false;
-		roundStartTime = Date.now();
+		// Initialize the round with server-side timer
+		await initializeRound(currentRound);
 	});
 
 	onDestroy(() => {
@@ -121,14 +141,15 @@
 	async function submitRound() {
 		if (!guessCoords || !currentPicture) return;
 
-		const timeTaken = Math.floor((Date.now() - roundStartTime) / 1000);
+		// Time is calculated server-side from startedAt, but pass client estimate as fallback
+		const clientTimeTaken = 120 - remainingSeconds;
 
 		const result = await submitChallengeRound(
 			challengeId,
 			currentRound,
 			guessCoords.lat,
 			guessCoords.lng,
-			timeTaken
+			clientTimeTaken
 		);
 
 		if (!result) {
@@ -141,14 +162,12 @@
 		if (currentRound < totalRounds) {
 			currentRound++;
 			guessCoords = null;
+			roundReady = false;
 			if (mapComponent) {
 				mapComponent.clearMarker();
 			}
-			roundStartTime = Date.now();
-			if (timerComponent) {
-				timerComponent.reset();
-				timerComponent.start();
-			}
+			// Initialize next round with server-side timer
+			await initializeRound(currentRound);
 		} else {
 			await checkCompletion();
 		}
@@ -174,6 +193,7 @@
 	}
 
 	async function submitRoundWithNoGuess() {
+		// Time will be 120 seconds (timeout) - server calculates from startedAt
 		const result = await submitChallengeRound(challengeId, currentRound, 0, 0, 120);
 
 		roundScores = [...roundScores, result?.points || 0];
@@ -181,14 +201,12 @@
 		if (currentRound < totalRounds) {
 			currentRound++;
 			guessCoords = null;
+			roundReady = false;
 			if (mapComponent) {
 				mapComponent.clearMarker();
 			}
-			roundStartTime = Date.now();
-			if (timerComponent) {
-				timerComponent.reset();
-				timerComponent.start();
-			}
+			// Initialize next round with server-side timer
+			await initializeRound(currentRound);
 		} else {
 			await checkCompletion();
 		}
@@ -208,7 +226,7 @@
 </svelte:head>
 
 <div class="min-h-screen bg-primary flex flex-col">
-	{#if loading || !currentPicture}
+	{#if loading}
 		<div class="flex items-center justify-center min-h-screen">
 			<Card class="text-center py-16">
 				<div class="text-4xl mb-4">⏳</div>
@@ -252,6 +270,13 @@
 				</p>
 			</Card>
 		</div>
+	{:else if !currentPicture || !roundReady}
+		<div class="flex items-center justify-center min-h-screen">
+			<Card class="text-center py-16">
+				<div class="text-4xl mb-4">⏳</div>
+				<p class="font-bold">Preparing round {currentRound}...</p>
+			</Card>
+		</div>
 	{:else}
 		<header class="header-fixed bg-white brutal-border">
 			<div class="w-full h-full px-4 md:px-6 flex items-center justify-between">
@@ -279,7 +304,12 @@
 					<div class="brutal-border bg-white px-3 py-1 font-black text-sm">
 						Round {currentRound}/{totalRounds}
 					</div>
-					<Timer bind:this={timerComponent} duration={120} onComplete={handleTimeUp} />
+					<Timer
+						bind:this={timerComponent}
+						duration={120}
+						initialRemaining={remainingSeconds}
+						onComplete={handleTimeUp}
+					/>
 				</div>
 			</div>
 		</header>

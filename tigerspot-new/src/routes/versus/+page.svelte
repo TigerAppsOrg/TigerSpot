@@ -15,6 +15,7 @@
 		acceptChallenge as apiAcceptChallenge,
 		declineChallenge as apiDeclineChallenge,
 		cancelChallenge as apiCancelChallenge,
+		forfeitMatch as apiForfeitMatch,
 		type Player,
 		type Challenge
 	} from '$lib/api/versus';
@@ -116,6 +117,18 @@
 		}
 	}
 
+	async function handleForfeitMatch(id: number) {
+		if (!confirm('Are you sure you want to forfeit this match? Your opponent will win.')) {
+			return;
+		}
+		const success = await apiForfeitMatch(id);
+		if (success) {
+			activeMatches = activeMatches.filter((m) => m.id !== id);
+			// Refresh to get updated completed matches
+			await refreshData();
+		}
+	}
+
 	function startGame(id: number) {
 		goto(`/versus/play/${id}`);
 	}
@@ -176,6 +189,7 @@
 										createdAt={new Date(match.createdAt)}
 										status="active"
 										onStart={() => startGame(match.id)}
+										onForfeit={() => handleForfeitMatch(match.id)}
 									/>
 								{/each}
 							</div>
