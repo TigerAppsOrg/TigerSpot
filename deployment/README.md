@@ -277,7 +277,7 @@ JWT_SECRET="generate-a-secure-random-string"
 PORT=4000
 NODE_ENV=production
 FRONTEND_URL="https://yourdomain.com"
-CAS_SERVICE_URL="https://yourdomain.com/api/auth/cas/callback"
+CAS_SERVICE_URL="https://yourdomain.com/api/auth/callback"
 CLOUDINARY_CLOUD_NAME="your-cloud-name"
 CLOUDINARY_API_KEY="your-api-key"
 CLOUDINARY_API_SECRET="your-api-secret"
@@ -290,7 +290,7 @@ nano ~/tigerspot/apps/frontend/.env
 ```
 
 ```env
-PUBLIC_API_URL=""
+VITE_API_URL=""
 ```
 
 ### 3.5 Install Dependencies and Build
