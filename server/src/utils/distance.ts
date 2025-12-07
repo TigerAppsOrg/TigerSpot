@@ -30,7 +30,7 @@ export function calculateDailyPoints(distanceMeters: number): number {
 // Versus/Tournament mode scoring (includes time bonus)
 export function calculateVersusPoints(distanceMeters: number, timeSeconds: number): number {
 	if (distanceMeters < 15 && timeSeconds < 5) return 1000;
-	const distancePoints = Math.max(0, 1 - distanceMeters / 120) * 900;
+	const distancePoints = Math.max(0, 1 - (distanceMeters - 15) / 120) * 900;
 	const timePoints = Math.max(0, 1 - timeSeconds / 30) * 100;
 	return Math.floor(distancePoints + timePoints);
 }
