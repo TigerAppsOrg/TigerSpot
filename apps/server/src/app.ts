@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { Application } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
@@ -12,7 +12,7 @@ import tournamentRoutes from './routes/tournament.routes.js';
 import leaderboardRoutes from './routes/leaderboard.routes.js';
 import adminRoutes from './routes/admin.routes.js';
 
-const app = express();
+const app: Application = express();
 
 // Security middleware
 app.use(helmet());
