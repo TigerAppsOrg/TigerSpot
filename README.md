@@ -1,71 +1,78 @@
-<div align = "center">
-<h1>
-  <a href= "https://tigerspot.tigerapps.org">Tiger Spot</a>
-</h1>
-<p align="center">
-  <img src="static/styles/logo.png" alt="Tiger Spot Logo"/>
-</p>
+# TigerSpot
 
-TigerSpot is an interactive geographical guessing web app. Users will be able to log in to their account, receive a daily photo of a place on campus, and place their guess of where they think it is on the map. After submitting a guess, the location will be revealed and their score will be determined based on how far their guess was to the correct location. Users can only play this mode once a day.
-However, users can also play the Versus mode where users can compete one on one with their friends with five rounds per game. This is a great way for students to learn about new places on campus and interact more with the Princeton community!
+TigerSpot is an interactive geographical guessing web app. Users will be able to log in to their account, receive a daily photo of a place on campus, and place their guess of where they think it is on the map. After submitting a guess, the location will be revealed and their score will be determined based on how far their guess was to the correct location. Users can only play this mode once a day. However, users can also play the Versus mode where users can compete one on one with their friends with five rounds per game. This is a great way for students to learn about new places on campus and interact more with the Princeton community!
 
-</div>
+## Tech Stack
+
+- **Frontend:** SvelteKit 5, Tailwind CSS v4, Leaflet.js
+- **Backend:** Express.js, TypeScript, Prisma ORM
+- **Database:** PostgreSQL 16
+- **Monorepo:** pnpm workspaces
 
 ## Getting Started
 
-Ensure that you have the following installed on your machine:
+### Prerequisites
 
-- Python 3.10 or higher
-- [Docker](https://www.docker.com/products/docker-desktop/)
+- Node.js (LTS)
+- pnpm
+- Docker (for PostgreSQL)
 
-Set up a virtual environment and install the required packages using `uv`:
-
-```bash
-# Install uv if not already installed
-curl -LsSf https://astral.sh/uv/install.sh | sh
-
-# Sync dependencies and create virtual environment
-uv sync
-
-# Activate the virtual environment (optional - uv run works without activation)
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-```
-
-Alternatively, run commands directly without activating:
+### Setup
 
 ```bash
-uv run python your_script.py
+# Install dependencies
+pnpm install
+
+# Start PostgreSQL
+pnpm docker:up
+
+# Generate Prisma client & apply migrations
+pnpm db:generate
+pnpm db:migrate
+
+# Start development servers
+pnpm dev
 ```
 
-Ensure that environment variables are set in accordance with the `.env.example` file. You can create a `.env` file in the root directory and set the environment variables there. **IMPORTANT**: Do not commit the `.env` file to the repository and do not place actual secrets in the `.env.example` file.
+The frontend runs on `http://localhost:5173` and the API on `http://localhost:3001`.
 
-### Database Setup
+### Environment Variables
 
-To set up the local PostgreSQL database using Docker, run `docker-compose up -d` in the root directory. The connection string in `.env.example` for DATABASE_URL is already configured to connect to the Docker container.
+**Server** (`apps/server/.env`):
 
-Set up the database schema using Alembic migrations:
-
-```bash
-# Run database migrations
-alembic upgrade head
-
-# Seed the database with pictures from Cloudinary
-python seed_pictures.py
+```env
+PORT=3001
+NODE_ENV=development
+DATABASE_URL=postgresql://spot:spot_password@localhost:5433/spot_db
+JWT_SECRET=your-secret-at-least-32-chars
+CLOUDINARY_CLOUD_NAME=your-cloud-name
+CLOUDINARY_API_KEY=your-api-key
+CLOUDINARY_API_SECRET=your-api-secret
+FRONTEND_URL=http://localhost:5173
+CAS_SERVICE_URL=http://localhost:3001/api/auth/callback
 ```
 
-To stop the database container, run `docker-compose down`. If you want to completely clear and reset the database, you can run `docker-compose down -v`. To view logs, use `docker-compose logs -f`.
+**Frontend** (`apps/frontend/.env`):
 
-**Note**: The project now uses SQLAlchemy with Alembic for database migrations. To create a new migration after modifying models, run:
-
-```bash
-alembic revision --autogenerate -m "Description of changes"
-alembic upgrade head
+```env
+VITE_API_URL=http://localhost:3001
 ```
 
-### Development Server
+## Scripts
 
-Run the development server with `python3 dev.py`. You can access the web app at `http://localhost:5173`.
+| Command             | Description                     |
+| ------------------- | ------------------------------- |
+| `pnpm dev`          | Start both frontend and backend |
+| `pnpm dev:server`   | Start backend only              |
+| `pnpm dev:client`   | Start frontend only             |
+| `pnpm build`        | Build frontend for production   |
+| `pnpm check`        | Run TypeScript checks           |
+| `pnpm format`       | Format code with Prettier       |
+| `pnpm db:studio`    | Open Prisma Studio              |
+| `pnpm docker:up`    | Start PostgreSQL container      |
+| `pnpm docker:down`  | Stop PostgreSQL container       |
+| `pnpm docker:reset` | Reset database                  |
 
 ## License
 
-This project is licensed under the BSD 3-Clause License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the BSD-3-Clause License. See the [LICENSE](LICENSE) file for details.

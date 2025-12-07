@@ -1,0 +1,493 @@
+<script lang="ts">
+	import { goto } from '$app/navigation';
+	import { page } from '$app/stores';
+	import { onMount, onDestroy } from 'svelte';
+	import Button from '$lib/components/Button.svelte';
+	import Card from '$lib/components/Card.svelte';
+	import Timer from '$lib/components/Timer.svelte';
+	import Map from '$lib/components/Map.svelte';
+	import {
+		getMatch,
+		getMatchRounds,
+		getMatchResults,
+		submitMatchRound,
+		startMatchRound,
+		getMatchStatus,
+		type RoundPicture
+	} from '$lib/api/tournament';
+	import { userStore } from '$lib/stores/user.svelte';
+
+	const matchId = parseInt($page.params.matchId);
+
+	// Extract tournamentId from URL search params (using $page.url which works with SSR)
+	const tournamentId = parseInt($page.url.searchParams.get('tournamentId') || '0');
+
+	let roundPictures = $state<RoundPicture[]>([]);
+	let loading = $state(true);
+	let timeLimit = $state(30); // Default 30 seconds
+	let opponentName = $state('Opponent');
+
+	// Game state
+	let currentRound = $state(1);
+	let guessCoords = $state<{ lat: number; lng: number } | null>(null);
+	let initialRemainingSeconds = $state<number | undefined>(undefined);
+	let roundStartTime = $state(Date.now()); // For calculating time taken on submit
+	let roundScores = $state<number[]>([]);
+	let timerComponent: Timer;
+	let mapComponent: Map;
+
+	// Waiting state
+	let waitingForOpponent = $state(false);
+	let opponentProgress = $state(0);
+	let pollInterval: ReturnType<typeof setInterval> | null = null;
+
+	// Image modal state
+	let showImageModal = $state(false);
+
+	const totalRounds = $derived(roundPictures.length || 5);
+	const currentPicture = $derived(roundPictures[currentRound - 1]);
+
+	// Load match rounds
+	onMount(async () => {
+		if (!tournamentId || !matchId) {
+			goto('/tournament');
+			return;
+		}
+
+		// Fetch match details to get opponent name and time limit
+		const matchDetails = await getMatch(tournamentId, matchId);
+		if (!matchDetails) {
+			// Unauthorized or not found - redirect to bracket
+			goto(`/tournament/${tournamentId}`);
+			return;
+		}
+
+		timeLimit = matchDetails.tournament.timeLimit;
+		// Determine opponent based on current user
+		const isPlayer1 = matchDetails.player1Id === userStore.user?.username;
+		opponentName = isPlayer1
+			? matchDetails.player2?.displayName || 'Opponent'
+			: matchDetails.player1?.displayName || 'Opponent';
+
+		// Check match status to resume from correct round
+		const status = await getMatchStatus(tournamentId, matchId);
+		if (status) {
+			const myProgress = isPlayer1 ? status.player1Progress : status.player2Progress;
+			const myFinished = isPlayer1 ? status.player1Finished : status.player2Finished;
+
+			// If match is already completed, go to results
+			if (status.status === 'COMPLETED') {
+				goto(`/tournament/results/${matchId}?tournamentId=${tournamentId}`);
+				return;
+			}
+
+			// If user has finished all rounds, go to waiting screen
+			if (myFinished) {
+				const rounds = await getMatchRounds(tournamentId, matchId);
+				roundPictures = rounds;
+
+				// Fetch actual scores from match results
+				const results = await getMatchResults(tournamentId, matchId);
+				if (results) {
+					roundScores = results.you.scores;
+				}
+
+				waitingForOpponent = true;
+				loading = false;
+				startPolling();
+				return;
+			}
+
+			// Resume from the next round after what's been submitted
+			if (myProgress > 0) {
+				currentRound = myProgress + 1;
+			}
+		}
+
+		const rounds = await getMatchRounds(tournamentId, matchId);
+		if (rounds.length === 0) {
+			// Unauthorized or no rounds - redirect to bracket
+			goto(`/tournament/${tournamentId}`);
+			return;
+		}
+
+		roundPictures = rounds;
+
+		// Start the current round timer on the server (prevents refresh exploit)
+		const timing = await startMatchRound(tournamentId, matchId, currentRound, timeLimit);
+		if (timing) {
+			initialRemainingSeconds = timing.remainingSeconds;
+			// Adjust local start time to account for elapsed time on server
+			roundStartTime = Date.now() - timing.elapsedSeconds * 1000;
+			// If time has already expired, auto-submit
+			if (timing.remainingSeconds <= 0) {
+				loading = false;
+				submitRoundWithNoGuess();
+				return;
+			}
+		}
+
+		loading = false;
+	});
+
+	onDestroy(() => {
+		if (pollInterval) {
+			clearInterval(pollInterval);
+		}
+	});
+
+	// Start polling for opponent status
+	function startPolling() {
+		pollInterval = setInterval(async () => {
+			const status = await getMatchStatus(tournamentId, matchId);
+			if (!status) return;
+
+			// Determine which player is the opponent
+			const isPlayer1 = status.player1Id === userStore.username;
+			opponentProgress = isPlayer1 ? status.player2Progress : status.player1Progress;
+			const opponentFinished = isPlayer1 ? status.player2Finished : status.player1Finished;
+
+			// If match is completed, go to results
+			if (status.status === 'COMPLETED' || opponentFinished) {
+				if (pollInterval) {
+					clearInterval(pollInterval);
+				}
+				goto(`/tournament/results/${matchId}?tournamentId=${tournamentId}`);
+			}
+		}, 2000); // Poll every 2 seconds
+	}
+
+	function handleMapSelect(coords: { lat: number; lng: number }) {
+		guessCoords = coords;
+	}
+
+	async function submitRound() {
+		if (!guessCoords || !currentPicture) return;
+
+		// Calculate time taken
+		const timeTaken = Math.floor((Date.now() - roundStartTime) / 1000);
+
+		// Submit round to API
+		const result = await submitMatchRound(
+			tournamentId,
+			matchId,
+			currentRound,
+			guessCoords.lat,
+			guessCoords.lng,
+			timeTaken
+		);
+
+		if (!result) {
+			alert('Failed to submit guess. Please try again.');
+			return;
+		}
+
+		// Store round score
+		roundScores = [...roundScores, result.points];
+
+		if (currentRound < totalRounds) {
+			// Move to next round
+			currentRound++;
+			guessCoords = null;
+			// Clear the map marker
+			if (mapComponent) {
+				mapComponent.clearMarker();
+			}
+			// Start next round timer on server
+			const timing = await startMatchRound(tournamentId, matchId, currentRound, timeLimit);
+			if (timing) {
+				roundStartTime = Date.now() - timing.elapsedSeconds * 1000;
+				if (timerComponent) {
+					timerComponent.setRemaining(timing.remainingSeconds);
+					timerComponent.start();
+				}
+				// If time already expired, auto-submit
+				if (timing.remainingSeconds <= 0) {
+					submitRoundWithNoGuess();
+					return;
+				}
+			} else {
+				// Fallback if API fails
+				roundStartTime = Date.now();
+				if (timerComponent) {
+					timerComponent.reset();
+					timerComponent.start();
+				}
+			}
+		} else {
+			// All rounds complete - check if opponent is done
+			await checkMatchCompletion();
+		}
+	}
+
+	async function checkMatchCompletion() {
+		const status = await getMatchStatus(tournamentId, matchId);
+
+		if (status?.status === 'COMPLETED') {
+			// Both players done - go to results
+			goto(`/tournament/results/${matchId}?tournamentId=${tournamentId}`);
+		} else {
+			// Wait for opponent
+			waitingForOpponent = true;
+			startPolling();
+		}
+	}
+
+	function handleTimeUp() {
+		// Auto-submit with current position or skip
+		if (guessCoords) {
+			submitRound();
+		} else {
+			// No guess - submit with default location (0,0) to record 0 points
+			submitRoundWithNoGuess();
+		}
+	}
+
+	async function submitRoundWithNoGuess() {
+		// Submit with 0,0 coords which will give 0 points due to distance
+		const result = await submitMatchRound(tournamentId, matchId, currentRound, 0, 0, timeLimit);
+
+		roundScores = [...roundScores, result?.points || 0];
+
+		if (currentRound < totalRounds) {
+			currentRound++;
+			guessCoords = null;
+			// Clear the map marker
+			if (mapComponent) {
+				mapComponent.clearMarker();
+			}
+			// Start next round timer on server
+			const timing = await startMatchRound(tournamentId, matchId, currentRound, timeLimit);
+			if (timing) {
+				roundStartTime = Date.now() - timing.elapsedSeconds * 1000;
+				if (timerComponent) {
+					timerComponent.setRemaining(timing.remainingSeconds);
+					timerComponent.start();
+				}
+			} else {
+				roundStartTime = Date.now();
+				if (timerComponent) {
+					timerComponent.reset();
+					timerComponent.start();
+				}
+			}
+		} else {
+			await checkMatchCompletion();
+		}
+	}
+
+	function openImageModal() {
+		showImageModal = true;
+	}
+
+	function closeImageModal() {
+		showImageModal = false;
+	}
+</script>
+
+<svelte:head>
+	<title>Tournament Match - TigerSpot</title>
+</svelte:head>
+
+<div class="min-h-screen bg-primary flex flex-col">
+	{#if loading || !currentPicture}
+		<!-- Loading state -->
+		<div class="flex items-center justify-center min-h-screen">
+			<Card class="text-center py-16">
+				<div class="text-4xl mb-4">⏳</div>
+				<p class="font-bold">Loading match...</p>
+			</Card>
+		</div>
+	{:else if waitingForOpponent}
+		<!-- Waiting for opponent -->
+		<div class="flex items-center justify-center min-h-screen">
+			<Card class="text-center py-16 px-12 max-w-md">
+				<div class="text-6xl mb-6 animate-bounce">⏳</div>
+				<h2 class="text-2xl font-black mb-4">Waiting for Opponent</h2>
+				<p class="opacity-80 mb-6">
+					You've finished all rounds! Waiting for {opponentName} to complete their rounds.
+				</p>
+
+				<!-- Your score summary -->
+				<div class="brutal-border bg-lime p-4 mb-6">
+					<div class="text-sm font-bold uppercase opacity-60 mb-1">Your Total Score</div>
+					<div class="text-3xl font-black">
+						{roundScores.reduce((a, b) => a + b, 0).toLocaleString()}<span
+							class="text-xl opacity-60">/{(totalRounds * 1000).toLocaleString()}</span
+						>
+					</div>
+				</div>
+
+				<!-- Opponent progress -->
+				<div class="brutal-border bg-gray/30 p-4 mb-6">
+					<div class="text-sm font-bold uppercase opacity-60 mb-2">Opponent Progress</div>
+					<div class="flex justify-center gap-2">
+						{#each Array(totalRounds) as _, i}
+							<div
+								class="w-4 h-4 brutal-border {i < opponentProgress ? 'bg-orange' : 'bg-white'}"
+							></div>
+						{/each}
+					</div>
+					<div class="text-sm mt-2 opacity-60">
+						{opponentProgress} / {totalRounds} rounds complete
+					</div>
+				</div>
+
+				<p class="text-sm opacity-60">
+					Results will appear automatically when your opponent finishes.
+				</p>
+			</Card>
+		</div>
+	{:else}
+		<!-- Fixed Header -->
+		<header class="header-fixed bg-white brutal-border">
+			<div class="w-full h-full px-4 md:px-6 flex items-center justify-between">
+				<div class="flex items-center gap-4">
+					<a href="/menu">
+						<img src="/logo.png" alt="TigerSpot Logo" class="inline-block w-32 md:w-40" />
+					</a>
+					<div class="brutal-border bg-magenta text-white px-3 py-1 font-bold text-sm">
+						vs {opponentName}
+					</div>
+				</div>
+
+				<div class="flex items-center gap-4">
+					<!-- Round indicator -->
+					<div class="hidden md:flex items-center gap-2">
+						{#each Array(totalRounds) as _, i}
+							<div
+								class="w-3 h-3 brutal-border {i < currentRound - 1
+									? 'bg-lime'
+									: i === currentRound - 1
+										? 'bg-orange'
+										: 'bg-gray'}"
+							></div>
+						{/each}
+					</div>
+					<div class="brutal-border bg-white px-3 py-1 font-black text-sm">
+						Round {currentRound}/{totalRounds}
+					</div>
+					<Timer
+						bind:this={timerComponent}
+						duration={timeLimit}
+						initialRemaining={initialRemainingSeconds}
+						onComplete={handleTimeUp}
+					/>
+				</div>
+			</div>
+		</header>
+
+		<!-- Game Area with padding for fixed header -->
+		<main class="grow pt-24 pb-6 px-4 flex items-center justify-center">
+			<div class="w-full max-w-6xl flex flex-col lg:flex-row gap-6">
+				<!-- Image Panel -->
+				<div class="lg:w-1/2 flex flex-col">
+					<Card class="grow flex flex-col p-0 overflow-hidden">
+						<div class="p-5 flex items-center justify-between">
+							<h2 class="text-xl font-black uppercase">Where is this?</h2>
+							<div class="text-sm font-bold text-black/60">
+								Round {currentRound} of {totalRounds}
+							</div>
+						</div>
+						<div
+							class="relative bg-white w-full overflow-hidden flex items-center justify-center h-[40vh] lg:h-[50vh]"
+						>
+							<img
+								src={currentPicture.imageUrl}
+								alt="Where is this location?"
+								class="max-w-full max-h-full object-contain"
+							/>
+							<button
+								onclick={openImageModal}
+								class="absolute top-3 right-3 brutal-border brutal-shadow bg-white hover:bg-gray px-3 py-2 transition-colors"
+								title="Expand image"
+							>
+								<svg
+									xmlns="http://www.w3.org/2000/svg"
+									class="h-5 w-5"
+									fill="none"
+									viewBox="0 0 24 24"
+									stroke="currentColor"
+									stroke-width="2.5"
+								>
+									<path
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"
+									/>
+								</svg>
+							</button>
+						</div>
+					</Card>
+				</div>
+
+				<!-- Map Panel -->
+				<div class="lg:w-1/2 flex flex-col">
+					<Card class="grow flex flex-col p-0 overflow-hidden">
+						<div class="p-5 flex items-center justify-between">
+							<h2 class="text-xl font-black uppercase">Click to guess</h2>
+							<span
+								class="brutal-border brutal-shadow-sm bg-lime px-4 py-2 text-sm font-bold {guessCoords
+									? 'visible'
+									: 'invisible'}"
+							>
+								Location selected
+							</span>
+						</div>
+						<div class="grow min-h-[300px] lg:min-h-0">
+							<Map
+								bind:this={mapComponent}
+								onSelect={handleMapSelect}
+								guessLocation={guessCoords ?? undefined}
+							/>
+						</div>
+					</Card>
+				</div>
+			</div>
+		</main>
+
+		<!-- Submit Bar -->
+		<footer class="bg-white brutal-border border-b-0 border-x-0 flex-shrink-0 py-5">
+			<div class="container-brutal flex items-center justify-between">
+				<div class="flex items-center gap-4">
+					{#if guessCoords}
+						<span class="font-mono font-bold text-sm opacity-60">
+							{guessCoords.lat.toFixed(4)}, {guessCoords.lng.toFixed(4)}
+						</span>
+					{:else}
+						<span class="text-sm opacity-60">Click on the map to place your guess</span>
+					{/if}
+				</div>
+				<Button variant="black" size="lg" disabled={!guessCoords} onclick={submitRound}>
+					{currentRound < totalRounds ? 'Next Round' : 'Finish Match'}
+				</Button>
+			</div>
+		</footer>
+	{/if}
+
+	<!-- Image Modal -->
+	{#if showImageModal && currentPicture}
+		<div
+			class="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-[2000]"
+			onclick={closeImageModal}
+		>
+			<div
+				class="relative max-w-7xl max-h-[90vh] brutal-border brutal-shadow-lg bg-white p-4"
+				onclick={(e) => e.stopPropagation()}
+			>
+				<button
+					onclick={closeImageModal}
+					class="absolute -top-4 -right-4 brutal-border brutal-shadow bg-white hover:bg-gray px-4 py-3 font-black text-xl transition-colors"
+					title="Close"
+				>
+					✕
+				</button>
+				<img
+					src={currentPicture.imageUrl}
+					alt="Where is this location?"
+					class="max-w-full max-h-[85vh] object-contain"
+				/>
+			</div>
+		</div>
+	{/if}
+</div>

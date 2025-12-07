@@ -1,0 +1,19 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: tigerspot-postgres
+    environment:
+      POSTGRES_USER: tigerspot
+      POSTGRES_PASSWORD: tigerspot_password
+      POSTGRES_DB: tigerspot_db
+    ports:
+      - "5435:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tigerspot -d tigerspot_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+volumes:
+  postgres_data:
