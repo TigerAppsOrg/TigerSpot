@@ -2,6 +2,7 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { onMount } from 'svelte';
+	import { animate, utils } from 'animejs';
 	import Button from '$lib/components/Button.svelte';
 	import Card from '$lib/components/Card.svelte';
 	import Header from '$lib/components/Header.svelte';
@@ -46,6 +47,19 @@
 		const data = await getMatchResults(tournamentId, matchId);
 		if (data) {
 			results = data;
+
+			// Trigger champion celebration if applicable
+			const wonGrandFinal =
+				data.bracketType === 'GRAND_FINAL' && data.winnerId === data.you.username;
+			if (wonGrandFinal) {
+				// Small delay to let the DOM render
+				setTimeout(() => {
+					launchConfetti();
+					animateTrophy();
+					// Second wave of confetti
+					setTimeout(() => launchConfetti(), 2000);
+				}, 300);
+			}
 		} else {
 			// Failed to load (unauthorized or not found) - redirect to bracket
 			goto(`/tournament/${tournamentId}`);
@@ -56,6 +70,8 @@
 	// Winner is determined by winnerId from server (accounts for tiebreakers)
 	const isWinner = $derived(results ? results.winnerId === results.you.username : false);
 	const usedTiebreaker = $derived(results?.tiebreaker === 'time');
+	const isGrandFinal = $derived(results?.bracketType === 'GRAND_FINAL');
+	const isChampion = $derived(isWinner && isGrandFinal);
 
 	// Check if eliminated (lost in losers bracket or grand final)
 	const isEliminated = $derived.by(() => {
@@ -64,16 +80,74 @@
 	});
 
 	const resultEmoji = $derived.by(() => {
+		if (isChampion) return '👑';
 		if (isWinner) return '🎉';
 		return isEliminated ? '💀' : '😔';
 	});
 
 	const resultText = $derived.by(() => {
+		if (isChampion) return 'TOURNAMENT CHAMPION!';
 		if (isWinner) return usedTiebreaker ? 'YOU WIN (TIEBREAKER)!' : 'YOU WIN!';
 		return isEliminated ? 'ELIMINATED' : 'YOU LOSE';
 	});
 
 	const resultColor = $derived(isWinner ? 'lime' : 'magenta');
+
+	// Confetti container ref
+	let confettiContainer: HTMLDivElement;
+
+	// Launch confetti celebration for tournament champion
+	function launchConfetti() {
+		if (!confettiContainer) return;
+
+		const colors = ['#BFFF00', '#FF6B6B', '#4ECDC4', '#FFE66D', '#FF00FF', '#00D4FF'];
+		const confettiCount = 150;
+
+		for (let i = 0; i < confettiCount; i++) {
+			const confetti = document.createElement('div');
+			confetti.className = 'confetti-piece';
+			confetti.style.cssText = `
+				position: absolute;
+				width: ${Math.random() * 12 + 8}px;
+				height: ${Math.random() * 12 + 8}px;
+				background: ${colors[Math.floor(Math.random() * colors.length)]};
+				left: ${Math.random() * 100}%;
+				top: -20px;
+				border: 2px solid black;
+			`;
+			confettiContainer.appendChild(confetti);
+
+			animate(confetti, {
+				translateY: [0, window.innerHeight + 100],
+				translateX: utils.random(-200, 200),
+				rotate: utils.random(0, 720),
+				scale: [1, Math.random() * 0.5 + 0.5],
+				duration: utils.random(2000, 4000),
+				delay: utils.random(0, 1500),
+				ease: 'outQuad',
+				onComplete: () => confetti.remove()
+			});
+		}
+	}
+
+	// Trophy bounce animation
+	function animateTrophy() {
+		animate('.champion-trophy', {
+			scale: [0, 1.2, 1],
+			rotate: [0, -10, 10, -5, 5, 0],
+			duration: 1500,
+			ease: 'outElastic(1, .5)'
+		});
+
+		// Animate the glow
+		animate('.champion-glow', {
+			scale: [0.8, 1.2],
+			opacity: [0.3, 0.8, 0.3],
+			duration: 2000,
+			loop: true,
+			ease: 'inOutSine'
+		});
+	}
 
 	// Format time as mm:ss
 	const formatTime = (seconds: number) => {
@@ -96,6 +170,12 @@
 
 	// Message based on result
 	const resultMessage = $derived.by(() => {
+		if (isChampion) {
+			if (usedTiebreaker) {
+				return `Won by tiebreaker! You are the ultimate champion with faster time (${formatTime(results!.you.totalTime)} vs ${formatTime(results!.opponent.totalTime)}).`;
+			}
+			return "You've conquered the tournament and claimed victory!";
+		}
 		if (isWinner) {
 			if (usedTiebreaker) {
 				return `Scores tied! You won with faster time (${formatTime(results!.you.totalTime)} vs ${formatTime(results!.opponent.totalTime)}).`;
@@ -115,6 +195,9 @@
 </svelte:head>
 
 <div class="min-h-screen bg-primary relative overflow-hidden">
+	<!-- Confetti container for champion celebration -->
+	<div bind:this={confettiContainer} class="fixed inset-0 pointer-events-none z-[3000]"></div>
+
 	<!-- Diamond pattern overlay (tournament theme) -->
 	<div class="absolute inset-0 bg-diamonds opacity-[0.03]"></div>
 
@@ -123,17 +206,51 @@
 	<main class="relative pt-24 pb-12 px-4">
 		<div class="container-brutal max-w-4xl mx-auto">
 			{#if results && !loading}
-				<!-- Result Header -->
-				<div class="text-center mb-10">
-					<div class="text-6xl mb-4">{resultEmoji}</div>
-					<h1
-						class="text-4xl md:text-5xl font-black mb-2"
-						style="color: var(--color-{resultColor})"
-					>
-						{resultText}
-					</h1>
-					<p class="text-lg opacity-80">{resultMessage}</p>
-				</div>
+				{#if isChampion}
+					<!-- CHAMPION CELEBRATION HEADER -->
+					<div class="text-center mb-10 relative">
+						<!-- Animated glow behind trophy -->
+						<div
+							class="champion-glow absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-lime/30 rounded-full blur-3xl"
+						></div>
+
+						<!-- Trophy and crown -->
+						<div class="champion-trophy relative inline-block mb-6">
+							<div class="text-8xl md:text-9xl">🏆</div>
+							<div class="absolute -top-4 left-1/2 -translate-x-1/2 text-5xl md:text-6xl">👑</div>
+						</div>
+
+						<!-- GAME OVER text -->
+						<div class="relative">
+							<div
+								class="text-xs md:text-sm font-black tracking-[0.3em] text-black/50 uppercase mb-2"
+							>
+								Game Over
+							</div>
+							<h1
+								class="text-5xl md:text-7xl font-black mb-4 bg-gradient-to-r from-lime via-yellow-400 to-lime bg-clip-text text-transparent animate-pulse"
+							>
+								CHAMPION!
+							</h1>
+							<div class="brutal-border brutal-shadow-lg bg-lime inline-block px-8 py-4 mb-4">
+								<span class="text-2xl md:text-3xl font-black">{results.you.displayName}</span>
+							</div>
+							<p class="text-lg md:text-xl opacity-80 max-w-md mx-auto">{resultMessage}</p>
+						</div>
+					</div>
+				{:else}
+					<!-- Regular Result Header -->
+					<div class="text-center mb-10">
+						<div class="text-6xl mb-4">{resultEmoji}</div>
+						<h1
+							class="text-4xl md:text-5xl font-black mb-2"
+							style="color: var(--color-{resultColor})"
+						>
+							{resultText}
+						</h1>
+						<p class="text-lg opacity-80">{resultMessage}</p>
+					</div>
+				{/if}
 
 				<!-- Score Comparison -->
 				<div class="grid md:grid-cols-3 gap-6 mb-10">
@@ -403,26 +520,37 @@
 				{/if}
 
 				<!-- What's Next -->
-				<Card variant={isWinner ? 'lime' : 'magenta'} class="text-center py-8 mb-10">
-					<h3 class="text-xl font-black mb-2">
-						{#if isWinner}
-							🚀 What's Next
-						{:else if isEliminated}
-							🏁 Tournament Over
-						{:else}
-							💪 Keep Fighting
-						{/if}
-					</h3>
-					<p class="opacity-80 mb-4">
-						{#if isWinner}
-							Check the bracket to see your next opponent!
-						{:else if isEliminated}
-							Thanks for playing! Check the bracket to follow the rest of the tournament.
-						{:else}
-							You've been moved to the losers bracket. Win your way back!
-						{/if}
-					</p>
-				</Card>
+				{#if isChampion}
+					<Card variant="lime" class="text-center py-10 mb-10">
+						<div class="text-5xl mb-4">🎊</div>
+						<h3 class="text-2xl font-black mb-3">Tournament Complete!</h3>
+						<p class="opacity-80 mb-2 text-lg">
+							You've proven yourself as the ultimate TigerSpot champion.
+						</p>
+						<p class="opacity-60 text-sm">Your name will be etched in tournament history!</p>
+					</Card>
+				{:else}
+					<Card variant={isWinner ? 'lime' : 'magenta'} class="text-center py-8 mb-10">
+						<h3 class="text-xl font-black mb-2">
+							{#if isWinner}
+								🚀 What's Next
+							{:else if isEliminated}
+								🏁 Tournament Over
+							{:else}
+								💪 Keep Fighting
+							{/if}
+						</h3>
+						<p class="opacity-80 mb-4">
+							{#if isWinner}
+								Check the bracket to see your next opponent!
+							{:else if isEliminated}
+								Thanks for playing! Check the bracket to follow the rest of the tournament.
+							{:else}
+								You've been moved to the losers bracket. Win your way back!
+							{/if}
+						</p>
+					</Card>
+				{/if}
 
 				<!-- Actions -->
 				<div class="flex flex-wrap justify-center gap-4">
