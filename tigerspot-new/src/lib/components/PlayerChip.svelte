@@ -22,10 +22,14 @@
 		white: 'bg-white text-black',
 		cyan: 'bg-cyan text-white'
 	};
-	const interactiveClasses = clickable
-		? 'hover:bg-cyan hover:text-white transition-all hover:scale-105 cursor-pointer'
-		: '';
-	const currentUserVariant = isCurrentUser ? 'bg-cyan text-white' : variantClasses[variant];
+
+	const interactiveClasses = $derived(
+		clickable ? 'hover:bg-cyan hover:text-white transition-all hover:scale-105 cursor-pointer' : ''
+	);
+
+	const currentUserVariant = $derived(
+		isCurrentUser ? 'bg-cyan text-white' : variantClasses[variant]
+	);
 </script>
 
 {#if clickable && onclick}
