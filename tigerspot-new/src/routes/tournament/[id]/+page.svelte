@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onMount, onDestroy } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { dev } from '$app/environment';
@@ -17,6 +17,7 @@
 	let loading = $state(true);
 	let error = $state<string | null>(null);
 	let simulating = $state(false);
+	let pollInterval: ReturnType<typeof setInterval> | null = null;
 
 	const difficultyColors: Record<string, string> = {
 		easy: 'bg-lime',
@@ -145,7 +146,30 @@
 		}
 
 		await loadTournament();
+		startPolling();
 	});
+
+	onDestroy(() => {
+		if (pollInterval) {
+			clearInterval(pollInterval);
+		}
+	});
+
+	function startPolling() {
+		// Poll every 5 seconds to check for bracket updates
+		pollInterval = setInterval(async () => {
+			// Only poll if tournament is in progress
+			if (tournament?.status === 'in_progress') {
+				await refreshTournament();
+			} else if (tournament?.status === 'completed') {
+				// Stop polling once tournament is completed
+				if (pollInterval) {
+					clearInterval(pollInterval);
+					pollInterval = null;
+				}
+			}
+		}, 5000);
+	}
 
 	async function loadTournament() {
 		loading = true;
@@ -159,6 +183,14 @@
 		}
 
 		loading = false;
+	}
+
+	// Refresh without showing loading state (for polling)
+	async function refreshTournament() {
+		const result = await getTournament(tournamentId);
+		if (result) {
+			tournament = result;
+		}
 	}
 
 	function handlePlayMatch(matchId: number) {
