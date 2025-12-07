@@ -302,3 +302,32 @@ export async function getMatchStatus(
 	}
 	return data ?? null;
 }
+
+export interface AdminAdvanceResult {
+	success: boolean;
+	matchId: number;
+	winnerId: string;
+	winnerName: string;
+	player1Score: number;
+	player2Score: number;
+}
+
+/**
+ * Admin: Manually advance a player in a match
+ * Used when an opponent leaves/doesn't play
+ */
+export async function adminAdvancePlayer(
+	tournamentId: number,
+	matchId: number,
+	winnerId: string
+): Promise<AdminAdvanceResult | null> {
+	const { data, error } = await api.post<AdminAdvanceResult>(
+		`/api/tournament/${tournamentId}/match/${matchId}/advance`,
+		{ winnerId }
+	);
+	if (error) {
+		console.error('Failed to advance player:', error);
+		return null;
+	}
+	return data ?? null;
+}

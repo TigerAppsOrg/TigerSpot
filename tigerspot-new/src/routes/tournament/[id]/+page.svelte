@@ -2,13 +2,16 @@
 	import { onMount, onDestroy } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
-	import { dev } from '$app/environment';
 	import Button from '$lib/components/Button.svelte';
 	import Card from '$lib/components/Card.svelte';
 	import Header from '$lib/components/Header.svelte';
 	import Bracket from '$lib/components/Bracket.svelte';
-	import { getTournament, type TournamentDetails, type BracketMatch } from '$lib/api/tournament';
-	import { simulateMatchWinner } from '$lib/api/admin';
+	import {
+		getTournament,
+		adminAdvancePlayer,
+		type TournamentDetails,
+		type BracketMatch
+	} from '$lib/api/tournament';
 	import { userStore } from '$lib/stores/user.svelte';
 
 	const tournamentId = parseInt($page.params.id ?? '');
@@ -190,17 +193,23 @@
 		goto(`/tournament/play/${matchId}?tournamentId=${tournamentId}`);
 	}
 
-	async function handleSimulateWinner(matchId: number, winnerId: string) {
+	async function handleAdvancePlayer(matchId: number, winnerId: string) {
 		if (simulating) return;
 
+		if (
+			!confirm(`Are you sure you want to advance this player? This will end the match immediately.`)
+		) {
+			return;
+		}
+
 		simulating = true;
-		const result = await simulateMatchWinner(tournamentId, matchId, winnerId);
+		const result = await adminAdvancePlayer(tournamentId, matchId, winnerId);
 
 		if (result?.success) {
 			// Reload tournament to get updated bracket
 			await loadTournament();
 		} else {
-			alert('Failed to simulate match result');
+			alert('Failed to advance player');
 		}
 
 		simulating = false;
@@ -295,14 +304,14 @@
 					</Card>
 				{/if}
 
-				<!-- Dev mode indicator -->
-				{#if dev && userStore.isAdmin}
+				<!-- Admin controls indicator -->
+				{#if userStore.isAdmin}
 					<div class="mb-4 p-3 bg-orange/10 brutal-border flex items-center gap-3">
-						<span class="text-xs font-bold uppercase text-orange">DEV MODE</span>
+						<span class="text-xs font-bold uppercase text-orange">ADMIN</span>
 						<span class="text-sm text-black/60">
-							Click "WIN" buttons on matches to simulate results
+							Click "WIN" buttons on matches to manually advance players (use when opponent leaves)
 							{#if simulating}
-								<span class="ml-2 font-bold">(simulating...)</span>
+								<span class="ml-2 font-bold">(advancing...)</span>
 							{/if}
 						</span>
 					</div>
@@ -386,8 +395,8 @@
 								grandFinal={tournament.bracket.grandFinal}
 								currentUserId={userStore.user?.username}
 								onPlayMatch={handlePlayMatch}
-								devMode={dev && userStore.isAdmin}
-								onSimulateWinner={dev && userStore.isAdmin ? handleSimulateWinner : undefined}
+								adminMode={userStore.isAdmin}
+								onAdvancePlayer={userStore.isAdmin ? handleAdvancePlayer : undefined}
 							/>
 						{/if}
 					</div>

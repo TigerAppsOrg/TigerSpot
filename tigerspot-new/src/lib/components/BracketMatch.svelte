@@ -5,18 +5,18 @@
 		match: BracketMatch;
 		currentUserId?: string;
 		compact?: boolean;
-		devMode?: boolean;
+		adminMode?: boolean;
 		onPlay?: () => void;
-		onSimulate?: (winnerId: string) => void;
+		onAdvance?: (winnerId: string) => void;
 	}
 
 	let {
 		match,
 		currentUserId = '',
 		compact = false,
-		devMode = false,
+		adminMode = false,
 		onPlay,
-		onSimulate
+		onAdvance
 	}: Props = $props();
 
 	const isCurrentUserMatch = $derived(
@@ -30,11 +30,10 @@
 			match.player2
 	);
 
-	// Can simulate if both players are assigned and match is not completed
-	const canSimulate = $derived(
-		devMode &&
-			match.player1 &&
-			match.player2 &&
+	// Can advance player if admin and match has at least one player and is not completed
+	const canAdvance = $derived(
+		adminMode &&
+			(match.player1 || match.player2) &&
 			match.status !== 'completed' &&
 			match.status !== 'pending'
 	);
@@ -102,11 +101,11 @@
 					<span class="font-mono tabular-nums font-bold">{match.player1Score.toLocaleString()}</span
 					>
 				{/if}
-				{#if canSimulate && onSimulate && match.player1}
+				{#if canAdvance && onAdvance && match.player1}
 					<button
-						onclick={() => onSimulate(match.player1!)}
+						onclick={() => onAdvance(match.player1!)}
 						class="text-[10px] px-1.5 py-0.5 bg-orange text-white brutal-border hover:bg-orange/80"
-						title="Simulate {match.player1DisplayName || match.player1} wins"
+						title="Advance {match.player1DisplayName || match.player1}"
 					>
 						WIN
 					</button>
@@ -137,11 +136,11 @@
 					<span class="font-mono tabular-nums font-bold">{match.player2Score.toLocaleString()}</span
 					>
 				{/if}
-				{#if canSimulate && onSimulate && match.player2}
+				{#if canAdvance && onAdvance && match.player2}
 					<button
-						onclick={() => onSimulate(match.player2!)}
+						onclick={() => onAdvance(match.player2!)}
 						class="text-[10px] px-1.5 py-0.5 bg-orange text-white brutal-border hover:bg-orange/80"
-						title="Simulate {match.player2DisplayName || match.player2} wins"
+						title="Advance {match.player2DisplayName || match.player2}"
 					>
 						WIN
 					</button>

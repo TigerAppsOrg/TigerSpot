@@ -700,6 +700,68 @@ export class TournamentService {
 	}
 
 	/**
+	 * Admin: Manually advance a player in a match
+	 * Used when an opponent leaves/doesn't play and the tournament would otherwise be stuck
+	 */
+	async adminAdvancePlayer(matchId: number, winnerId: string) {
+		const match = await prisma.tournamentMatch.findUnique({
+			where: { id: matchId },
+			include: {
+				player1: { select: { displayName: true } },
+				player2: { select: { displayName: true } }
+			}
+		});
+
+		if (!match) {
+			throw new Error('Match not found');
+		}
+
+		if (match.status === 'COMPLETED') {
+			throw new Error('Match is already completed');
+		}
+
+		// Verify the winner is actually part of this match
+		if (match.player1Id !== winnerId && match.player2Id !== winnerId) {
+			throw new Error('Player is not part of this match');
+		}
+
+		// Calculate scores if any rounds were played
+		const player1Total = match.player1Id
+			? await this.calculatePlayerTotal(matchId, match.player1Id)
+			: 0;
+		const player2Total = match.player2Id
+			? await this.calculatePlayerTotal(matchId, match.player2Id)
+			: 0;
+
+		// Update match with scores and mark as completed
+		await prisma.tournamentMatch.update({
+			where: { id: matchId },
+			data: {
+				player1Score: player1Total,
+				player2Score: player2Total,
+				winnerId,
+				status: 'COMPLETED',
+				completedAt: new Date()
+			}
+		});
+
+		// Advance winner in bracket (this handles all the bracket logic)
+		await this.bracketService.advanceWinner(matchId, winnerId);
+
+		const winnerName =
+			winnerId === match.player1Id ? match.player1?.displayName : match.player2?.displayName;
+
+		return {
+			success: true,
+			matchId,
+			winnerId,
+			winnerName,
+			player1Score: player1Total,
+			player2Score: player2Total
+		};
+	}
+
+	/**
 	 * Get match status (for polling or socket updates)
 	 */
 	async getMatchStatus(matchId: number) {

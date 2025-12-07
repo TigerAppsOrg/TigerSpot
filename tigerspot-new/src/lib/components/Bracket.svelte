@@ -8,8 +8,8 @@
 		grandFinal: BracketMatch;
 		currentUserId?: string;
 		onPlayMatch?: (matchId: number) => void;
-		onSimulateWinner?: (matchId: number, winnerId: string) => void;
-		devMode?: boolean;
+		onAdvancePlayer?: (matchId: number, winnerId: string) => void;
+		adminMode?: boolean;
 	}
 
 	let {
@@ -18,8 +18,8 @@
 		grandFinal,
 		currentUserId = '',
 		onPlayMatch,
-		onSimulateWinner,
-		devMode = false
+		onAdvancePlayer,
+		adminMode = false
 	}: Props = $props();
 
 	// Generate round names based on bracket size
@@ -61,10 +61,10 @@
 									<BracketMatchCard
 										{match}
 										{currentUserId}
-										{devMode}
+										{adminMode}
 										onPlay={onPlayMatch ? () => onPlayMatch(match.id) : undefined}
-										onSimulate={onSimulateWinner
-											? (winnerId: string) => onSimulateWinner(match.id, winnerId)
+										onAdvance={onAdvancePlayer
+											? (winnerId: string) => onAdvancePlayer(match.id, winnerId)
 											: undefined}
 									/>
 								</div>
@@ -98,11 +98,11 @@
 									<BracketMatchCard
 										{match}
 										{currentUserId}
-										{devMode}
+										{adminMode}
 										compact
 										onPlay={onPlayMatch ? () => onPlayMatch(match.id) : undefined}
-										onSimulate={onSimulateWinner
-											? (winnerId: string) => onSimulateWinner(match.id, winnerId)
+										onAdvance={onAdvancePlayer
+											? (winnerId: string) => onAdvancePlayer(match.id, winnerId)
 											: undefined}
 									/>
 								</div>
@@ -125,10 +125,10 @@
 			<BracketMatchCard
 				match={grandFinal}
 				{currentUserId}
-				{devMode}
+				{adminMode}
 				onPlay={onPlayMatch ? () => onPlayMatch(grandFinal.id) : undefined}
-				onSimulate={onSimulateWinner
-					? (winnerId: string) => onSimulateWinner(grandFinal.id, winnerId)
+				onAdvance={onAdvancePlayer
+					? (winnerId: string) => onAdvancePlayer(grandFinal.id, winnerId)
 					: undefined}
 			/>
 		</div>

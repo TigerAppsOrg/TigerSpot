@@ -271,4 +271,36 @@ export class TournamentController {
 			res.status(500).json({ error: 'Failed to get match status' });
 		}
 	};
+
+	/**
+	 * Admin: Manually advance a player in a match
+	 * Used when an opponent leaves/doesn't play
+	 */
+	adminAdvancePlayer = async (req: AuthRequest, res: Response) => {
+		// Admin check
+		if (!req.user?.isAdmin) {
+			res.status(403).json({ error: 'Admin access required' });
+			return;
+		}
+
+		const matchId = parseInt(req.params.matchId, 10);
+		if (isNaN(matchId)) {
+			res.status(400).json({ error: 'Invalid match ID' });
+			return;
+		}
+
+		const { winnerId } = req.body;
+		if (!winnerId || typeof winnerId !== 'string') {
+			res.status(400).json({ error: 'Winner ID (username) is required' });
+			return;
+		}
+
+		try {
+			const result = await this.tournamentService.adminAdvancePlayer(matchId, winnerId);
+			res.json(result);
+		} catch (error) {
+			console.error('Error advancing player:', error);
+			res.status(400).json({ error: (error as Error).message });
+		}
+	};
 }
