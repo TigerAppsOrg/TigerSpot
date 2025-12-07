@@ -21,7 +21,7 @@ export class AuthController {
 		const { ticket } = req.query;
 
 		if (!ticket || typeof ticket !== 'string') {
-			res.redirect(`${config.cors.frontendUrl}/login?error=no_ticket`);
+			res.redirect(`${config.cors.frontendUrl}/?error=no_ticket`);
 			return;
 		}
 
@@ -30,7 +30,7 @@ export class AuthController {
 			const userData = await this.authService.validateCASTicket(ticket);
 
 			if (!userData) {
-				res.redirect(`${config.cors.frontendUrl}/login?error=invalid_ticket`);
+				res.redirect(`${config.cors.frontendUrl}/?error=invalid_ticket`);
 				return;
 			}
 
@@ -52,7 +52,7 @@ export class AuthController {
 			res.redirect(`${config.cors.frontendUrl}/menu`);
 		} catch (error) {
 			console.error('CAS callback error:', error);
-			res.redirect(`${config.cors.frontendUrl}/login?error=auth_error`);
+			res.redirect(`${config.cors.frontendUrl}/?error=auth_error`);
 		}
 	};
 
