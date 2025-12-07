@@ -80,6 +80,12 @@
 		return userActiveMatch.player1DisplayName || userActiveMatch.player1;
 	});
 
+	// Check if current user is eliminated
+	const isCurrentUserEliminated = $derived(
+		tournament?.participants.some((p) => p.username === userStore.user?.username && p.eliminated) ??
+			false
+	);
+
 	// Get podium placements for completed tournaments
 	const podium = $derived.by(() => {
 		if (!tournament || tournament.status !== 'completed' || !tournament.bracket) return null;
@@ -255,6 +261,18 @@
 							<Button variant="black" onclick={() => handlePlayMatch(userActiveMatch.id)}>
 								Play Now
 							</Button>
+						</div>
+					</Card>
+				{/if}
+
+				<!-- Eliminated Banner -->
+				{#if isCurrentUserEliminated && tournament.status === 'in_progress'}
+					<Card variant="magenta" class="mb-8">
+						<div class="flex items-center gap-4">
+							<span class="text-3xl">💀</span>
+							<div>
+								<div class="font-black">You've Been Eliminated</div>
+							</div>
 						</div>
 					</Card>
 				{/if}

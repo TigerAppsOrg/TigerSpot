@@ -448,6 +448,7 @@ export class TournamentService {
 			matchId: match.id,
 			tournamentId: match.tournament.id,
 			status: match.status,
+			bracketType: match.bracketType, // WINNERS, LOSERS, or GRAND_FINAL
 			you: {
 				username: you?.username || '',
 				displayName: you?.displayName || 'Unknown',

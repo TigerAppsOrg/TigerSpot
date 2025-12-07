@@ -9,6 +9,7 @@
 	import {
 		getMatch,
 		getMatchRounds,
+		getMatchResults,
 		submitMatchRound,
 		getMatchStatus,
 		type RoundPicture
@@ -78,6 +79,13 @@
 			if (myFinished) {
 				const rounds = await getMatchRounds(tournamentId, matchId);
 				roundPictures = rounds;
+
+				// Fetch actual scores from match results
+				const results = await getMatchResults(tournamentId, matchId);
+				if (results) {
+					roundScores = results.you.scores;
+				}
+
 				waitingForOpponent = true;
 				loading = false;
 				startPolling();

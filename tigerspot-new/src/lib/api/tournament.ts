@@ -189,6 +189,7 @@ export interface MatchResults {
 	matchId: number;
 	tournamentId: number;
 	status: string;
+	bracketType: 'WINNERS' | 'LOSERS' | 'GRAND_FINAL';
 	you: {
 		username: string;
 		displayName: string;

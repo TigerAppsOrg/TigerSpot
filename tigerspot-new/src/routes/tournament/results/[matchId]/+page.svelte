@@ -36,14 +36,22 @@
 	const isWinner = $derived(results ? results.you.total > results.opponent.total : false);
 	const isDraw = $derived(results ? results.you.total === results.opponent.total : false);
 
+	// Check if eliminated (lost in losers bracket or grand final)
+	const isEliminated = $derived.by(() => {
+		if (!results || isWinner || isDraw) return false;
+		return results.bracketType === 'LOSERS' || results.bracketType === 'GRAND_FINAL';
+	});
+
 	const resultEmoji = $derived.by(() => {
 		if (isDraw) return '🤝';
-		return isWinner ? '🎉' : '😔';
+		if (isWinner) return '🎉';
+		return isEliminated ? '💀' : '😔';
 	});
 
 	const resultText = $derived.by(() => {
 		if (isDraw) return "IT'S A DRAW!";
-		return isWinner ? 'YOU WIN!' : 'YOU LOSE';
+		if (isWinner) return 'YOU WIN!';
+		return isEliminated ? 'ELIMINATED' : 'YOU LOSE';
 	});
 
 	const resultColor = $derived.by(() => {
@@ -55,7 +63,8 @@
 	const resultMessage = $derived.by(() => {
 		if (isDraw) return "It's a tie! A tiebreaker round will be played.";
 		if (isWinner) return 'Congratulations! You advance to the next round.';
-		return "Don't give up! You've been moved to the losers bracket.";
+		if (isEliminated) return "You've been knocked out of the tournament. Better luck next time!";
+		return "You've been moved to the losers bracket. Win your way back!";
 	});
 
 	// Pad scores arrays to same length for display
@@ -187,11 +196,19 @@
 				<!-- What's Next -->
 				<Card variant={isWinner ? 'lime' : 'magenta'} class="text-center py-8 mb-10">
 					<h3 class="text-xl font-black mb-2">
-						{isWinner ? "🚀 What's Next" : '💪 Keep Fighting'}
+						{#if isWinner}
+							🚀 What's Next
+						{:else if isEliminated}
+							🏁 Tournament Over
+						{:else}
+							💪 Keep Fighting
+						{/if}
 					</h3>
 					<p class="opacity-80 mb-4">
 						{#if isWinner}
 							Check the bracket to see your next opponent!
+						{:else if isEliminated}
+							Thanks for playing! Check the bracket to follow the rest of the tournament.
 						{:else}
 							You've been moved to the losers bracket. Win your way back!
 						{/if}
