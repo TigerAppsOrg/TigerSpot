@@ -41,6 +41,9 @@
 	let opponentProgress = $state(0);
 	let pollInterval: ReturnType<typeof setInterval> | null = null;
 
+	// Image modal state
+	let showImageModal = $state(false);
+
 	const totalRounds = $derived(roundPictures.length || 5);
 	const currentPicture = $derived(roundPictures[currentRound - 1]);
 
@@ -272,6 +275,14 @@
 			await checkMatchCompletion();
 		}
 	}
+
+	function openImageModal() {
+		showImageModal = true;
+	}
+
+	function closeImageModal() {
+		showImageModal = false;
+	}
 </script>
 
 <svelte:head>
@@ -386,6 +397,26 @@
 								alt="Where is this location?"
 								class="max-w-full max-h-full object-contain"
 							/>
+							<button
+								onclick={openImageModal}
+								class="absolute top-3 right-3 brutal-border brutal-shadow bg-white hover:bg-gray px-3 py-2 transition-colors"
+								title="Expand image"
+							>
+								<svg
+									xmlns="http://www.w3.org/2000/svg"
+									class="h-5 w-5"
+									fill="none"
+									viewBox="0 0 24 24"
+									stroke="currentColor"
+									stroke-width="2.5"
+								>
+									<path
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"
+									/>
+								</svg>
+							</button>
 						</div>
 					</Card>
 				</div>
@@ -432,5 +463,31 @@
 				</Button>
 			</div>
 		</footer>
+	{/if}
+
+	<!-- Image Modal -->
+	{#if showImageModal && currentPicture}
+		<div
+			class="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-[2000]"
+			onclick={closeImageModal}
+		>
+			<div
+				class="relative max-w-7xl max-h-[90vh] brutal-border brutal-shadow-lg bg-white p-4"
+				onclick={(e) => e.stopPropagation()}
+			>
+				<button
+					onclick={closeImageModal}
+					class="absolute -top-4 -right-4 brutal-border brutal-shadow bg-white hover:bg-gray px-4 py-3 font-black text-xl transition-colors"
+					title="Close"
+				>
+					✕
+				</button>
+				<img
+					src={currentPicture.imageUrl}
+					alt="Where is this location?"
+					class="max-w-full max-h-[85vh] object-contain"
+				/>
+			</div>
+		</div>
 	{/if}
 </div>

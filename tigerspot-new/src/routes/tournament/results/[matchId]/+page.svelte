@@ -21,6 +21,9 @@
 	const currentReviewRound = $derived(results?.rounds[reviewRoundIndex] ?? null);
 	const totalRounds = $derived(results?.rounds.length ?? 0);
 
+	// Image modal state
+	let showImageModal = $state(false);
+
 	function nextRound() {
 		if (reviewRoundIndex < totalRounds - 1) {
 			reviewRoundIndex++;
@@ -82,6 +85,14 @@
 	// Check if a player timed out (distance > 100km indicates no real guess)
 	const TIMEOUT_DISTANCE_THRESHOLD = 100000;
 	const didTimeout = (distance: number) => distance > TIMEOUT_DISTANCE_THRESHOLD;
+
+	function openImageModal() {
+		showImageModal = true;
+	}
+
+	function closeImageModal() {
+		showImageModal = false;
+	}
 
 	// Message based on result
 	const resultMessage = $derived.by(() => {
@@ -247,12 +258,32 @@
 
 						<div class="grid lg:grid-cols-2 gap-6">
 							<!-- Image -->
-							<div class="brutal-border overflow-hidden">
+							<div class="brutal-border overflow-hidden relative">
 								<img
 									src={currentReviewRound.imageUrl}
 									alt="Round {currentReviewRound.roundNumber} location"
 									class="w-full h-64 object-cover"
 								/>
+								<button
+									onclick={openImageModal}
+									class="absolute top-3 right-3 brutal-border brutal-shadow bg-white hover:bg-gray px-3 py-2 transition-colors"
+									title="Expand image"
+								>
+									<svg
+										xmlns="http://www.w3.org/2000/svg"
+										class="h-5 w-5"
+										fill="none"
+										viewBox="0 0 24 24"
+										stroke="currentColor"
+										stroke-width="2.5"
+									>
+										<path
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"
+										/>
+									</svg>
+								</button>
 							</div>
 
 							<!-- Map with guesses -->
@@ -406,4 +437,30 @@
 			{/if}
 		</div>
 	</main>
+
+	<!-- Image Modal -->
+	{#if showImageModal && currentReviewRound}
+		<div
+			class="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-[2000]"
+			onclick={closeImageModal}
+		>
+			<div
+				class="relative max-w-7xl max-h-[90vh] brutal-border brutal-shadow-lg bg-white p-4"
+				onclick={(e) => e.stopPropagation()}
+			>
+				<button
+					onclick={closeImageModal}
+					class="absolute -top-4 -right-4 brutal-border brutal-shadow bg-white hover:bg-gray px-4 py-3 font-black text-xl transition-colors"
+					title="Close"
+				>
+					✕
+				</button>
+				<img
+					src={currentReviewRound.imageUrl}
+					alt="Round {currentReviewRound.roundNumber} location"
+					class="max-w-full max-h-[85vh] object-contain"
+				/>
+			</div>
+		</div>
+	{/if}
 </div>
