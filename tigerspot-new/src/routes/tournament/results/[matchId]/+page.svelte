@@ -10,9 +10,8 @@
 
 	const matchId = parseInt($page.params.matchId);
 
-	// Get tournamentId from URL
-	const urlParams = new URLSearchParams(window.location.search);
-	const tournamentId = parseInt(urlParams.get('tournamentId') || '0');
+	// Get tournamentId from URL (using $page.url which works with SSR)
+	const tournamentId = parseInt($page.url.searchParams.get('tournamentId') || '0');
 
 	let loading = $state(true);
 	let results = $state<MatchResults | null>(null);

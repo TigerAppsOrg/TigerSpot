@@ -17,9 +17,8 @@
 
 	const matchId = parseInt($page.params.matchId);
 
-	// Extract tournamentId from URL search params or state
-	const urlParams = new URLSearchParams(window.location.search);
-	const tournamentId = parseInt(urlParams.get('tournamentId') || '0');
+	// Extract tournamentId from URL search params (using $page.url which works with SSR)
+	const tournamentId = parseInt($page.url.searchParams.get('tournamentId') || '0');
 
 	let roundPictures = $state<RoundPicture[]>([]);
 	let loading = $state(true);
@@ -51,13 +50,44 @@
 
 		// Fetch match details to get opponent name and time limit
 		const matchDetails = await getMatch(tournamentId, matchId);
-		if (matchDetails) {
-			timeLimit = matchDetails.tournament.timeLimit;
-			// Determine opponent based on current user
-			const isPlayer1 = matchDetails.player1Id === userStore.user?.username;
-			opponentName = isPlayer1
-				? matchDetails.player2?.displayName || 'Opponent'
-				: matchDetails.player1?.displayName || 'Opponent';
+		if (!matchDetails) {
+			goto('/tournament');
+			return;
+		}
+
+		timeLimit = matchDetails.tournament.timeLimit;
+		// Determine opponent based on current user
+		const isPlayer1 = matchDetails.player1Id === userStore.user?.username;
+		opponentName = isPlayer1
+			? matchDetails.player2?.displayName || 'Opponent'
+			: matchDetails.player1?.displayName || 'Opponent';
+
+		// Check match status to resume from correct round
+		const status = await getMatchStatus(tournamentId, matchId);
+		if (status) {
+			const myProgress = isPlayer1 ? status.player1Progress : status.player2Progress;
+			const myFinished = isPlayer1 ? status.player1Finished : status.player2Finished;
+
+			// If match is already completed, go to results
+			if (status.status === 'COMPLETED') {
+				goto(`/tournament/results/${matchId}?tournamentId=${tournamentId}`);
+				return;
+			}
+
+			// If user has finished all rounds, go to waiting screen
+			if (myFinished) {
+				const rounds = await getMatchRounds(tournamentId, matchId);
+				roundPictures = rounds;
+				waitingForOpponent = true;
+				loading = false;
+				startPolling();
+				return;
+			}
+
+			// Resume from the next round after what's been submitted
+			if (myProgress > 0) {
+				currentRound = myProgress + 1;
+			}
 		}
 
 		const rounds = await getMatchRounds(tournamentId, matchId);
