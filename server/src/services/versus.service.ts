@@ -450,17 +450,55 @@ export class VersusService {
 	}
 
 	/**
-	 * Get challenge results
+	 * Get challenge status (for polling opponent progress)
 	 */
-	async getResults(challengeId: number) {
+	async getStatus(challengeId: number, username: string) {
+		const challenge = await prisma.challenge.findUnique({
+			where: { id: challengeId }
+		});
+
+		if (!challenge) {
+			throw new Error('Challenge not found');
+		}
+
+		// Get round counts for each player
+		const challengerRounds = await prisma.challengeRound.count({
+			where: { challengeId, playerUsername: challenge.challengerId }
+		});
+		const challengeeRounds = await prisma.challengeRound.count({
+			where: { challengeId, playerUsername: challenge.challengeeId }
+		});
+
+		const isChallenger = challenge.challengerId === username;
+
+		return {
+			challengeId: challenge.id,
+			status: challenge.status,
+			challengerId: challenge.challengerId,
+			challengeeId: challenge.challengeeId,
+			yourProgress: isChallenger ? challengerRounds : challengeeRounds,
+			opponentProgress: isChallenger ? challengeeRounds : challengerRounds,
+			totalRounds: ROUNDS_PER_MATCH,
+			yourFinished: isChallenger ? challenge.challengerFinished : challenge.challengeeFinished,
+			opponentFinished: isChallenger ? challenge.challengeeFinished : challenge.challengerFinished,
+			winnerId: challenge.winnerId
+		};
+	}
+
+	/**
+	 * Get challenge results (formatted like tournament results)
+	 */
+	async getResults(challengeId: number, username: string) {
 		const challenge = await prisma.challenge.findUnique({
 			where: { id: challengeId },
 			include: {
-				challenger: { select: { displayName: true } },
-				challengee: { select: { displayName: true } },
+				challenger: { select: { username: true, displayName: true } },
+				challengee: { select: { username: true, displayName: true } },
 				rounds: {
 					include: {
-						picture: true
+						picture: {
+							select: { id: true, imageUrl: true, latitude: true, longitude: true }
+						}
 					},
 					orderBy: [{ roundNumber: 'asc' }, { playerUsername: 'asc' }]
 				}
@@ -471,21 +509,95 @@ export class VersusService {
 			throw new Error('Challenge not found');
 		}
 
+		// Determine which player is "you" and which is "opponent"
+		const isChallenger = challenge.challengerId === username;
+		const you = isChallenger ? challenge.challenger : challenge.challengee;
+		const opponent = isChallenger ? challenge.challengee : challenge.challenger;
+		const yourId = isChallenger ? challenge.challengerId : challenge.challengeeId;
+		const opponentId = isChallenger ? challenge.challengeeId : challenge.challengerId;
+
+		// Get round scores for each player
+		const yourRounds = challenge.rounds
+			.filter((r) => r.playerUsername === yourId && r.submittedAt !== null)
+			.sort((a, b) => a.roundNumber - b.roundNumber);
+		const opponentRounds = challenge.rounds
+			.filter((r) => r.playerUsername === opponentId && r.submittedAt !== null)
+			.sort((a, b) => a.roundNumber - b.roundNumber);
+
+		// Get template rounds (for picture info)
+		const templateRounds = challenge.rounds
+			.filter((r) => r.playerUsername === null)
+			.sort((a, b) => a.roundNumber - b.roundNumber);
+
+		const yourScores = yourRounds.map((r) => r.points || 0);
+		const opponentScores = opponentRounds.map((r) => r.points || 0);
+		const yourTotal = yourScores.reduce((a, b) => a + b, 0);
+		const opponentTotal = opponentScores.reduce((a, b) => a + b, 0);
+
+		// Calculate total times
+		const yourTotalTime = yourRounds.reduce((sum, r) => sum + (r.timeSeconds || 0), 0);
+		const opponentTotalTime = opponentRounds.reduce((sum, r) => sum + (r.timeSeconds || 0), 0);
+
+		const yourFinished = yourRounds.length === ROUNDS_PER_MATCH;
+		const opponentFinished = opponentRounds.length === ROUNDS_PER_MATCH;
+
+		// Determine if tiebreaker was used
+		const tiebreaker = yourTotal === opponentTotal && challenge.winnerId ? 'time' : null;
+
+		// Build detailed round info for review
+		const rounds = templateRounds.map((template) => {
+			const yourRound = yourRounds.find((r) => r.roundNumber === template.roundNumber);
+			const opponentRound = opponentRounds.find((r) => r.roundNumber === template.roundNumber);
+
+			return {
+				roundNumber: template.roundNumber,
+				imageUrl: template.picture.imageUrl,
+				actual: {
+					lat: template.picture.latitude,
+					lng: template.picture.longitude
+				},
+				you: yourRound
+					? {
+							guess: { lat: yourRound.guessLat!, lng: yourRound.guessLng! },
+							distance: yourRound.distance || 0,
+							points: yourRound.points || 0,
+							time: yourRound.timeSeconds || 0
+						}
+					: null,
+				opponent: opponentRound
+					? {
+							guess: { lat: opponentRound.guessLat!, lng: opponentRound.guessLng! },
+							distance: opponentRound.distance || 0,
+							points: opponentRound.points || 0,
+							time: opponentRound.timeSeconds || 0
+						}
+					: null
+			};
+		});
+
 		return {
-			id: challenge.id,
-			challenger: {
-				username: challenge.challengerId,
-				displayName: challenge.challenger.displayName,
-				score: challenge.challengerPoints
-			},
-			challengee: {
-				username: challenge.challengeeId,
-				displayName: challenge.challengee.displayName,
-				score: challenge.challengeePoints
-			},
-			winner: challenge.winnerId,
+			challengeId: challenge.id,
 			status: challenge.status,
-			rounds: challenge.rounds
+			tiebreaker,
+			rounds,
+			you: {
+				username: you.username,
+				displayName: you.displayName,
+				scores: yourScores,
+				total: yourTotal,
+				totalTime: yourTotalTime,
+				finished: yourFinished
+			},
+			opponent: {
+				username: opponent.username,
+				displayName: opponent.displayName,
+				scores: opponentScores,
+				total: opponentTotal,
+				totalTime: opponentTotalTime,
+				finished: opponentFinished
+			},
+			winnerId: challenge.winnerId,
+			completedAt: challenge.completedAt?.toISOString() || null
 		};
 	}
 }

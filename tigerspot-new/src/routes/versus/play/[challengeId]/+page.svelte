@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
-	import { onMount } from 'svelte';
+	import { onMount, onDestroy } from 'svelte';
 	import Button from '$lib/components/Button.svelte';
 	import Card from '$lib/components/Card.svelte';
 	import Timer from '$lib/components/Timer.svelte';
@@ -9,30 +9,40 @@
 	import {
 		getChallenge,
 		getChallengeRounds,
+		getChallengeStatus,
+		getChallengeResults,
 		submitChallengeRound,
 		type Challenge,
 		type RoundPicture
 	} from '$lib/api/versus';
-	import { calculateDistance, calculateVersusPoints } from '$lib/utils/distance';
+	import { userStore } from '$lib/stores/user.svelte';
 
 	const challengeId = $derived(parseInt($page.params.challengeId));
 
 	let challenge = $state<Challenge | null>(null);
 	let roundPictures = $state<RoundPicture[]>([]);
 	let loading = $state(true);
+	let opponentName = $state('Opponent');
 
+	// Game state
 	let currentRound = $state(1);
 	let guessCoords = $state<{ lat: number; lng: number } | null>(null);
-	let yourScore = $state(0);
-	let opponentScore = $state(0);
-	let roundScores = $state<
-		Array<{ round: number; yourScore: number; opponentScore: number; distance: number }>
-	>([]);
 	let roundStartTime = $state(Date.now());
+	let roundScores = $state<number[]>([]);
+	let timerComponent: Timer;
+	let mapComponent: Map;
 
+	// Waiting state
+	let waitingForOpponent = $state(false);
+	let opponentProgress = $state(0);
+	let pollInterval: ReturnType<typeof setInterval> | null = null;
+
+	// Image modal state
+	let showImageModal = $state(false);
+
+	const totalRounds = $derived(roundPictures.length || 5);
 	const currentPicture = $derived(roundPictures[currentRound - 1]);
 
-	// Load challenge and round data
 	onMount(async () => {
 		const [challengeData, rounds] = await Promise.all([
 			getChallenge(challengeId),
@@ -46,21 +56,73 @@
 
 		challenge = challengeData;
 		roundPictures = rounds;
+		opponentName = challengeData.opponentDisplayName || challengeData.opponent;
+
+		// Check status to resume from correct round
+		const status = await getChallengeStatus(challengeId);
+		if (status) {
+			// If challenge is completed, go to results
+			if (status.status === 'COMPLETED') {
+				goto(`/versus/results/${challengeId}`);
+				return;
+			}
+
+			// If user has finished all rounds, go to waiting screen
+			if (status.yourFinished) {
+				// Fetch actual scores from results
+				const results = await getChallengeResults(challengeId);
+				if (results) {
+					roundScores = results.you.scores;
+				}
+
+				waitingForOpponent = true;
+				loading = false;
+				startPolling();
+				return;
+			}
+
+			// Resume from next round after what's been submitted
+			if (status.yourProgress > 0) {
+				currentRound = status.yourProgress + 1;
+			}
+		}
+
 		loading = false;
 		roundStartTime = Date.now();
 	});
+
+	onDestroy(() => {
+		if (pollInterval) {
+			clearInterval(pollInterval);
+		}
+	});
+
+	function startPolling() {
+		pollInterval = setInterval(async () => {
+			const status = await getChallengeStatus(challengeId);
+			if (!status) return;
+
+			opponentProgress = status.opponentProgress;
+
+			// If challenge is completed, go to results
+			if (status.status === 'COMPLETED' || status.opponentFinished) {
+				if (pollInterval) {
+					clearInterval(pollInterval);
+				}
+				goto(`/versus/results/${challengeId}`);
+			}
+		}, 2000);
+	}
 
 	function handleMapSelect(coords: { lat: number; lng: number }) {
 		guessCoords = coords;
 	}
 
-	async function submitGuess() {
+	async function submitRound() {
 		if (!guessCoords || !currentPicture) return;
 
-		// Calculate time taken
 		const timeTaken = Math.floor((Date.now() - roundStartTime) / 1000);
 
-		// Submit round to API
 		const result = await submitChallengeRound(
 			challengeId,
 			currentRound,
@@ -74,56 +136,70 @@
 			return;
 		}
 
-		// Update scores
-		yourScore += result.points;
-		// Note: opponent score would come from the API when opponent plays
-		const opponentPoints = 0; // Will be updated when opponent plays
+		roundScores = [...roundScores, result.points];
 
-		roundScores = [
-			...roundScores,
-			{
-				round: currentRound,
-				yourScore: result.points,
-				opponentScore: opponentPoints,
-				distance: result.distance
-			}
-		];
-
-		// Check if game is complete
-		if (currentRound >= 5) {
-			// Navigate to results
-			goto(`/versus/results/${challengeId}`);
-		} else {
-			// Next round
+		if (currentRound < totalRounds) {
 			currentRound++;
 			guessCoords = null;
+			if (mapComponent) {
+				mapComponent.clearMarker();
+			}
 			roundStartTime = Date.now();
+			if (timerComponent) {
+				timerComponent.reset();
+				timerComponent.start();
+			}
+		} else {
+			await checkCompletion();
+		}
+	}
+
+	async function checkCompletion() {
+		const status = await getChallengeStatus(challengeId);
+
+		if (status?.status === 'COMPLETED') {
+			goto(`/versus/results/${challengeId}`);
+		} else {
+			waitingForOpponent = true;
+			startPolling();
 		}
 	}
 
 	function handleTimeUp() {
 		if (guessCoords) {
-			submitGuess();
+			submitRound();
 		} else {
-			// Auto-submit with no guess (0 points)
-			roundScores = [
-				...roundScores,
-				{
-					round: currentRound,
-					yourScore: 0,
-					opponentScore: 0,
-					distance: 99999
-				}
-			];
-
-			if (currentRound >= 5) {
-				goto(`/versus/results/${challengeId}`);
-			} else {
-				currentRound++;
-				guessCoords = null;
-				roundStartTime = Date.now();
-			}
+			submitRoundWithNoGuess();
 		}
+	}
+
+	async function submitRoundWithNoGuess() {
+		const result = await submitChallengeRound(challengeId, currentRound, 0, 0, 120);
+
+		roundScores = [...roundScores, result?.points || 0];
+
+		if (currentRound < totalRounds) {
+			currentRound++;
+			guessCoords = null;
+			if (mapComponent) {
+				mapComponent.clearMarker();
+			}
+			roundStartTime = Date.now();
+			if (timerComponent) {
+				timerComponent.reset();
+				timerComponent.start();
+			}
+		} else {
+			await checkCompletion();
+		}
+	}
+
+	function openImageModal() {
+		showImageModal = true;
+	}
+
+	function closeImageModal() {
+		showImageModal = false;
 	}
 </script>
 
@@ -133,100 +209,187 @@
 
 <div class="min-h-screen bg-primary flex flex-col">
 	{#if loading || !currentPicture}
-		<!-- Loading state -->
 		<div class="flex items-center justify-center min-h-screen">
 			<Card class="text-center py-16">
 				<div class="text-4xl mb-4">⏳</div>
 				<p class="font-bold">Loading challenge...</p>
 			</Card>
 		</div>
+	{:else if waitingForOpponent}
+		<div class="flex items-center justify-center min-h-screen">
+			<Card class="text-center py-16 px-12 max-w-md">
+				<div class="text-6xl mb-6 animate-bounce">⏳</div>
+				<h2 class="text-2xl font-black mb-4">Waiting for Opponent</h2>
+				<p class="opacity-80 mb-6">
+					You've finished all rounds! Waiting for {opponentName} to complete their rounds.
+				</p>
+
+				<div class="brutal-border bg-lime p-4 mb-6">
+					<div class="text-sm font-bold uppercase opacity-60 mb-1">Your Total Score</div>
+					<div class="text-3xl font-black">
+						{roundScores.reduce((a, b) => a + b, 0).toLocaleString()}<span
+							class="text-xl opacity-60">/{(totalRounds * 1000).toLocaleString()}</span
+						>
+					</div>
+				</div>
+
+				<div class="brutal-border bg-gray/30 p-4 mb-6">
+					<div class="text-sm font-bold uppercase opacity-60 mb-2">Opponent Progress</div>
+					<div class="flex justify-center gap-2">
+						{#each Array(totalRounds) as _, i}
+							<div
+								class="w-4 h-4 brutal-border {i < opponentProgress ? 'bg-orange' : 'bg-white'}"
+							></div>
+						{/each}
+					</div>
+					<div class="text-sm mt-2 opacity-60">
+						{opponentProgress} / {totalRounds} rounds complete
+					</div>
+				</div>
+
+				<p class="text-sm opacity-60">
+					Results will appear automatically when your opponent finishes.
+				</p>
+			</Card>
+		</div>
 	{:else}
-		<!-- Fixed Header -->
 		<header class="header-fixed bg-white brutal-border">
-			<div class="w-full h-full px-6 flex items-center justify-between flex-wrap gap-4">
+			<div class="w-full h-full px-4 md:px-6 flex items-center justify-between">
 				<div class="flex items-center gap-4">
-					<a href="/versus">
-						<img src="/logo.png" alt="TigerSpot Logo" class="inline-block w-32" />
+					<a href="/menu">
+						<img src="/logo.png" alt="TigerSpot Logo" class="inline-block w-32 md:w-40" />
 					</a>
-					<div class="brutal-border brutal-shadow-sm bg-magenta text-white px-4 py-2 font-bold">
-						Round {currentRound}/5
+					<div class="brutal-border bg-magenta text-white px-3 py-1 font-bold text-sm">
+						vs {opponentName}
 					</div>
 				</div>
+
 				<div class="flex items-center gap-4">
-					<div class="brutal-border brutal-shadow-sm bg-white px-4 py-2">
-						<span class="font-bold">You:</span>
-						<span class="text-xl font-black ml-2">{yourScore}</span>
+					<div class="hidden md:flex items-center gap-2">
+						{#each Array(totalRounds) as _, i}
+							<div
+								class="w-3 h-3 brutal-border {i < currentRound - 1
+									? 'bg-lime'
+									: i === currentRound - 1
+										? 'bg-orange'
+										: 'bg-gray'}"
+							></div>
+						{/each}
 					</div>
-					<div class="brutal-border brutal-shadow-sm bg-white px-4 py-2">
-						<span class="font-bold">{challenge?.opponent}:</span>
-						<span class="text-xl font-black ml-2">{opponentScore}</span>
+					<div class="brutal-border bg-white px-3 py-1 font-black text-sm">
+						Round {currentRound}/{totalRounds}
 					</div>
+					<Timer bind:this={timerComponent} duration={120} onComplete={handleTimeUp} />
 				</div>
-				<Timer duration={120} onComplete={handleTimeUp} />
 			</div>
 		</header>
 
-		<!-- Game Area with padding for fixed header -->
-		<main class="grow pt-28 pb-6 px-4 flex items-center justify-center">
+		<main class="grow pt-24 pb-6 px-4 flex items-center justify-center">
 			<div class="w-full max-w-6xl flex flex-col lg:flex-row gap-6">
-				<!-- Image Panel -->
 				<div class="lg:w-1/2 flex flex-col">
 					<Card class="grow flex flex-col p-0 overflow-hidden">
 						<div class="p-5 flex items-center justify-between">
 							<h2 class="text-xl font-black uppercase">Where is this?</h2>
-							<span
-								class="brutal-border brutal-shadow-sm bg-cyan text-white px-3 py-1 font-bold text-sm"
-							>
-								Round {currentRound}
-							</span>
+							<div class="text-sm font-bold text-black/60">
+								Round {currentRound} of {totalRounds}
+							</div>
 						</div>
-						<div class="relative grow bg-gray w-full block min-h-[300px]">
+						<div
+							class="relative bg-white w-full overflow-hidden flex items-center justify-center h-[40vh] lg:h-[50vh]"
+						>
 							<img
 								src={currentPicture.imageUrl}
 								alt="Where is this location?"
-								class="w-full h-full object-cover"
+								class="max-w-full max-h-full object-contain"
 							/>
+							<button
+								onclick={openImageModal}
+								class="absolute top-3 right-3 brutal-border brutal-shadow bg-white hover:bg-gray px-3 py-2 transition-colors"
+								title="Expand image"
+							>
+								<svg
+									xmlns="http://www.w3.org/2000/svg"
+									class="h-5 w-5"
+									fill="none"
+									viewBox="0 0 24 24"
+									stroke="currentColor"
+									stroke-width="2.5"
+								>
+									<path
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"
+									/>
+								</svg>
+							</button>
 						</div>
 					</Card>
 				</div>
 
-				<!-- Map Panel -->
 				<div class="lg:w-1/2 flex flex-col">
 					<Card class="grow flex flex-col p-0 overflow-hidden">
-						<div class="p-5">
-							<h2 class="text-xl font-black uppercase mb-3">Click to Guess</h2>
-							<div class="text-sm opacity-70 mb-1">
-								{guessCoords
-									? `📍 ${guessCoords.lat.toFixed(4)}, ${guessCoords.lng.toFixed(4)}`
-									: 'Click anywhere on the map to place your guess'}
-							</div>
+						<div class="p-5 flex items-center justify-between">
+							<h2 class="text-xl font-black uppercase">Click to guess</h2>
+							<span
+								class="brutal-border brutal-shadow-sm bg-lime px-4 py-2 text-sm font-bold {guessCoords
+									? 'visible'
+									: 'invisible'}"
+							>
+								Location selected
+							</span>
 						</div>
-						<div class="grow relative min-h-[300px]">
-							<Map onSelect={handleMapSelect} guess={guessCoords} showActual={false} />
+						<div class="grow min-h-[300px] lg:min-h-0">
+							<Map
+								bind:this={mapComponent}
+								onSelect={handleMapSelect}
+								guessLocation={guessCoords ?? undefined}
+							/>
 						</div>
 					</Card>
 				</div>
 			</div>
 		</main>
 
-		<!-- Submit Bar -->
-		<div class="bg-white brutal-border px-4 py-4">
-			<div class="container-brutal flex justify-between items-center flex-wrap gap-4">
+		<footer class="bg-white brutal-border border-b-0 border-x-0 flex-shrink-0 py-5">
+			<div class="container-brutal flex items-center justify-between">
 				<div class="flex items-center gap-4">
-					<span class="text-sm font-bold opacity-60">
-						{guessCoords ? 'Guess placed! Ready to submit.' : 'Place a marker on the map'}
-					</span>
+					{#if guessCoords}
+						<span class="font-mono font-bold text-sm opacity-60">
+							{guessCoords.lat.toFixed(4)}, {guessCoords.lng.toFixed(4)}
+						</span>
+					{:else}
+						<span class="text-sm opacity-60">Click on the map to place your guess</span>
+					{/if}
 				</div>
-				<Button variant="black" size="lg" onclick={submitGuess} disabled={!guessCoords}>
-					Submit Guess →
+				<Button variant="black" size="lg" disabled={!guessCoords} onclick={submitRound}>
+					{currentRound < totalRounds ? 'Next Round' : 'Finish Match'}
 				</Button>
+			</div>
+		</footer>
+	{/if}
+
+	{#if showImageModal && currentPicture}
+		<div
+			class="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-[2000]"
+			onclick={closeImageModal}
+		>
+			<div
+				class="relative max-w-7xl max-h-[90vh] brutal-border brutal-shadow-lg bg-white p-4"
+				onclick={(e) => e.stopPropagation()}
+			>
+				<button
+					onclick={closeImageModal}
+					class="absolute -top-4 -right-4 brutal-border brutal-shadow bg-white hover:bg-gray px-4 py-3 font-black text-xl transition-colors"
+					title="Close"
+				>
+					✕
+				</button>
+				<img
+					src={currentPicture.imageUrl}
+					alt="Where is this location?"
+					class="max-w-full max-h-[85vh] object-contain"
+				/>
 			</div>
 		</div>
 	{/if}
 </div>
-
-<style>
-	:global(.timer-urgent) {
-		animation: pulse-urgent 0.5s ease-in-out infinite;
-	}
-</style>

@@ -38,6 +38,62 @@ export interface RoundResult {
 	actualLng: number;
 }
 
+export interface ChallengeStatus {
+	challengeId: number;
+	status: string;
+	challengerId: string;
+	challengeeId: string;
+	yourProgress: number;
+	opponentProgress: number;
+	totalRounds: number;
+	yourFinished: boolean;
+	opponentFinished: boolean;
+	winnerId: string | null;
+}
+
+export interface VersusRoundDetail {
+	roundNumber: number;
+	imageUrl: string;
+	actual: { lat: number; lng: number };
+	you: {
+		guess: { lat: number; lng: number };
+		distance: number;
+		points: number;
+		time: number;
+	} | null;
+	opponent: {
+		guess: { lat: number; lng: number };
+		distance: number;
+		points: number;
+		time: number;
+	} | null;
+}
+
+export interface ChallengeResults {
+	challengeId: number;
+	status: string;
+	tiebreaker: 'time' | null;
+	rounds: VersusRoundDetail[];
+	you: {
+		username: string;
+		displayName: string;
+		scores: number[];
+		total: number;
+		totalTime: number;
+		finished: boolean;
+	};
+	opponent: {
+		username: string;
+		displayName: string;
+		scores: number[];
+		total: number;
+		totalTime: number;
+		finished: boolean;
+	};
+	winnerId: string | null;
+	completedAt: string | null;
+}
+
 /**
  * Send heartbeat to update presence on versus page
  */
@@ -172,13 +228,25 @@ export async function submitChallengeRound(
 }
 
 /**
+ * Get challenge status (for polling opponent progress)
+ */
+export async function getChallengeStatus(challengeId: number): Promise<ChallengeStatus | null> {
+	const { data, error } = await api.get<ChallengeStatus>(`/api/versus/${challengeId}/status`);
+	if (error) {
+		console.error('Failed to get status:', error);
+		return null;
+	}
+	return data ?? null;
+}
+
+/**
  * Get challenge results
  */
-export async function getChallengeResults(challengeId: number) {
-	const { data, error } = await api.get(`/api/versus/${challengeId}/results`);
+export async function getChallengeResults(challengeId: number): Promise<ChallengeResults | null> {
+	const { data, error } = await api.get<ChallengeResults>(`/api/versus/${challengeId}/results`);
 	if (error) {
 		console.error('Failed to get results:', error);
 		return null;
 	}
-	return data;
+	return data ?? null;
 }

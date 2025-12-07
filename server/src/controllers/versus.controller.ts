@@ -151,7 +151,24 @@ export class VersusController {
 				return;
 			}
 
-			res.json(challenge);
+			// Format response to match Challenge type expected by frontend
+			const username = req.user!.username;
+			const isChallenger = challenge.challengerId === username;
+			const opponent = isChallenger ? challenge.challengeeId : challenge.challengerId;
+			const opponentDisplayName = isChallenger
+				? challenge.challengee.displayName
+				: challenge.challenger.displayName;
+
+			res.json({
+				id: challenge.id,
+				opponent,
+				opponentDisplayName,
+				status: challenge.status.toLowerCase(),
+				isChallenger,
+				createdAt: challenge.createdAt,
+				yourScore: isChallenger ? challenge.challengerPoints : challenge.challengeePoints,
+				theirScore: isChallenger ? challenge.challengeePoints : challenge.challengerPoints
+			});
 		} catch (error) {
 			console.error('Error getting challenge:', error);
 			res.status(500).json({ error: 'Failed to get challenge' });
@@ -216,6 +233,25 @@ export class VersusController {
 	};
 
 	/**
+	 * Get challenge status (for polling opponent progress)
+	 */
+	getStatus = async (req: AuthRequest, res: Response) => {
+		const challengeId = parseInt(req.params.id, 10);
+		if (isNaN(challengeId)) {
+			res.status(400).json({ error: 'Invalid challenge ID' });
+			return;
+		}
+
+		try {
+			const status = await this.versusService.getStatus(challengeId, req.user!.username);
+			res.json(status);
+		} catch (error) {
+			console.error('Error getting status:', error);
+			res.status(500).json({ error: 'Failed to get status' });
+		}
+	};
+
+	/**
 	 * Get challenge results
 	 */
 	getResults = async (req: AuthRequest, res: Response) => {
@@ -226,7 +262,7 @@ export class VersusController {
 		}
 
 		try {
-			const results = await this.versusService.getResults(challengeId);
+			const results = await this.versusService.getResults(challengeId, req.user!.username);
 			res.json(results);
 		} catch (error) {
 			console.error('Error getting results:', error);

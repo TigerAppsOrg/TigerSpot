@@ -32,6 +32,9 @@ router.delete('/:id', versusController.cancelChallenge);
 // Get challenge details
 router.get('/:id', versusController.getChallenge);
 
+// Get challenge status (for polling opponent progress)
+router.get('/:id/status', versusController.getStatus);
+
 // Get round pictures for a match
 router.get('/:id/rounds', versusController.getRounds);
 
