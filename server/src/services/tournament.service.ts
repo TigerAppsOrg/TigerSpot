@@ -354,12 +354,34 @@ export class TournamentService {
 			const player2Total = await this.calculatePlayerTotal(matchId, match.player2Id!);
 
 			// Determine winner
-			const winnerId =
-				player1Total > player2Total
-					? match.player1Id
-					: player1Total < player2Total
-						? match.player2Id
-						: null; // Tie - rare, handle as needed
+			let winnerId: string | null = null;
+
+			if (player1Total > player2Total) {
+				winnerId = match.player1Id;
+			} else if (player1Total < player2Total) {
+				winnerId = match.player2Id;
+			} else {
+				// Tiebreaker: faster total time wins
+				const player1Time = await this.calculatePlayerTotalTime(matchId, match.player1Id!);
+				const player2Time = await this.calculatePlayerTotalTime(matchId, match.player2Id!);
+
+				if (player1Time < player2Time) {
+					winnerId = match.player1Id;
+				} else if (player2Time < player1Time) {
+					winnerId = match.player2Id;
+				} else {
+					// Still tied - use total distance (closer is better)
+					const player1Distance = await this.calculatePlayerTotalDistance(
+						matchId,
+						match.player1Id!
+					);
+					const player2Distance = await this.calculatePlayerTotalDistance(
+						matchId,
+						match.player2Id!
+					);
+					winnerId = player1Distance <= player2Distance ? match.player1Id : match.player2Id;
+				}
+			}
 
 			// Update match
 			await prisma.tournamentMatch.update({
@@ -397,6 +419,28 @@ export class TournamentService {
 		});
 
 		return rounds.reduce((sum, r) => sum + (r.points || 0), 0);
+	}
+
+	private async calculatePlayerTotalTime(matchId: number, username: string): Promise<number> {
+		const rounds = await prisma.tournamentRound.findMany({
+			where: {
+				matchId,
+				playerUsername: username
+			}
+		});
+
+		return rounds.reduce((sum, r) => sum + (r.timeSeconds || 0), 0);
+	}
+
+	private async calculatePlayerTotalDistance(matchId: number, username: string): Promise<number> {
+		const rounds = await prisma.tournamentRound.findMany({
+			where: {
+				matchId,
+				playerUsername: username
+			}
+		});
+
+		return rounds.reduce((sum, r) => sum + (r.distance || 0), 0);
 	}
 
 	/**
@@ -440,20 +484,29 @@ export class TournamentService {
 		const yourTotal = yourScores.reduce((a, b) => a + b, 0);
 		const opponentTotal = opponentScores.reduce((a, b) => a + b, 0);
 
+		// Calculate total times for tiebreaker display
+		const yourTotalTime = yourRounds.reduce((sum, r) => sum + (r.timeSeconds || 0), 0);
+		const opponentTotalTime = opponentRounds.reduce((sum, r) => sum + (r.timeSeconds || 0), 0);
+
 		// Check completion status
 		const yourFinished = yourRounds.length === match.tournament.roundsPerMatch;
 		const opponentFinished = opponentRounds.length === match.tournament.roundsPerMatch;
+
+		// Determine if tiebreaker was used
+		const tiebreaker = yourTotal === opponentTotal && match.winnerId ? 'time' : null;
 
 		return {
 			matchId: match.id,
 			tournamentId: match.tournament.id,
 			status: match.status,
 			bracketType: match.bracketType, // WINNERS, LOSERS, or GRAND_FINAL
+			tiebreaker, // 'time' if tiebreaker was used, null otherwise
 			you: {
 				username: you?.username || '',
 				displayName: you?.displayName || 'Unknown',
 				scores: yourScores,
 				total: yourTotal,
+				totalTime: yourTotalTime,
 				finished: yourFinished
 			},
 			opponent: {
@@ -461,6 +514,7 @@ export class TournamentService {
 				displayName: opponent?.displayName || 'Unknown',
 				scores: opponentScores,
 				total: opponentTotal,
+				totalTime: opponentTotalTime,
 				finished: opponentFinished
 			},
 			winnerId: match.winnerId,

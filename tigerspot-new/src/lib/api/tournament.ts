@@ -190,11 +190,13 @@ export interface MatchResults {
 	tournamentId: number;
 	status: string;
 	bracketType: 'WINNERS' | 'LOSERS' | 'GRAND_FINAL';
+	tiebreaker: 'time' | null;
 	you: {
 		username: string;
 		displayName: string;
 		scores: number[];
 		total: number;
+		totalTime: number;
 		finished: boolean;
 	};
 	opponent: {
@@ -202,6 +204,7 @@ export interface MatchResults {
 		displayName: string;
 		scores: number[];
 		total: number;
+		totalTime: number;
 		finished: boolean;
 	};
 	winnerId: string | null;

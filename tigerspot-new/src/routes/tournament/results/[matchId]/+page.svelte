@@ -33,36 +33,46 @@
 		loading = false;
 	});
 
-	const isWinner = $derived(results ? results.you.total > results.opponent.total : false);
-	const isDraw = $derived(results ? results.you.total === results.opponent.total : false);
+	// Winner is determined by winnerId from server (accounts for tiebreakers)
+	const isWinner = $derived(results ? results.winnerId === results.you.username : false);
+	const usedTiebreaker = $derived(results?.tiebreaker === 'time');
 
 	// Check if eliminated (lost in losers bracket or grand final)
 	const isEliminated = $derived.by(() => {
-		if (!results || isWinner || isDraw) return false;
+		if (!results || isWinner) return false;
 		return results.bracketType === 'LOSERS' || results.bracketType === 'GRAND_FINAL';
 	});
 
 	const resultEmoji = $derived.by(() => {
-		if (isDraw) return '🤝';
 		if (isWinner) return '🎉';
 		return isEliminated ? '💀' : '😔';
 	});
 
 	const resultText = $derived.by(() => {
-		if (isDraw) return "IT'S A DRAW!";
-		if (isWinner) return 'YOU WIN!';
+		if (isWinner) return usedTiebreaker ? 'YOU WIN (TIEBREAKER)!' : 'YOU WIN!';
 		return isEliminated ? 'ELIMINATED' : 'YOU LOSE';
 	});
 
-	const resultColor = $derived.by(() => {
-		if (isDraw) return 'orange';
-		return isWinner ? 'lime' : 'magenta';
-	});
+	const resultColor = $derived(isWinner ? 'lime' : 'magenta');
+
+	// Format time as mm:ss
+	const formatTime = (seconds: number) => {
+		const mins = Math.floor(seconds / 60);
+		const secs = seconds % 60;
+		return `${mins}:${secs.toString().padStart(2, '0')}`;
+	};
 
 	// Message based on result
 	const resultMessage = $derived.by(() => {
-		if (isDraw) return "It's a tie! A tiebreaker round will be played.";
-		if (isWinner) return 'Congratulations! You advance to the next round.';
+		if (isWinner) {
+			if (usedTiebreaker) {
+				return `Scores tied! You won with faster time (${formatTime(results!.you.totalTime)} vs ${formatTime(results!.opponent.totalTime)}).`;
+			}
+			return 'Congratulations! You advance to the next round.';
+		}
+		if (usedTiebreaker) {
+			return `Scores tied! Lost on time (${formatTime(results!.you.totalTime)} vs ${formatTime(results!.opponent.totalTime)}).`;
+		}
 		if (isEliminated) return "You've been knocked out of the tournament. Better luck next time!";
 		return "You've been moved to the losers bracket. Win your way back!";
 	});
@@ -113,7 +123,7 @@
 					</div>
 
 					<!-- Opponent Score -->
-					<Card variant={!isWinner && !isDraw ? 'lime' : 'default'} class="text-center py-6">
+					<Card variant={!isWinner ? 'lime' : 'default'} class="text-center py-6">
 						<div class="text-sm font-bold uppercase opacity-60 mb-2">Opponent</div>
 						<div class="text-lg font-black mb-1">{results.opponent.displayName}</div>
 						<div class="text-4xl font-black">{results.opponent.total.toLocaleString()}</div>
@@ -184,7 +194,7 @@
 							</div>
 							<div class="text-black/30 font-bold">vs</div>
 							<div class="text-left w-20">
-								<div class="text-2xl font-black {!isWinner && !isDraw ? 'text-magenta' : ''}">
+								<div class="text-2xl font-black {!isWinner ? 'text-magenta' : ''}">
 									{results.opponent.total.toLocaleString()}
 								</div>
 							</div>
