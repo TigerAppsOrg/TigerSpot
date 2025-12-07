@@ -583,15 +583,7 @@ export class VersusService {
 					}
 				});
 
-				// Update user total points
-				await prisma.user.update({
-					where: { username: updatedChallenge.challengerId },
-					data: { totalPoints: { increment: updatedChallenge.challengerPoints } }
-				});
-				await prisma.user.update({
-					where: { username: updatedChallenge.challengeeId },
-					data: { totalPoints: { increment: updatedChallenge.challengeePoints } }
-				});
+				// Note: Versus points do NOT count towards leaderboard (only daily does)
 			}
 		}
 
