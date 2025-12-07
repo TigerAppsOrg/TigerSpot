@@ -9,7 +9,7 @@ export class TournamentService {
 	/**
 	 * List all tournaments
 	 */
-	async listTournaments(): Promise<TournamentResponse[]> {
+	async listTournaments(isAdmin: boolean = false): Promise<TournamentResponse[]> {
 		const tournaments = await prisma.tournament.findMany({
 			include: {
 				participants: true,
@@ -28,7 +28,8 @@ export class TournamentService {
 			participants: t.participants.length,
 			maxParticipants: t.maxParticipants,
 			createdAt: t.createdAt,
-			winner: t.winner?.displayName
+			winner: t.winner?.displayName,
+			...(isAdmin ? { joinCode: t.joinCode } : {})
 		}));
 	}
 
@@ -82,7 +83,7 @@ export class TournamentService {
 	/**
 	 * Join a tournament
 	 */
-	async joinTournament(tournamentId: number, username: string) {
+	async joinTournament(tournamentId: number, username: string, joinCode: string) {
 		const tournament = await prisma.tournament.findUnique({
 			where: { id: tournamentId },
 			include: { participants: true }
@@ -94,6 +95,11 @@ export class TournamentService {
 
 		if (tournament.status !== 'OPEN') {
 			throw new Error('Tournament is not open for registration');
+		}
+
+		// Validate join code (case-insensitive)
+		if (tournament.joinCode.toUpperCase() !== joinCode.toUpperCase()) {
+			throw new Error('Invalid join code');
 		}
 
 		if (

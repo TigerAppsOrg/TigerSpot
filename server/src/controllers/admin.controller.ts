@@ -5,6 +5,15 @@ import { BracketService } from '../services/bracket.service.js';
 import type { AuthRequest } from '../types/index.js';
 import type { Difficulty } from '@prisma/client';
 
+function generateJoinCode(): string {
+	const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Exclude confusing chars: I, O, 0, 1
+	let code = '';
+	for (let i = 0; i < 6; i++) {
+		code += chars.charAt(Math.floor(Math.random() * chars.length));
+	}
+	return code;
+}
+
 export class AdminController {
 	private imageService = new ImageService();
 	private bracketService = new BracketService();
@@ -227,9 +236,20 @@ export class AdminController {
 		}
 
 		try {
+			// Generate a unique join code
+			let joinCode = generateJoinCode();
+			let attempts = 0;
+			while (attempts < 10) {
+				const existing = await prisma.tournament.findUnique({ where: { joinCode } });
+				if (!existing) break;
+				joinCode = generateJoinCode();
+				attempts++;
+			}
+
 			const tournament = await prisma.tournament.create({
 				data: {
 					name,
+					joinCode,
 					timeLimit,
 					roundsPerMatch,
 					maxParticipants: maxParticipants ?? null,

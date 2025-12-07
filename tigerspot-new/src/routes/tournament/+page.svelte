@@ -11,6 +11,12 @@
 	let loading = $state(true);
 	let joiningId = $state<number | null>(null);
 
+	// Join code modal state
+	let showJoinModal = $state(false);
+	let selectedTournament = $state<Tournament | null>(null);
+	let joinCode = $state('');
+	let joinError = $state('');
+
 	// TODO: Active match tracking will need WebSocket integration
 	let hasActiveMatch = $state(false);
 	let activeMatchInfo = $state<{
@@ -47,12 +53,35 @@
 		loading = false;
 	}
 
-	async function handleJoin(tournamentId: number) {
-		joiningId = tournamentId;
-		const success = await joinTournament(tournamentId);
-		if (success) {
-			// Reload tournaments to get updated participant count
+	function openJoinModal(tournament: Tournament) {
+		selectedTournament = tournament;
+		joinCode = '';
+		joinError = '';
+		showJoinModal = true;
+	}
+
+	function closeJoinModal() {
+		showJoinModal = false;
+		selectedTournament = null;
+		joinCode = '';
+		joinError = '';
+	}
+
+	async function handleJoin() {
+		if (!selectedTournament) return;
+		if (!joinCode.trim()) {
+			joinError = 'Please enter a join code';
+			return;
+		}
+
+		joiningId = selectedTournament.id;
+		joinError = '';
+		const result = await joinTournament(selectedTournament.id, joinCode.trim());
+		if (result.success) {
+			closeJoinModal();
 			await loadTournaments();
+		} else {
+			joinError = result.error || 'Failed to join tournament';
 		}
 		joiningId = null;
 	}
@@ -152,15 +181,11 @@
 									</div>
 
 									<!-- Actions based on status -->
-									<div class="flex gap-2 flex-shrink-0">
+									<div class="flex gap-2 shrink-0">
 										{#if tournament.status === 'open'}
 											{#if !tournament.maxParticipants || tournament.participants < tournament.maxParticipants}
-												<Button
-													variant="lime"
-													onclick={() => handleJoin(tournament.id)}
-													disabled={joiningId === tournament.id}
-												>
-													{joiningId === tournament.id ? 'Joining...' : 'Join'}
+												<Button variant="lime" onclick={() => openJoinModal(tournament)}>
+													Join
 												</Button>
 											{:else}
 												<span
@@ -206,3 +231,46 @@
 		</div>
 	</main>
 </div>
+
+<!-- Join Code Modal -->
+{#if showJoinModal && selectedTournament}
+	<div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+		<Card class="w-full max-w-md">
+			<div class="text-center mb-6">
+				<div class="text-4xl mb-2">🔐</div>
+				<h2 class="text-2xl font-black">Enter Join Code</h2>
+				<p class="text-black/60 mt-2">
+					Enter the code to join <span class="font-bold">{selectedTournament.name}</span>
+				</p>
+			</div>
+
+			<div class="space-y-4">
+				<div>
+					<label for="joinCode" class="block text-sm font-bold uppercase mb-2">Join Code</label>
+					<input
+						id="joinCode"
+						type="text"
+						bind:value={joinCode}
+						placeholder="e.g., ABC123"
+						class="w-full brutal-border px-4 py-3 font-bold text-center text-2xl tracking-widest uppercase focus:outline-none focus:ring-4 focus:ring-orange/50"
+						maxlength="6"
+						onkeydown={(e) => e.key === 'Enter' && handleJoin()}
+					/>
+				</div>
+
+				{#if joinError}
+					<div class="brutal-border bg-magenta text-white p-3 text-sm font-bold">
+						{joinError}
+					</div>
+				{/if}
+
+				<div class="flex gap-3">
+					<Button variant="white" class="flex-1" onclick={closeJoinModal}>Cancel</Button>
+					<Button variant="lime" class="flex-1" onclick={handleJoin} disabled={joiningId !== null}>
+						{joiningId !== null ? 'Joining...' : 'Join Tournament'}
+					</Button>
+				</div>
+			</div>
+		</Card>
+	</div>
+{/if}

@@ -87,4 +87,5 @@ export interface TournamentResponse {
 	maxParticipants: number | null;
 	createdAt: Date;
 	winner?: string;
+	joinCode?: string; // Only included for admins
 }

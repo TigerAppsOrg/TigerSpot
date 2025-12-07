@@ -206,6 +206,13 @@
 							>
 								{tournament.status === 'in_progress' ? 'LIVE' : tournament.status}
 							</span>
+							{#if tournament.joinCode}
+								<span
+									class="brutal-border bg-cyan text-white px-2 py-0.5 text-xs font-bold uppercase font-mono"
+								>
+									{tournament.joinCode}
+								</span>
+							{/if}
 						</div>
 						<div class="flex flex-wrap gap-3 text-sm">
 							<span class="opacity-60">

@@ -13,6 +13,7 @@ export interface Tournament {
 	maxParticipants: number | null; // null = unlimited
 	createdAt: string;
 	winner?: string;
+	joinCode?: string; // Only included for admins
 }
 
 export interface TournamentParticipant {
@@ -76,13 +77,16 @@ export async function getTournament(id: number): Promise<TournamentDetails | nul
 /**
  * Join a tournament
  */
-export async function joinTournament(tournamentId: number): Promise<boolean> {
-	const { error } = await api.post(`/api/tournament/${tournamentId}/join`);
+export async function joinTournament(
+	tournamentId: number,
+	joinCode: string
+): Promise<{ success: boolean; error?: string }> {
+	const { error } = await api.post(`/api/tournament/${tournamentId}/join`, { joinCode });
 	if (error) {
 		console.error('Failed to join tournament:', error);
-		return false;
+		return { success: false, error: error || 'Failed to join tournament' };
 	}
-	return true;
+	return { success: true };
 }
 
 /**

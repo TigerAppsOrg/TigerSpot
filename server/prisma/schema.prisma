@@ -161,6 +161,7 @@ model Tournament {
   id              Int              @id @default(autoincrement())
   name            String           @db.VarChar(255)
   status          TournamentStatus @default(OPEN)
+  joinCode        String           @unique @db.VarChar(8) // Random code to join tournament
   // difficulty removed - tournaments use mixed difficulty that escalates through stages
   timeLimit       Int              @default(120) // seconds per round
   roundsPerMatch  Int              @default(5)

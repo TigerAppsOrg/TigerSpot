@@ -10,9 +10,10 @@ export class TournamentController {
 	/**
 	 * List all tournaments
 	 */
-	list = async (_req: AuthRequest, res: Response) => {
+	list = async (req: AuthRequest, res: Response) => {
 		try {
-			const tournaments = await this.tournamentService.listTournaments();
+			const isAdmin = req.user?.isAdmin ?? false;
+			const tournaments = await this.tournamentService.listTournaments(isAdmin);
 			res.json(tournaments);
 		} catch (error) {
 			console.error('Error listing tournaments:', error);
@@ -53,8 +54,14 @@ export class TournamentController {
 			return;
 		}
 
+		const { joinCode } = req.body;
+		if (!joinCode || typeof joinCode !== 'string') {
+			res.status(400).json({ error: 'Join code is required' });
+			return;
+		}
+
 		try {
-			await this.tournamentService.joinTournament(id, req.user!.username);
+			await this.tournamentService.joinTournament(id, req.user!.username, joinCode);
 			res.json({ success: true });
 		} catch (error) {
 			console.error('Error joining tournament:', error);
