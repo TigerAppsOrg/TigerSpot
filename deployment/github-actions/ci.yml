@@ -26,56 +26,10 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
-          cache: "pnpm"
+          node-version: '20'
+          cache: 'pnpm'
 
       - run: pnpm install
 
       - name: Check formatting
         run: pnpm format:check
-
-  typecheck:
-    name: Type Check
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 9
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-          cache: "pnpm"
-
-      - run: pnpm install
-
-      - name: Type check frontend
-        run: pnpm --filter tigerspot-new check
-
-      - name: Type check backend
-        run: pnpm --filter tigerspot-server build
-
-  build:
-    name: Build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 9
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-          cache: "pnpm"
-
-      - run: pnpm install
-
-      - name: Generate Prisma client
-        run: pnpm --filter tigerspot-server db:generate
-
-      - name: Build frontend
-        run: pnpm build

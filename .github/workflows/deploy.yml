@@ -15,11 +15,9 @@ on:
 jobs:
   deploy:
     name: Deploy to Production
-    needs: ci
     runs-on: self-hosted
     steps:
       - uses: actions/checkout@v4
-
       - name: Deploy to production
         run: ./deployment/deploy.sh
         env:

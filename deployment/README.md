@@ -369,8 +369,8 @@ sudo systemctl reload nginx
 
 ## Step 5: Set Up SSL with Certbot
 
-```bash
-sudo certbot --nginx -d YOUR_DOMAIN.com -d www.YOUR_DOMAIN.com
+````bash
+sudo certbot --nginx -d spot.tigerapps.org
 ```
 
 Follow the prompts:
@@ -389,7 +389,7 @@ Certbot will:
 
 ```bash
 sudo certbot renew --dry-run
-```
+````
 
 ---
 

@@ -22,21 +22,25 @@ git reset --hard origin/main
 
 # Install dependencies
 echo ">>> Installing dependencies..."
-pnpm install --frozen-lockfile
+pnpm install --frozen-lockfile -r
 
 # Backend: Generate Prisma client and run migrations
 echo ">>> Running database migrations..."
 cd apps/server
+pnpm i
+cd ../../
 pnpm db:generate
-pnpm prisma migrate deploy
+pnpm db:migrate
 
 # Backend: Build TypeScript
 echo ">>> Building backend..."
+cd apps/server
 pnpm build
 
 # Frontend: Build SvelteKit
 echo ">>> Building frontend..."
 cd ../frontend
+pnpm i
 pnpm build
 
 # Restart PM2 with zero-downtime reload
