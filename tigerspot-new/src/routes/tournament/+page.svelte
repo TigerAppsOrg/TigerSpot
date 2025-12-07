@@ -78,8 +78,8 @@
 		joinError = '';
 		const result = await joinTournament(selectedTournament.id, joinCode.trim());
 		if (result.success) {
-			closeJoinModal();
-			await loadTournaments();
+			// Redirect to waiting room
+			goto(`/tournament/${selectedTournament.id}/waiting`);
 		} else {
 			joinError = result.error || 'Failed to join tournament';
 		}
@@ -183,7 +183,11 @@
 									<!-- Actions based on status -->
 									<div class="flex gap-2 shrink-0">
 										{#if tournament.status === 'open'}
-											{#if !tournament.maxParticipants || tournament.participants < tournament.maxParticipants}
+											{#if tournament.joined}
+												<Button variant="cyan" href={`/tournament/${tournament.id}/waiting`}>
+													Waiting Room
+												</Button>
+											{:else if !tournament.maxParticipants || tournament.participants < tournament.maxParticipants}
 												<Button variant="lime" onclick={() => openJoinModal(tournament)}>
 													Join
 												</Button>

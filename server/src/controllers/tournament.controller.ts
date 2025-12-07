@@ -13,7 +13,8 @@ export class TournamentController {
 	list = async (req: AuthRequest, res: Response) => {
 		try {
 			const isAdmin = req.user?.isAdmin ?? false;
-			const tournaments = await this.tournamentService.listTournaments(isAdmin);
+			const username = req.user?.username;
+			const tournaments = await this.tournamentService.listTournaments(isAdmin, username);
 			res.json(tournaments);
 		} catch (error) {
 			console.error('Error listing tournaments:', error);

@@ -14,6 +14,7 @@ export interface Tournament {
 	createdAt: string;
 	winner?: string;
 	joinCode?: string; // Only included for admins
+	joined?: boolean; // Whether current user has joined this tournament
 }
 
 export interface TournamentParticipant {

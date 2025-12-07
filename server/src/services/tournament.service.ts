@@ -9,7 +9,10 @@ export class TournamentService {
 	/**
 	 * List all tournaments
 	 */
-	async listTournaments(isAdmin: boolean = false): Promise<TournamentResponse[]> {
+	async listTournaments(
+		isAdmin: boolean = false,
+		username?: string
+	): Promise<TournamentResponse[]> {
 		const tournaments = await prisma.tournament.findMany({
 			include: {
 				participants: true,
@@ -29,7 +32,8 @@ export class TournamentService {
 			maxParticipants: t.maxParticipants,
 			createdAt: t.createdAt,
 			winner: t.winner?.displayName,
-			...(isAdmin ? { joinCode: t.joinCode } : {})
+			...(isAdmin ? { joinCode: t.joinCode } : {}),
+			...(username ? { joined: t.participants.some((p) => p.username === username) } : {})
 		}));
 	}
 
