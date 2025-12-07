@@ -211,7 +211,7 @@
 		<div class="flex items-center justify-center min-h-screen">
 			<Card class="text-center py-16 px-12 max-w-md">
 				<div class="text-6xl mb-6 animate-bounce">⏳</div>
-				<h2 class="text-2xl font-black mb-4">Waiting for {opponentName}</h2>
+				<h2 class="text-2xl font-black mb-4">Waiting for Opponent</h2>
 				<p class="opacity-80 mb-6">
 					You've finished all rounds! Waiting for {opponentName} to complete their rounds.
 				</p>
