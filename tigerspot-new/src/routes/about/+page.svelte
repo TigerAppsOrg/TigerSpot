@@ -31,7 +31,7 @@
 		{
 			name: 'Winsice Ng',
 			image: '/team/winsice.jpeg',
-			favoriteSpot: 'Tower Club',
+			favoriteSpot: 'Spelman Hall',
 			color: 'orange'
 		},
 		{
