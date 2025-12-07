@@ -88,10 +88,13 @@
 	<title>{tournament?.name || 'Waiting Room'} - TigerSpot</title>
 </svelte:head>
 
-<div class="min-h-screen bg-primary">
+<div class="min-h-screen bg-primary relative overflow-hidden">
+	<!-- Diamond pattern overlay (tournament theme) -->
+	<div class="absolute inset-0 bg-diamonds opacity-[0.03]"></div>
+
 	<Header />
 
-	<main class="pt-24 pb-12 px-4">
+	<main class="relative pt-24 pb-12 px-4">
 		<div class="container-brutal max-w-2xl mx-auto">
 			{#if loading}
 				<div class="text-center py-16">
