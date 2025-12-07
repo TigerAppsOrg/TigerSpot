@@ -10,10 +10,6 @@ export const config = {
 		url: process.env.DATABASE_URL || 'postgresql://spot:spot_password@localhost:5433/spot_db'
 	},
 
-	redis: {
-		url: process.env.REDIS_URL || 'redis://localhost:6379'
-	},
-
 	jwt: {
 		secret: process.env.JWT_SECRET || 'dev-secret-change-in-production',
 		expiresIn: '7d'
