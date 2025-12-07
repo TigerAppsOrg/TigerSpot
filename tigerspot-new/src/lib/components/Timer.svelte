@@ -3,14 +3,22 @@
 
 	interface Props {
 		duration: number; // Total seconds
+		initialRemaining?: number; // Start with this many seconds remaining (for resume)
 		onComplete?: () => void;
 		autoStart?: boolean;
 		class?: string;
 	}
 
-	let { duration, onComplete, autoStart = true, class: className = '' }: Props = $props();
+	let {
+		duration,
+		initialRemaining,
+		onComplete,
+		autoStart = true,
+		class: className = ''
+	}: Props = $props();
 
-	let timeRemaining = $state(duration);
+	// Use initialRemaining if provided, otherwise start at full duration
+	let timeRemaining = $state(initialRemaining ?? duration);
 	let isRunning = $state(false);
 	let intervalId: ReturnType<typeof setInterval> | null = null;
 
@@ -48,6 +56,11 @@
 		timeRemaining = duration;
 	}
 
+	function setRemaining(seconds: number) {
+		stop();
+		timeRemaining = Math.max(0, seconds);
+	}
+
 	onMount(() => {
 		if (autoStart) {
 			start();
@@ -59,7 +72,7 @@
 	});
 
 	// Expose methods for parent component control
-	export { start, stop, reset, timeRemaining };
+	export { start, stop, reset, setRemaining, timeRemaining };
 </script>
 
 <div

@@ -29,6 +29,9 @@ router.get('/:id/match/:matchId', tournamentController.getMatch);
 // Get round pictures for a match
 router.get('/:id/match/:matchId/rounds', tournamentController.getMatchRounds);
 
+// Start a round (track timing to prevent refresh exploits)
+router.post('/:id/match/:matchId/start-round', tournamentController.startRound);
+
 // Submit guess for a tournament match round
 router.post('/:id/match/:matchId/submit', tournamentController.submitRound);
 

@@ -158,6 +158,32 @@ export async function getMatchRounds(
 	return data ?? [];
 }
 
+export interface RoundTimingResult {
+	startedAt: string;
+	elapsedSeconds: number;
+	remainingSeconds: number;
+}
+
+/**
+ * Start a round - tracks timing to prevent refresh exploits
+ */
+export async function startMatchRound(
+	tournamentId: number,
+	matchId: number,
+	roundNumber: number,
+	timeLimit: number
+): Promise<RoundTimingResult | null> {
+	const { data, error } = await api.post<RoundTimingResult>(
+		`/api/tournament/${tournamentId}/match/${matchId}/start-round`,
+		{ roundNumber, timeLimit }
+	);
+	if (error) {
+		console.error('Failed to start round:', error);
+		return null;
+	}
+	return data ?? null;
+}
+
 /**
  * Submit a round guess for tournament match
  */

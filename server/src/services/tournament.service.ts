@@ -280,6 +280,85 @@ export class TournamentService {
 	}
 
 	/**
+	 * Start a round for a player - creates a record with startedAt timestamp
+	 * Returns elapsed seconds if round was already started
+	 */
+	async startRound(
+		matchId: number,
+		username: string,
+		roundNumber: number,
+		timeLimit: number
+	): Promise<{ startedAt: Date; elapsedSeconds: number; remainingSeconds: number }> {
+		const match = await prisma.tournamentMatch.findUnique({
+			where: { id: matchId },
+			include: { tournament: { select: { timeLimit: true } } }
+		});
+
+		if (!match) {
+			throw new Error('Match not found');
+		}
+
+		if (match.player1Id !== username && match.player2Id !== username) {
+			throw new Error('You are not part of this match');
+		}
+
+		// Check if player already started this round
+		const existingRound = await prisma.tournamentRound.findFirst({
+			where: {
+				matchId,
+				roundNumber,
+				playerUsername: username
+			}
+		});
+
+		if (existingRound) {
+			// Already started - calculate elapsed time
+			if (existingRound.submittedAt) {
+				// Already submitted - no time remaining
+				return {
+					startedAt: existingRound.startedAt || existingRound.submittedAt,
+					elapsedSeconds: timeLimit,
+					remainingSeconds: 0
+				};
+			}
+
+			const startedAt = existingRound.startedAt || new Date();
+			const elapsedMs = Date.now() - startedAt.getTime();
+			const elapsedSeconds = Math.floor(elapsedMs / 1000);
+			const remainingSeconds = Math.max(0, timeLimit - elapsedSeconds);
+
+			return { startedAt, elapsedSeconds, remainingSeconds };
+		}
+
+		// Get the template round to get the pictureId
+		const templateRound = await prisma.tournamentRound.findFirst({
+			where: {
+				matchId,
+				roundNumber,
+				playerUsername: null
+			}
+		});
+
+		if (!templateRound) {
+			throw new Error('Round not found');
+		}
+
+		// Create a new round record with startedAt
+		const now = new Date();
+		await prisma.tournamentRound.create({
+			data: {
+				matchId,
+				roundNumber,
+				pictureId: templateRound.pictureId,
+				playerUsername: username,
+				startedAt: now
+			}
+		});
+
+		return { startedAt: now, elapsedSeconds: 0, remainingSeconds: timeLimit };
+	}
+
+	/**
 	 * Submit a round guess for tournament match
 	 */
 	async submitRound(
@@ -326,7 +405,7 @@ export class TournamentService {
 		);
 		const points = calculateVersusPoints(distance, timeSeconds);
 
-		// Check if already submitted
+		// Check if already submitted or started
 		const existing = await prisma.tournamentRound.findFirst({
 			where: {
 				matchId,
@@ -335,25 +414,41 @@ export class TournamentService {
 			}
 		});
 
-		if (existing) {
+		if (existing?.submittedAt) {
 			throw new Error('Already submitted this round');
 		}
 
-		// Create submission
-		await prisma.tournamentRound.create({
-			data: {
-				matchId,
-				roundNumber,
-				pictureId: templateRound.pictureId,
-				playerUsername: username,
-				guessLat: latitude,
-				guessLng: longitude,
-				distance: Math.round(distance),
-				points,
-				timeSeconds,
-				submittedAt: new Date()
-			}
-		});
+		if (existing) {
+			// Update existing record (started but not submitted)
+			await prisma.tournamentRound.update({
+				where: { id: existing.id },
+				data: {
+					guessLat: latitude,
+					guessLng: longitude,
+					distance: Math.round(distance),
+					points,
+					timeSeconds,
+					submittedAt: new Date()
+				}
+			});
+		} else {
+			// Create new submission (legacy path - startRound not called)
+			await prisma.tournamentRound.create({
+				data: {
+					matchId,
+					roundNumber,
+					pictureId: templateRound.pictureId,
+					playerUsername: username,
+					guessLat: latitude,
+					guessLng: longitude,
+					distance: Math.round(distance),
+					points,
+					timeSeconds,
+					startedAt: new Date(),
+					submittedAt: new Date()
+				}
+			});
+		}
 
 		// Update match status
 		if (match.status === 'READY') {
@@ -371,10 +466,10 @@ export class TournamentService {
 			match.tournament.roundsPerMatch
 		);
 		const player1Rounds = await prisma.tournamentRound.count({
-			where: { matchId, playerUsername: match.player1Id }
+			where: { matchId, playerUsername: match.player1Id, submittedAt: { not: null } }
 		});
 		const player2Rounds = await prisma.tournamentRound.count({
-			where: { matchId, playerUsername: match.player2Id }
+			where: { matchId, playerUsername: match.player2Id, submittedAt: { not: null } }
 		});
 
 		if (player1Rounds === roundsForMatch && player2Rounds === roundsForMatch) {
@@ -510,12 +605,12 @@ export class TournamentService {
 		const yourId = isPlayer1 ? match.player1Id : match.player2Id;
 		const opponentId = isPlayer1 ? match.player2Id : match.player1Id;
 
-		// Get round scores for each player
+		// Get round scores for each player (only submitted rounds)
 		const yourRounds = match.rounds
-			.filter((r) => r.playerUsername === yourId)
+			.filter((r) => r.playerUsername === yourId && r.submittedAt !== null)
 			.sort((a, b) => a.roundNumber - b.roundNumber);
 		const opponentRounds = match.rounds
-			.filter((r) => r.playerUsername === opponentId)
+			.filter((r) => r.playerUsername === opponentId && r.submittedAt !== null)
 			.sort((a, b) => a.roundNumber - b.roundNumber);
 
 		// Get template rounds (for picture info)
@@ -613,7 +708,10 @@ export class TournamentService {
 			include: {
 				tournament: { select: { roundsPerMatch: true } },
 				rounds: {
-					where: { playerUsername: { not: null } },
+					where: {
+						playerUsername: { not: null },
+						submittedAt: { not: null } // Only count actually submitted rounds
+					},
 					select: { playerUsername: true, roundNumber: true }
 				}
 			}

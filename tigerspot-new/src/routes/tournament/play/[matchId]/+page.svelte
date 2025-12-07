@@ -11,6 +11,7 @@
 		getMatchRounds,
 		getMatchResults,
 		submitMatchRound,
+		startMatchRound,
 		getMatchStatus,
 		type RoundPicture
 	} from '$lib/api/tournament';
@@ -29,7 +30,8 @@
 	// Game state
 	let currentRound = $state(1);
 	let guessCoords = $state<{ lat: number; lng: number } | null>(null);
-	let roundStartTime = $state(Date.now());
+	let initialRemainingSeconds = $state<number | undefined>(undefined);
+	let roundStartTime = $state(Date.now()); // For calculating time taken on submit
 	let roundScores = $state<number[]>([]);
 	let timerComponent: Timer;
 	let mapComponent: Map;
@@ -107,8 +109,22 @@
 		}
 
 		roundPictures = rounds;
+
+		// Start the current round timer on the server (prevents refresh exploit)
+		const timing = await startMatchRound(tournamentId, matchId, currentRound, timeLimit);
+		if (timing) {
+			initialRemainingSeconds = timing.remainingSeconds;
+			// Adjust local start time to account for elapsed time on server
+			roundStartTime = Date.now() - timing.elapsedSeconds * 1000;
+			// If time has already expired, auto-submit
+			if (timing.remainingSeconds <= 0) {
+				loading = false;
+				submitRoundWithNoGuess();
+				return;
+			}
+		}
+
 		loading = false;
-		roundStartTime = Date.now();
 	});
 
 	onDestroy(() => {
@@ -170,15 +186,30 @@
 			// Move to next round
 			currentRound++;
 			guessCoords = null;
-			roundStartTime = Date.now();
 			// Clear the map marker
 			if (mapComponent) {
 				mapComponent.clearMarker();
 			}
-			// Reset timer
-			if (timerComponent) {
-				timerComponent.reset();
-				timerComponent.start();
+			// Start next round timer on server
+			const timing = await startMatchRound(tournamentId, matchId, currentRound, timeLimit);
+			if (timing) {
+				roundStartTime = Date.now() - timing.elapsedSeconds * 1000;
+				if (timerComponent) {
+					timerComponent.setRemaining(timing.remainingSeconds);
+					timerComponent.start();
+				}
+				// If time already expired, auto-submit
+				if (timing.remainingSeconds <= 0) {
+					submitRoundWithNoGuess();
+					return;
+				}
+			} else {
+				// Fallback if API fails
+				roundStartTime = Date.now();
+				if (timerComponent) {
+					timerComponent.reset();
+					timerComponent.start();
+				}
 			}
 		} else {
 			// All rounds complete - check if opponent is done
@@ -218,14 +249,24 @@
 		if (currentRound < totalRounds) {
 			currentRound++;
 			guessCoords = null;
-			roundStartTime = Date.now();
 			// Clear the map marker
 			if (mapComponent) {
 				mapComponent.clearMarker();
 			}
-			if (timerComponent) {
-				timerComponent.reset();
-				timerComponent.start();
+			// Start next round timer on server
+			const timing = await startMatchRound(tournamentId, matchId, currentRound, timeLimit);
+			if (timing) {
+				roundStartTime = Date.now() - timing.elapsedSeconds * 1000;
+				if (timerComponent) {
+					timerComponent.setRemaining(timing.remainingSeconds);
+					timerComponent.start();
+				}
+			} else {
+				roundStartTime = Date.now();
+				if (timerComponent) {
+					timerComponent.reset();
+					timerComponent.start();
+				}
 			}
 		} else {
 			await checkMatchCompletion();
@@ -315,7 +356,12 @@
 					<div class="brutal-border bg-white px-3 py-1 font-black text-sm">
 						Round {currentRound}/{totalRounds}
 					</div>
-					<Timer bind:this={timerComponent} duration={timeLimit} onComplete={handleTimeUp} />
+					<Timer
+						bind:this={timerComponent}
+						duration={timeLimit}
+						initialRemaining={initialRemainingSeconds}
+						onComplete={handleTimeUp}
+					/>
 				</div>
 			</div>
 		</header>
@@ -332,11 +378,13 @@
 								Round {currentRound} of {totalRounds}
 							</div>
 						</div>
-						<div class="relative bg-white w-full block h-[300px] lg:h-auto lg:grow lg:max-h-[50vh]">
+						<div
+							class="relative bg-white w-full overflow-hidden flex items-center justify-center h-[40vh] lg:h-[50vh]"
+						>
 							<img
 								src={currentPicture.imageUrl}
 								alt="Where is this location?"
-								class="w-full h-full object-contain"
+								class="max-w-full max-h-full object-contain"
 							/>
 						</div>
 					</Card>

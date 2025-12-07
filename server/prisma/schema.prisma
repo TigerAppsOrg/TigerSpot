@@ -288,6 +288,7 @@ model TournamentRound {
   distance       Int?
   points         Int?
   timeSeconds    Int?
+  startedAt      DateTime? // When player first viewed this round
   submittedAt    DateTime?
 
   // Relations

@@ -195,6 +195,37 @@ export class TournamentController {
 	};
 
 	/**
+	 * Start a round (track timing to prevent refresh exploits)
+	 */
+	startRound = async (req: AuthRequest, res: Response) => {
+		const matchId = parseInt(req.params.matchId, 10);
+		if (isNaN(matchId)) {
+			res.status(400).json({ error: 'Invalid match ID' });
+			return;
+		}
+
+		const { roundNumber, timeLimit } = req.body;
+
+		if (typeof roundNumber !== 'number' || typeof timeLimit !== 'number') {
+			res.status(400).json({ error: 'Invalid round data' });
+			return;
+		}
+
+		try {
+			const result = await this.tournamentService.startRound(
+				matchId,
+				req.user!.username,
+				roundNumber,
+				timeLimit
+			);
+			res.json(result);
+		} catch (error) {
+			console.error('Error starting round:', error);
+			res.status(400).json({ error: (error as Error).message });
+		}
+	};
+
+	/**
 	 * Get match results
 	 */
 	getMatchResults = async (req: AuthRequest, res: Response) => {
