@@ -7,6 +7,7 @@
 	import Timer from '$lib/components/Timer.svelte';
 	import Map from '$lib/components/Map.svelte';
 	import {
+		getMatch,
 		getMatchRounds,
 		submitMatchRound,
 		getMatchStatus,
@@ -31,6 +32,7 @@
 	let roundStartTime = $state(Date.now());
 	let roundScores = $state<number[]>([]);
 	let timerComponent: Timer;
+	let mapComponent: Map;
 
 	// Waiting state
 	let waitingForOpponent = $state(false);
@@ -45,6 +47,17 @@
 		if (!tournamentId || !matchId) {
 			goto('/tournament');
 			return;
+		}
+
+		// Fetch match details to get opponent name and time limit
+		const matchDetails = await getMatch(tournamentId, matchId);
+		if (matchDetails) {
+			timeLimit = matchDetails.tournament.timeLimit;
+			// Determine opponent based on current user
+			const isPlayer1 = matchDetails.player1Id === userStore.user?.username;
+			opponentName = isPlayer1
+				? matchDetails.player2?.displayName || 'Opponent'
+				: matchDetails.player1?.displayName || 'Opponent';
 		}
 
 		const rounds = await getMatchRounds(tournamentId, matchId);
@@ -118,6 +131,10 @@
 			currentRound++;
 			guessCoords = null;
 			roundStartTime = Date.now();
+			// Clear the map marker
+			if (mapComponent) {
+				mapComponent.clearMarker();
+			}
 			// Reset timer
 			if (timerComponent) {
 				timerComponent.reset();
@@ -162,6 +179,10 @@
 			currentRound++;
 			guessCoords = null;
 			roundStartTime = Date.now();
+			// Clear the map marker
+			if (mapComponent) {
+				mapComponent.clearMarker();
+			}
 			if (timerComponent) {
 				timerComponent.reset();
 				timerComponent.start();
@@ -190,9 +211,9 @@
 		<div class="flex items-center justify-center min-h-screen">
 			<Card class="text-center py-16 px-12 max-w-md">
 				<div class="text-6xl mb-6 animate-bounce">⏳</div>
-				<h2 class="text-2xl font-black mb-4">Waiting for Opponent</h2>
+				<h2 class="text-2xl font-black mb-4">Waiting for {opponentName}</h2>
 				<p class="opacity-80 mb-6">
-					You've finished all rounds! Waiting for your opponent to complete their rounds.
+					You've finished all rounds! Waiting for {opponentName} to complete their rounds.
 				</p>
 
 				<!-- Your score summary -->
@@ -293,7 +314,11 @@
 							</span>
 						</div>
 						<div class="grow min-h-[300px] lg:min-h-0">
-							<Map onSelect={handleMapSelect} guessLocation={guessCoords ?? undefined} />
+							<Map
+								bind:this={mapComponent}
+								onSelect={handleMapSelect}
+								guessLocation={guessCoords ?? undefined}
+							/>
 						</div>
 					</Card>
 				</div>
@@ -304,15 +329,6 @@
 		<footer class="bg-white brutal-border border-b-0 border-x-0 flex-shrink-0 py-5">
 			<div class="container-brutal flex items-center justify-between">
 				<div class="flex items-center gap-4">
-					<!-- Round scores -->
-					<div class="hidden md:flex items-center gap-2 text-sm">
-						<span class="font-bold opacity-60">Scores:</span>
-						{#each roundScores as score, i}
-							<span class="brutal-border bg-lime px-2 py-0.5 font-bold text-xs">
-								R{i + 1}: {score}
-							</span>
-						{/each}
-					</div>
 					{#if guessCoords}
 						<span class="font-mono font-bold text-sm opacity-60">
 							{guessCoords.lat.toFixed(4)}, {guessCoords.lng.toFixed(4)}

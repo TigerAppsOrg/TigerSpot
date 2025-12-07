@@ -202,8 +202,6 @@
 				<!-- Actions -->
 				<div class="flex flex-wrap justify-center gap-4">
 					<Button variant="lime" href={`/tournament/${tournamentId}`}>View Bracket</Button>
-					<Button variant="white" href="/tournament">Tournament Home</Button>
-					<Button variant="cyan" href="/menu">Main Menu</Button>
 				</div>
 			{:else}
 				<!-- Loading state -->

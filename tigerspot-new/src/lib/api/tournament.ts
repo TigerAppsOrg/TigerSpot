@@ -114,6 +114,33 @@ export async function getBracket(tournamentId: number): Promise<Bracket | null> 
 	return data ?? null;
 }
 
+export interface MatchDetails {
+	id: number;
+	player1Id: string | null;
+	player2Id: string | null;
+	player1: { displayName: string } | null;
+	player2: { displayName: string } | null;
+	tournament: { timeLimit: number; roundsPerMatch: number };
+	status: string;
+}
+
+/**
+ * Get match details
+ */
+export async function getMatch(
+	tournamentId: number,
+	matchId: number
+): Promise<MatchDetails | null> {
+	const { data, error } = await api.get<MatchDetails>(
+		`/api/tournament/${tournamentId}/match/${matchId}`
+	);
+	if (error) {
+		console.error('Failed to get match:', error);
+		return null;
+	}
+	return data ?? null;
+}
+
 /**
  * Get match rounds (pictures)
  */
