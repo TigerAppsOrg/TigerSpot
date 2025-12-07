@@ -1,6 +1,8 @@
 {
 	"name": "tigerspot",
 	"private": true,
+	"version": "2.0.0",
+	"license": "BSD-3-Clause",
 	"scripts": {
 		"install:all": "pnpm install && pnpm --filter tigerspot-server install && pnpm --filter tigerspot-new install",
 		"dev": "concurrently -n server,client -c blue,green \"pnpm --filter tigerspot-server dev\" \"pnpm --filter tigerspot-new dev\"",
