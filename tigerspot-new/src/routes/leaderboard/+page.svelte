@@ -159,14 +159,12 @@
 				<Card class="max-w-2xl mx-auto">
 					<div class="divide-y-4 divide-black">
 						{#each leaderboard as entry, i}
-							<div
-								class="flex items-center gap-6 py-5 first:pt-0 last:pb-0 {entry.username ===
-								currentUsername
-									? 'bg-cyan/20 -mx-8 px-8'
-									: ''}"
-							>
+							<div class="relative flex items-center gap-6 py-5 first:pt-0 last:pb-0">
+								{#if entry.username === currentUsername}
+									<div class="absolute inset-y-0 -inset-x-8 bg-cyan/20"></div>
+								{/if}
 								<!-- Rank -->
-								<div class="w-14 text-center">
+								<div class="relative w-14 text-center">
 									{#if i === 0}
 										<span class="text-3xl">&#x1F947;</span>
 									{:else if i === 1}
@@ -181,7 +179,7 @@
 								</div>
 
 								<!-- User Info -->
-								<div class="grow">
+								<div class="relative grow">
 									<div
 										class="font-bold text-lg {entry.username === currentUsername
 											? 'text-cyan'
@@ -203,7 +201,7 @@
 								</div>
 
 								<!-- Points -->
-								<div class="text-right">
+								<div class="relative text-right">
 									<div class="text-2xl font-black">
 										{entry.points.toLocaleString()}
 									</div>
