@@ -79,6 +79,10 @@
 		return `${mins}:${secs.toString().padStart(2, '0')}`;
 	};
 
+	// Check if a player timed out (distance > 100km indicates no real guess)
+	const TIMEOUT_DISTANCE_THRESHOLD = 100000;
+	const didTimeout = (distance: number) => distance > TIMEOUT_DISTANCE_THRESHOLD;
+
 	// Message based on result
 	const resultMessage = $derived.by(() => {
 		if (isWinner) {
@@ -257,8 +261,14 @@
 									<Map
 										readonly
 										showActualLocation={currentReviewRound.actual}
-										guessLocation={currentReviewRound.you?.guess}
-										opponentGuessLocation={currentReviewRound.opponent?.guess}
+										guessLocation={currentReviewRound.you &&
+										!didTimeout(currentReviewRound.you.distance)
+											? currentReviewRound.you.guess
+											: undefined}
+										opponentGuessLocation={currentReviewRound.opponent &&
+										!didTimeout(currentReviewRound.opponent.distance)
+											? currentReviewRound.opponent.guess
+											: undefined}
 									/>
 								{/key}
 							</div>
@@ -279,22 +289,26 @@
 									<span class="font-bold">You</span>
 								</div>
 								{#if currentReviewRound.you}
-									<div class="grid grid-cols-3 gap-2 text-sm">
-										<div>
-											<div class="text-black/60 uppercase text-xs">Points</div>
-											<div class="font-black text-lg">
-												{currentReviewRound.you.points.toLocaleString()}
+									{#if didTimeout(currentReviewRound.you.distance)}
+										<div class="text-black/40 italic">Ran out of time</div>
+									{:else}
+										<div class="grid grid-cols-3 gap-2 text-sm">
+											<div>
+												<div class="text-black/60 uppercase text-xs">Points</div>
+												<div class="font-black text-lg">
+													{currentReviewRound.you.points.toLocaleString()}
+												</div>
+											</div>
+											<div>
+												<div class="text-black/60 uppercase text-xs">Distance</div>
+												<div class="font-bold">{currentReviewRound.you.distance}m</div>
+											</div>
+											<div>
+												<div class="text-black/60 uppercase text-xs">Time</div>
+												<div class="font-bold">{formatTime(currentReviewRound.you.time)}</div>
 											</div>
 										</div>
-										<div>
-											<div class="text-black/60 uppercase text-xs">Distance</div>
-											<div class="font-bold">{currentReviewRound.you.distance}m</div>
-										</div>
-										<div>
-											<div class="text-black/60 uppercase text-xs">Time</div>
-											<div class="font-bold">{formatTime(currentReviewRound.you.time)}</div>
-										</div>
-									</div>
+									{/if}
 								{:else}
 									<div class="text-black/40">No submission</div>
 								{/if}
@@ -313,22 +327,26 @@
 									<span class="font-bold">{results.opponent.displayName}</span>
 								</div>
 								{#if currentReviewRound.opponent}
-									<div class="grid grid-cols-3 gap-2 text-sm">
-										<div>
-											<div class="text-black/60 uppercase text-xs">Points</div>
-											<div class="font-black text-lg">
-												{currentReviewRound.opponent.points.toLocaleString()}
+									{#if didTimeout(currentReviewRound.opponent.distance)}
+										<div class="text-black/40 italic">Ran out of time</div>
+									{:else}
+										<div class="grid grid-cols-3 gap-2 text-sm">
+											<div>
+												<div class="text-black/60 uppercase text-xs">Points</div>
+												<div class="font-black text-lg">
+													{currentReviewRound.opponent.points.toLocaleString()}
+												</div>
+											</div>
+											<div>
+												<div class="text-black/60 uppercase text-xs">Distance</div>
+												<div class="font-bold">{currentReviewRound.opponent.distance}m</div>
+											</div>
+											<div>
+												<div class="text-black/60 uppercase text-xs">Time</div>
+												<div class="font-bold">{formatTime(currentReviewRound.opponent.time)}</div>
 											</div>
 										</div>
-										<div>
-											<div class="text-black/60 uppercase text-xs">Distance</div>
-											<div class="font-bold">{currentReviewRound.opponent.distance}m</div>
-										</div>
-										<div>
-											<div class="text-black/60 uppercase text-xs">Time</div>
-											<div class="font-bold">{formatTime(currentReviewRound.opponent.time)}</div>
-										</div>
-									</div>
+									{/if}
 								{:else}
 									<div class="text-black/40">No submission</div>
 								{/if}
