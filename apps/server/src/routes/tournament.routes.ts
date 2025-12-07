@@ -44,4 +44,7 @@ router.get('/:id/match/:matchId/status', tournamentController.getMatchStatus);
 // Admin: Manually advance a player in a match (when opponent leaves/doesn't play)
 router.post('/:id/match/:matchId/advance', tournamentController.adminAdvancePlayer);
 
+// Admin: Get all bracket round pictures for a tournament
+router.get('/:id/pictures', tournamentController.getBracketRoundPictures);
+
 export default router;

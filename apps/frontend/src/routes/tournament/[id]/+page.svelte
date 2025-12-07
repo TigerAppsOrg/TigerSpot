@@ -9,8 +9,10 @@
 	import {
 		getTournament,
 		adminAdvancePlayer,
+		getBracketRoundPictures,
 		type TournamentDetails,
-		type BracketMatch
+		type BracketMatch,
+		type BracketRoundPicturesResponse
 	} from '$lib/api/tournament';
 	import { userStore } from '$lib/stores/user.svelte';
 
@@ -21,6 +23,11 @@
 	let error = $state<string | null>(null);
 	let simulating = $state(false);
 	let pollInterval: ReturnType<typeof setInterval> | null = null;
+
+	// Admin: Round pictures modal
+	let showPicturesModal = $state(false);
+	let picturesData = $state<BracketRoundPicturesResponse | null>(null);
+	let loadingPictures = $state(false);
 
 	const statusColors: Record<string, string> = {
 		open: 'bg-white',
@@ -214,6 +221,50 @@
 
 		simulating = false;
 	}
+
+	async function handleViewPictures() {
+		if (loadingPictures) return;
+
+		loadingPictures = true;
+		picturesData = await getBracketRoundPictures(tournamentId);
+		loadingPictures = false;
+
+		if (picturesData) {
+			showPicturesModal = true;
+		} else {
+			alert('Failed to load round pictures');
+		}
+	}
+
+	function closePicturesModal() {
+		showPicturesModal = false;
+	}
+
+	function getBracketTypeName(bracketType: string): string {
+		switch (bracketType) {
+			case 'WINNERS':
+				return 'Winners Bracket';
+			case 'LOSERS':
+				return 'Losers Bracket';
+			case 'GRAND_FINAL':
+				return 'Grand Final';
+			default:
+				return bracketType;
+		}
+	}
+
+	function getDifficultyColor(difficulty: string): string {
+		switch (difficulty) {
+			case 'EASY':
+				return 'bg-lime';
+			case 'MEDIUM':
+				return 'bg-orange';
+			case 'HARD':
+				return 'bg-magenta';
+			default:
+				return 'bg-gray';
+		}
+	}
 </script>
 
 <svelte:head>
@@ -306,14 +357,27 @@
 
 				<!-- Admin controls indicator -->
 				{#if userStore.isAdmin}
-					<div class="mb-4 p-3 bg-orange/10 brutal-border flex items-center gap-3">
-						<span class="text-xs font-bold uppercase text-orange">ADMIN</span>
-						<span class="text-sm text-black/60">
-							Click "WIN" buttons on matches to manually advance players (use when opponent leaves)
-							{#if simulating}
-								<span class="ml-2 font-bold">(advancing...)</span>
-							{/if}
-						</span>
+					<div
+						class="mb-4 p-3 bg-orange/10 brutal-border flex flex-col sm:flex-row sm:items-center gap-3"
+					>
+						<div class="flex items-center gap-3 flex-1">
+							<span class="text-xs font-bold uppercase text-orange">ADMIN</span>
+							<span class="text-sm text-black/60">
+								Click "WIN" buttons on matches to manually advance players
+								{#if simulating}
+									<span class="ml-2 font-bold">(advancing...)</span>
+								{/if}
+							</span>
+						</div>
+						{#if tournament.status !== 'open'}
+							<button
+								class="brutal-border brutal-shadow-sm px-3 py-1.5 text-sm font-bold bg-white hover:bg-cyan transition-colors disabled:opacity-50"
+								onclick={handleViewPictures}
+								disabled={loadingPictures}
+							>
+								{loadingPictures ? 'Loading...' : 'View Round Pictures'}
+							</button>
+						{/if}
 					</div>
 				{/if}
 
@@ -431,3 +495,81 @@
 		</div>
 	</main>
 </div>
+
+<!-- Admin: Round Pictures Modal -->
+{#if showPicturesModal && picturesData}
+	<div
+		class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+		onclick={closePicturesModal}
+		onkeydown={(e) => e.key === 'Escape' && closePicturesModal()}
+		role="dialog"
+		aria-modal="true"
+		tabindex="-1"
+	>
+		<div
+			class="bg-white brutal-border brutal-shadow max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col"
+			onclick={(e) => e.stopPropagation()}
+			onkeydown={(e) => e.stopPropagation()}
+			role="document"
+		>
+			<!-- Modal Header -->
+			<div class="p-4 border-b-4 border-black flex items-center justify-between bg-cyan">
+				<h2 class="text-xl font-black">Round Pictures</h2>
+				<button
+					class="brutal-border bg-white w-8 h-8 flex items-center justify-center font-black hover:bg-magenta transition-colors"
+					onclick={closePicturesModal}
+				>
+					X
+				</button>
+			</div>
+
+			<!-- Modal Content -->
+			<div class="p-4 overflow-y-auto flex-1">
+				{#each picturesData.rounds as round}
+					<div class="mb-6">
+						<h3 class="font-black text-sm uppercase mb-3 flex items-center gap-2">
+							<span
+								class="w-3 h-3 brutal-border {round.bracketType === 'WINNERS'
+									? 'bg-lime'
+									: round.bracketType === 'LOSERS'
+										? 'bg-magenta'
+										: 'bg-orange'}"
+							></span>
+							{getBracketTypeName(round.bracketType)} - Round {round.roundNumber}
+						</h3>
+						<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+							{#each round.pictures as picture}
+								<div class="brutal-border overflow-hidden">
+									<div class="aspect-video bg-gray relative">
+										<img
+											src={picture.imageUrl}
+											alt="Round {picture.index}"
+											class="w-full h-full object-cover"
+										/>
+										<div
+											class="absolute top-1 left-1 text-[10px] font-bold brutal-border px-1 {getDifficultyColor(
+												picture.difficulty
+											)}"
+										>
+											{picture.difficulty}
+										</div>
+									</div>
+									<div class="p-2 text-xs">
+										<div class="font-bold">Picture #{picture.index}</div>
+										<div class="text-black/60 truncate">
+											{picture.latitude.toFixed(4)}, {picture.longitude.toFixed(4)}
+										</div>
+									</div>
+								</div>
+							{/each}
+						</div>
+					</div>
+				{/each}
+
+				{#if picturesData.rounds.length === 0}
+					<div class="text-center py-8 text-black/50">No pictures have been assigned yet.</div>
+				{/if}
+			</div>
+		</div>
+	</div>
+{/if}

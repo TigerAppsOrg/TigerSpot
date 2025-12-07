@@ -859,4 +859,80 @@ export class TournamentService {
 		});
 		return count > 0 ? count : fallback;
 	}
+
+	/**
+	 * Get all bracket round pictures for a tournament (admin only)
+	 * Returns pictures organized by bracket type and round number
+	 */
+	async getBracketRoundPictures(tournamentId: number) {
+		const tournament = await prisma.tournament.findUnique({
+			where: { id: tournamentId },
+			select: { id: true, name: true, status: true }
+		});
+
+		if (!tournament) {
+			throw new Error('Tournament not found');
+		}
+
+		const bracketRounds = await prisma.tournamentBracketRound.findMany({
+			where: { tournamentId },
+			include: {
+				picture: {
+					select: {
+						id: true,
+						imageUrl: true,
+						difficulty: true,
+						latitude: true,
+						longitude: true
+					}
+				}
+			},
+			orderBy: [{ bracketType: 'asc' }, { roundNumber: 'asc' }, { pictureIndex: 'asc' }]
+		});
+
+		// Organize by bracket type and round number
+		const organized: {
+			bracketType: string;
+			roundNumber: number;
+			pictures: {
+				index: number;
+				pictureId: number;
+				imageUrl: string;
+				difficulty: string;
+				latitude: number;
+				longitude: number;
+			}[];
+		}[] = [];
+
+		for (const round of bracketRounds) {
+			let existing = organized.find(
+				(o) => o.bracketType === round.bracketType && o.roundNumber === round.roundNumber
+			);
+
+			if (!existing) {
+				existing = {
+					bracketType: round.bracketType,
+					roundNumber: round.roundNumber,
+					pictures: []
+				};
+				organized.push(existing);
+			}
+
+			existing.pictures.push({
+				index: round.pictureIndex,
+				pictureId: round.picture.id,
+				imageUrl: round.picture.imageUrl,
+				difficulty: round.picture.difficulty,
+				latitude: round.picture.latitude,
+				longitude: round.picture.longitude
+			});
+		}
+
+		return {
+			tournamentId: tournament.id,
+			tournamentName: tournament.name,
+			status: tournament.status,
+			rounds: organized
+		};
+	}
 }

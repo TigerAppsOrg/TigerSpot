@@ -315,4 +315,30 @@ export class TournamentController {
 			res.status(400).json({ error: (error as Error).message });
 		}
 	};
+
+	/**
+	 * Admin: Get all bracket round pictures for a tournament
+	 * Returns pictures organized by bracket type and round number
+	 */
+	getBracketRoundPictures = async (req: AuthRequest, res: Response) => {
+		// Admin check
+		if (!req.user?.isAdmin) {
+			res.status(403).json({ error: 'Admin access required' });
+			return;
+		}
+
+		const id = parseInt(req.params.id, 10);
+		if (isNaN(id)) {
+			res.status(400).json({ error: 'Invalid tournament ID' });
+			return;
+		}
+
+		try {
+			const result = await this.tournamentService.getBracketRoundPictures(id);
+			res.json(result);
+		} catch (error) {
+			console.error('Error getting bracket round pictures:', error);
+			res.status(400).json({ error: (error as Error).message });
+		}
+	};
 }

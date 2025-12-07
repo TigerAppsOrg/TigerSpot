@@ -331,3 +331,41 @@ export async function adminAdvancePlayer(
 	}
 	return data ?? null;
 }
+
+export interface BracketRoundPicture {
+	index: number;
+	pictureId: number;
+	imageUrl: string;
+	difficulty: string;
+	latitude: number;
+	longitude: number;
+}
+
+export interface BracketRound {
+	bracketType: 'WINNERS' | 'LOSERS' | 'GRAND_FINAL';
+	roundNumber: number;
+	pictures: BracketRoundPicture[];
+}
+
+export interface BracketRoundPicturesResponse {
+	tournamentId: number;
+	tournamentName: string;
+	status: string;
+	rounds: BracketRound[];
+}
+
+/**
+ * Admin: Get all bracket round pictures for a tournament
+ */
+export async function getBracketRoundPictures(
+	tournamentId: number
+): Promise<BracketRoundPicturesResponse | null> {
+	const { data, error } = await api.get<BracketRoundPicturesResponse>(
+		`/api/tournament/${tournamentId}/pictures`
+	);
+	if (error) {
+		console.error('Failed to get bracket round pictures:', error);
+		return null;
+	}
+	return data ?? null;
+}
