@@ -84,18 +84,20 @@
 	<div class="space-y-1">
 		<!-- Player 1 -->
 		<div
-			class="flex items-center justify-between {compact ? 'text-sm' : ''} {getPlayerClass(
+			class="flex items-center justify-between gap-1 {compact ? 'text-sm' : ''} {getPlayerClass(
 				match.player1,
 				match.winnerId === match.player1
 			)}"
 		>
-			<span class="truncate max-w-[120px]">
-				{match.player1DisplayName || match.player1 || 'TBD'}
+			<div class="flex items-center gap-1 min-w-0 flex-1">
+				<span class="truncate">
+					{match.player1DisplayName || match.player1 || 'TBD'}
+				</span>
 				{#if match.player1 === currentUserId}
-					<span class="text-cyan">(you)</span>
+					<span class="text-cyan whitespace-nowrap">(you)</span>
 				{/if}
-			</span>
-			<div class="flex items-center gap-2">
+			</div>
+			<div class="flex items-center gap-2 shrink-0">
 				{#if match.player1Score !== null}
 					<span class="font-mono tabular-nums font-bold">{match.player1Score.toLocaleString()}</span
 					>
@@ -117,18 +119,20 @@
 
 		<!-- Player 2 -->
 		<div
-			class="flex items-center justify-between {compact ? 'text-sm' : ''} {getPlayerClass(
+			class="flex items-center justify-between gap-1 {compact ? 'text-sm' : ''} {getPlayerClass(
 				match.player2,
 				match.winnerId === match.player2
 			)}"
 		>
-			<span class="truncate max-w-[120px]">
-				{match.player2DisplayName || match.player2 || 'TBD'}
+			<div class="flex items-center gap-1 min-w-0 flex-1">
+				<span class="truncate">
+					{match.player2DisplayName || match.player2 || 'TBD'}
+				</span>
 				{#if match.player2 === currentUserId}
-					<span class="text-cyan">(you)</span>
+					<span class="text-cyan whitespace-nowrap">(you)</span>
 				{/if}
-			</span>
-			<div class="flex items-center gap-2">
+			</div>
+			<div class="flex items-center gap-2 shrink-0">
 				{#if match.player2Score !== null}
 					<span class="font-mono tabular-nums font-bold">{match.player2Score.toLocaleString()}</span
 					>
