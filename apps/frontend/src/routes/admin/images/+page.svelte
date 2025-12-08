@@ -5,8 +5,8 @@
 	import Card from '$lib/components/Card.svelte';
 	import ImageUpload from '$lib/components/ImageUpload.svelte';
 	import Map from '$lib/components/Map.svelte';
-	import GamePreviewModal from '$lib/components/GamePreviewModal.svelte';
-	import { listImages, uploadImage, deleteImage, type Picture } from '$lib/api/admin';
+	import ImageEditModal from '$lib/components/ImageEditModal.svelte';
+	import { listImages, uploadImage, deleteImage, updateImage, type Picture } from '$lib/api/admin';
 	import { userStore } from '$lib/stores/user.svelte';
 
 	// Form state
@@ -26,8 +26,7 @@
 
 	// Images from API
 	let images = $state<Picture[]>([]);
-	let previewImage = $state<string | null>(null);
-	let previewCoords = $state<{ lat: number; lng: number } | null>(null);
+	let editingImage = $state<Picture | null>(null);
 
 	const difficultyOptions = [
 		{ value: 'EASY', label: 'Easy', color: 'bg-lime' },
@@ -134,14 +133,17 @@
 		}
 	}
 
-	function showPreview(imageUrl: string, coords: { lat: number; lng: number }) {
-		previewImage = imageUrl;
-		previewCoords = coords;
+	function openEdit(image: Picture) {
+		editingImage = image;
 	}
 
-	function closePreview() {
-		previewImage = null;
-		previewCoords = null;
+	function closeEdit() {
+		editingImage = null;
+	}
+
+	function handleEditSave(updatedImage: Picture) {
+		images = images.map((img) => (img.id === updatedImage.id ? updatedImage : img));
+		editingImage = null;
 	}
 </script>
 
@@ -319,17 +321,7 @@
 							{/if}
 						</div>
 						<div class="flex gap-2 flex-wrap">
-							<Button
-								variant="cyan"
-								onclick={() =>
-									showPreview(image.imageUrl, {
-										lat: image.latitude,
-										lng: image.longitude
-									})}
-								class="flex-1"
-							>
-								Preview
-							</Button>
+							<Button variant="cyan" onclick={() => openEdit(image)} class="flex-1">Edit</Button>
 							<Button variant="magenta" onclick={() => handleDelete(image.id)} class="flex-1">
 								Delete
 							</Button>
@@ -341,7 +333,7 @@
 	{/if}
 </div>
 
-<!-- Preview Modal -->
-{#if previewImage && previewCoords}
-	<GamePreviewModal imageUrl={previewImage} coords={previewCoords} onClose={closePreview} />
+<!-- Edit Modal -->
+{#if editingImage}
+	<ImageEditModal image={editingImage} onClose={closeEdit} onSave={handleEditSave} />
 {/if}
