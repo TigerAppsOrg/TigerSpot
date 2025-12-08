@@ -10,9 +10,9 @@ const getApiBaseUrl = () => {
 	}
 	// Dev fallback: use same host as frontend with backend port
 	if (typeof window !== 'undefined') {
-		return `http://${window.location.hostname}:3001`;
+		return `http://${window.location.hostname}:4000`;
 	}
-	return 'http://localhost:3001';
+	return 'http://localhost:4000';
 };
 
 const API_BASE_URL = getApiBaseUrl();
