@@ -4,8 +4,9 @@
 	import Button from '$lib/components/Button.svelte';
 	import Card from '$lib/components/Card.svelte';
 	import ImageUpload from '$lib/components/ImageUpload.svelte';
-	import Map from '$lib/components/Map.svelte';
+	import MapComponent from '$lib/components/Map.svelte';
 	import ImageEditModal from '$lib/components/ImageEditModal.svelte';
+	import BulkEditModal from '$lib/components/BulkEditModal.svelte';
 	import { listImages, uploadImage, deleteImage, updateImage, type Picture } from '$lib/api/admin';
 	import { userStore } from '$lib/stores/user.svelte';
 
@@ -27,6 +28,11 @@
 	// Images from API
 	let images = $state<Picture[]>([]);
 	let editingImage = $state<Picture | null>(null);
+
+	// Selection state
+	let selectedIds = $state<Set<number>>(new Set());
+	let selectionMode = $state(false);
+	let bulkEditing = $state(false);
 
 	const difficultyOptions = [
 		{ value: 'EASY', label: 'Easy', color: 'bg-lime' },
@@ -145,6 +151,50 @@
 		images = images.map((img) => (img.id === updatedImage.id ? updatedImage : img));
 		editingImage = null;
 	}
+
+	// Selection handlers
+	function toggleSelectionMode() {
+		selectionMode = !selectionMode;
+		if (!selectionMode) {
+			selectedIds = new Set<number>();
+		}
+	}
+
+	function toggleSelect(id: number) {
+		const newSet = new Set(selectedIds);
+		if (newSet.has(id)) {
+			newSet.delete(id);
+		} else {
+			newSet.add(id);
+		}
+		selectedIds = newSet;
+	}
+
+	function selectAll() {
+		selectedIds = new Set(images.map((img) => img.id));
+	}
+
+	function deselectAll() {
+		selectedIds = new Set<number>();
+	}
+
+	function openBulkEdit() {
+		if (selectedIds.size > 0) {
+			bulkEditing = true;
+		}
+	}
+
+	function closeBulkEdit() {
+		bulkEditing = false;
+	}
+
+	function handleBulkSave(updatedImages: Picture[]) {
+		const updatedMap = new Map<number, Picture>(updatedImages.map((img) => [img.id, img]));
+		images = images.map((img) => updatedMap.get(img.id) ?? img);
+		bulkEditing = false;
+		selectionMode = false;
+		selectedIds = new Set<number>();
+	}
 </script>
 
 <div class="max-w-6xl mx-auto">
@@ -186,7 +236,7 @@
 						</div>
 					{/if}
 					<div class="brutal-border overflow-hidden h-64">
-						<Map
+						<MapComponent
 							onSelect={handleMapSelect}
 							guessLocation={coordinates ?? undefined}
 							centerOnGuess={true}
@@ -269,7 +319,23 @@
 	</Card>
 
 	<!-- Existing Images -->
-	<h3 class="text-xl font-black uppercase mb-6">Existing Images ({images.length})</h3>
+	<div class="flex items-center justify-between mb-6">
+		<h3 class="text-xl font-black uppercase">Existing Images ({images.length})</h3>
+		{#if !loading && images.length > 0}
+			<div class="flex gap-2">
+				{#if selectionMode}
+					<Button variant="lime" onclick={selectAll} size="sm">Select All</Button>
+					<Button variant="white" onclick={deselectAll} size="sm">Deselect</Button>
+					<Button variant="cyan" onclick={openBulkEdit} size="sm" disabled={selectedIds.size === 0}>
+						Edit Selected ({selectedIds.size})
+					</Button>
+					<Button variant="magenta" onclick={toggleSelectionMode} size="sm">Cancel</Button>
+				{:else}
+					<Button variant="white" onclick={toggleSelectionMode} size="sm">Select</Button>
+				{/if}
+			</div>
+		{/if}
+	</div>
 
 	{#if loading}
 		<div class="text-center py-12">
@@ -284,9 +350,28 @@
 	{:else}
 		<div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
 			{#each images as image}
-				<Card class="p-0 overflow-hidden">
+				<Card
+					class="p-0 overflow-hidden {selectionMode && selectedIds.has(image.id)
+						? 'ring-4 ring-cyan'
+						: ''}"
+				>
 					<!-- Image -->
 					<div class="relative bg-gray">
+						{#if selectionMode}
+							<button
+								type="button"
+								onclick={() => toggleSelect(image.id)}
+								class="absolute top-2 left-2 z-10 w-6 h-6 brutal-border flex items-center justify-center {selectedIds.has(
+									image.id
+								)
+									? 'bg-cyan text-white'
+									: 'bg-white'}"
+							>
+								{#if selectedIds.has(image.id)}
+									✓
+								{/if}
+							</button>
+						{/if}
 						<img src={image.imageUrl} alt="Location" class="w-full h-auto" />
 						<span
 							class="absolute top-2 right-2 brutal-border px-2 py-0.5 text-xs font-bold uppercase text-white {difficultyColors[
@@ -336,4 +421,13 @@
 <!-- Edit Modal -->
 {#if editingImage}
 	<ImageEditModal image={editingImage} onClose={closeEdit} onSave={handleEditSave} />
+{/if}
+
+<!-- Bulk Edit Modal -->
+{#if bulkEditing}
+	<BulkEditModal
+		images={images.filter((img) => selectedIds.has(img.id))}
+		onClose={closeBulkEdit}
+		onSave={handleBulkSave}
+	/>
 {/if}
