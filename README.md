@@ -34,14 +34,14 @@ pnpm db:migrate
 pnpm dev
 ```
 
-The frontend runs on `http://localhost:5173` and the API on `http://localhost:3001`.
+The frontend runs on `http://localhost:5173` and the API on `http://localhost:4000`.
 
 ### Environment Variables
 
 **Server** (`apps/server/.env`):
 
 ```env
-PORT=3001
+PORT=4000
 NODE_ENV=development
 DATABASE_URL=postgresql://spot:spot_password@localhost:5433/spot_db
 JWT_SECRET=your-secret-at-least-32-chars
@@ -49,13 +49,13 @@ CLOUDINARY_CLOUD_NAME=your-cloud-name
 CLOUDINARY_API_KEY=your-api-key
 CLOUDINARY_API_SECRET=your-api-secret
 FRONTEND_URL=http://localhost:5173
-CAS_SERVICE_URL=http://localhost:3001/api/auth/callback
+CAS_SERVICE_URL=http://localhost:4000/api/auth/callback
 ```
 
 **Frontend** (`apps/frontend/.env`):
 
 ```env
-VITE_API_URL=http://localhost:3001
+VITE_API_URL=http://localhost:4000
 ```
 
 ## Scripts
