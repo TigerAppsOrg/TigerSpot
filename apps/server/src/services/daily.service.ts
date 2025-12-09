@@ -303,7 +303,7 @@ export class DailyService {
 		await prisma.userDaily.upsert({
 			where: { username },
 			update: {
-				points: { increment: points },
+				points: points,
 				distance: Math.round(distance),
 				played: true,
 				lastPlayed: new Date(),
