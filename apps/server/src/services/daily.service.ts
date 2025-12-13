@@ -151,7 +151,17 @@ export class DailyService {
 		const now = new Date();
 		await prisma.userDaily.upsert({
 			where: { username },
-			update: { startedAt: now },
+			// Reset per-day fields when starting a new day.
+			// This prevents a previous-day timeout state (played=true + null guess) from blocking submissions
+			// after we update startedAt for the new day.
+			update: {
+				startedAt: now,
+				played: false,
+				points: 0,
+				distance: 0,
+				guessLat: null,
+				guessLng: null
+			},
 			create: {
 				username,
 				startedAt: now
@@ -188,7 +198,12 @@ export class DailyService {
 		// Check if timed out today (startedAt is today, guessLat is null, AND played is true)
 		// This handles the case where user timed out but we didn't set lastPlayed
 		// We must check played === true to distinguish from users who started but haven't submitted yet
-		if (userDaily.startedAt && userDaily.guessLat === null && userDaily.played === true) {
+		if (
+			userDaily.startedAt &&
+			userDaily.played === true &&
+			userDaily.guessLat === null &&
+			userDaily.guessLng === null
+		) {
 			const startedAt = new Date(userDaily.startedAt);
 			startedAt.setHours(0, 0, 0, 0);
 			if (startedAt.getTime() === today.getTime()) {
