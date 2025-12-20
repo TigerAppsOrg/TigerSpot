@@ -83,7 +83,7 @@
 			<!-- Game Modes -->
 			<h2 class="text-3xl font-black mb-8">Choose Your Mode</h2>
 
-			<div class="grid md:grid-cols-2 xl:grid-cols-3 gap-8 mb-16">
+			<div class="grid md:grid-cols-2 xl:grid-cols-4 gap-8 mb-16">
 				<GameModeCard
 					href="/game"
 					variant="cyan"
@@ -105,6 +105,16 @@
 				/>
 
 				<GameModeCard
+					href="/solo"
+					variant="orange"
+					icon="target"
+					title="Solo Mode"
+					description="Practice anytime with unlimited runs."
+					stat="Unlimited plays"
+					cta="Play"
+				/>
+
+				<GameModeCard
 					href="/tournament"
 					variant="lime"
 					icon="trophy"
@@ -112,7 +122,6 @@
 					description="Bracket-style competition!"
 					stat="{activeTournaments} active"
 					cta="Compete"
-					class="md:col-span-2 xl:col-span-1"
 				/>
 			</div>
 
