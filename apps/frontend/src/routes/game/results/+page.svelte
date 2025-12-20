@@ -3,12 +3,14 @@
 	import { goto } from '$app/navigation';
 	import Button from '$lib/components/Button.svelte';
 	import Card from '$lib/components/Card.svelte';
+	import Icon from '$lib/components/Icon.svelte';
 	import Map from '$lib/components/Map.svelte';
 	import { formatDistance } from '$lib/utils/distance';
 	import { gameResults, type GameResults } from '$lib/stores/gameResults';
 	import { getTodayResult } from '$lib/api/game';
 	import { userStore } from '$lib/stores/user.svelte';
 	import { get } from 'svelte/store';
+	import type { IconName } from '$lib/components/icons';
 
 	// Get results from store or fetch from API
 	let results = $state<GameResults | null>(get(gameResults));
@@ -51,13 +53,17 @@
 	const points = $derived(results?.points ?? 0);
 
 	// Determine score quality
-	const scoreQuality = $derived.by(() => {
-		if (timedOut) return { text: 'TIMED OUT', color: 'magenta', emoji: '⏰' };
-		if (points >= 1000) return { text: 'PERFECT!', color: 'lime', emoji: '🎯' };
-		if (points >= 800) return { text: 'AMAZING!', color: 'cyan', emoji: '🤩' };
-		if (points >= 500) return { text: 'GREAT!', color: 'orange', emoji: '😎' };
-		if (points >= 200) return { text: 'GOOD', color: 'magenta', emoji: '👍' };
-		return { text: 'TRY AGAIN', color: 'magenta', emoji: '🤔' };
+	const scoreQuality = $derived.by<{
+		text: string;
+		color: string;
+		icon: IconName;
+	}>(() => {
+		if (timedOut) return { text: 'TIMED OUT', color: 'magenta', icon: 'clock' };
+		if (points >= 1000) return { text: 'PERFECT!', color: 'lime', icon: 'target' };
+		if (points >= 800) return { text: 'AMAZING!', color: 'cyan', icon: 'sparkles' };
+		if (points >= 500) return { text: 'GREAT!', color: 'orange', icon: 'smile' };
+		if (points >= 200) return { text: 'GOOD', color: 'magenta', icon: 'checkCircle' };
+		return { text: 'TRY AGAIN', color: 'magenta', icon: 'help' };
 	});
 
 	// Get current streak from user data
@@ -72,7 +78,7 @@
 {#if loading}
 	<div class="min-h-screen bg-primary flex items-center justify-center">
 		<div class="text-center">
-			<div class="text-4xl mb-4">🐯</div>
+			<Icon name="paw" class="text-4xl mb-4" />
 			<p class="font-bold">Loading results...</p>
 		</div>
 	</div>
@@ -92,7 +98,7 @@
 			<div class="container-brutal max-w-6xl mx-auto">
 				<!-- Result Header -->
 				<div class="text-center mb-8">
-					<div class="text-6xl mb-4">{scoreQuality.emoji}</div>
+					<Icon name={scoreQuality.icon} class="text-6xl mb-4" />
 					<h1
 						class="text-4xl md:text-5xl font-black"
 						style="color: var(--color-{scoreQuality.color})"
@@ -185,7 +191,12 @@
 				<!-- Actions -->
 				<div class="flex flex-wrap justify-center gap-4">
 					<Button variant="cyan" href="/menu">Back to Menu</Button>
-					<Button variant="black" href="/leaderboard">📊 Leaderboard</Button>
+					<Button variant="black" href="/leaderboard">
+						<span class="inline-flex items-center gap-2">
+							<Icon name="chart" class="text-lg" />
+							Leaderboard
+						</span>
+					</Button>
 				</div>
 			</div>
 		</main>

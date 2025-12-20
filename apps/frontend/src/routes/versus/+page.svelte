@@ -4,6 +4,7 @@
 	import Button from '$lib/components/Button.svelte';
 	import Card from '$lib/components/Card.svelte';
 	import Header from '$lib/components/Header.svelte';
+	import Icon from '$lib/components/Icon.svelte';
 	import PlayerChip from '$lib/components/PlayerChip.svelte';
 	import ChallengeCard from '$lib/components/ChallengeCard.svelte';
 	import EmptyState from '$lib/components/EmptyState.svelte';
@@ -148,7 +149,7 @@
 		<div class="container-brutal max-w-6xl mx-auto">
 			<!-- Header -->
 			<div class="text-center mb-10 mt-8">
-				<div class="text-5xl mb-4">⚔️</div>
+				<Icon name="swords" class="text-5xl mb-4" />
 				<h1 class="text-4xl font-black mb-2">Versus Mode</h1>
 				<p class="text-black/60">Challenge friends to 5-round battles!</p>
 			</div>
@@ -260,7 +261,10 @@
 										: 'bg-gray/30'} flex-wrap"
 							>
 								<div class="flex items-center gap-3">
-									<span class="text-2xl">{match.youForfeited ? '🏳️' : won ? '🏆' : '💔'}</span>
+									<Icon
+										name={match.youForfeited ? 'flag' : won ? 'trophy' : 'heartBroken'}
+										class="text-2xl"
+									/>
 									<div>
 										<div class="font-black">
 											{#if match.youForfeited}

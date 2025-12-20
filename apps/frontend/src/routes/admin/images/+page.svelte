@@ -3,6 +3,7 @@
 	import { goto } from '$app/navigation';
 	import Button from '$lib/components/Button.svelte';
 	import Card from '$lib/components/Card.svelte';
+	import Icon from '$lib/components/Icon.svelte';
 	import ImageUpload from '$lib/components/ImageUpload.svelte';
 	import MapComponent from '$lib/components/Map.svelte';
 	import ImageEditModal from '$lib/components/ImageEditModal.svelte';
@@ -203,7 +204,7 @@
 	<!-- Success Message -->
 	{#if showSuccess}
 		<div class="brutal-border bg-lime text-white p-4 mb-6 font-bold flex items-center gap-3">
-			<span class="text-2xl">✅</span>
+			<Icon name="checkCircle" class="text-2xl" />
 			Image added successfully!
 		</div>
 	{/if}
@@ -231,7 +232,7 @@
 					</label>
 					{#if hasGpsMetadata}
 						<div class="brutal-border bg-lime/20 px-3 py-2 mb-2 flex items-center gap-2">
-							<span class="text-lg">📍</span>
+							<Icon name="mapPin" class="text-lg" />
 							<span class="font-bold text-sm">GPS Found!</span>
 						</div>
 					{/if}
@@ -251,7 +252,7 @@
 					<!-- No image selected yet -->
 					<label class="block text-sm font-bold uppercase mb-2">Location</label>
 					<div class="brutal-border bg-gray/20 p-6 h-64 flex flex-col items-center justify-center">
-						<div class="text-4xl mb-3 opacity-40">🗺️</div>
+						<Icon name="map" class="text-4xl mb-3 opacity-40" />
 						<p class="text-black/40 text-sm">Select an image first</p>
 					</div>
 				{/if}
@@ -339,12 +340,12 @@
 
 	{#if loading}
 		<div class="text-center py-12">
-			<div class="text-4xl mb-4">🐯</div>
+			<Icon name="paw" class="text-4xl mb-4" />
 			<p class="font-bold">Loading images...</p>
 		</div>
 	{:else if images.length === 0}
 		<Card class="text-center py-10">
-			<div class="text-4xl mb-4">🖼️</div>
+			<Icon name="image" class="text-4xl mb-4" />
 			<p class="text-black/60">No images yet. Add one above!</p>
 		</Card>
 	{:else}

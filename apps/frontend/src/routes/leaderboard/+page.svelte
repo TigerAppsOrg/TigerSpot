@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import Card from '$lib/components/Card.svelte';
+	import Icon from '$lib/components/Icon.svelte';
 	import Header from '$lib/components/Header.svelte';
 	import {
 		getTotalLeaderboard,
@@ -16,18 +17,31 @@
 	let leaderboard = $state<LeaderboardEntry[]>([]);
 	let myStats = $state<UserStats | null>(null);
 	let loading = $state(true);
+	let latestRequestId = 0;
 
 	// Find current user's rank from leaderboard or myStats
 	const userRank = $derived(myStats?.rank ?? 0);
 	const currentUsername = $derived(userStore.username);
+	const isDaily = $derived(activeTab === 'daily');
+	const listEntries = $derived(leaderboard.slice(3, 25));
+	const dailyUserEntry = $derived(
+		leaderboard.find((entry) => entry.username === currentUsername) ?? null
+	);
+	const medalColors = {
+		gold: '#f4c430',
+		silver: '#c0c0c0',
+		bronze: '#cd7f32'
+	};
 
 	onMount(async () => {
 		await loadData();
 	});
 
 	async function loadData() {
+		const requestId = ++latestRequestId;
 		loading = true;
 		const [allTimeData, statsData] = await Promise.all([getTotalLeaderboard(), getMyStats()]);
+		if (requestId !== latestRequestId) return;
 		leaderboard = allTimeData;
 		myStats = statsData;
 		loading = false;
@@ -35,12 +49,11 @@
 
 	async function switchTab(tab: 'daily' | 'alltime') {
 		activeTab = tab;
+		const requestId = ++latestRequestId;
 		loading = true;
-		if (tab === 'daily') {
-			leaderboard = await getDailyLeaderboard();
-		} else {
-			leaderboard = await getTotalLeaderboard();
-		}
+		const data = tab === 'daily' ? await getDailyLeaderboard() : await getTotalLeaderboard();
+		if (requestId !== latestRequestId) return;
+		leaderboard = data;
 		loading = false;
 	}
 </script>
@@ -57,7 +70,12 @@
 
 	<main class="relative pt-24 pb-12 px-4">
 		<div class="container-brutal">
-			<h1 class="text-4xl md:text-5xl font-black text-center mt-8 mb-10">&#x1F3C6; Leaderboard</h1>
+			<h1
+				class="text-4xl md:text-5xl font-black text-center mt-8 mb-10 flex items-center justify-center gap-3"
+			>
+				<Icon name="trophy" class="text-4xl md:text-5xl" />
+				Leaderboard
+			</h1>
 
 			<!-- Tab Switcher -->
 			<div class="flex justify-center gap-6 mb-10">
@@ -77,13 +95,13 @@
 
 			{#if loading}
 				<div class="text-center py-12">
-					<div class="text-4xl mb-4">🐯</div>
+					<Icon name="paw" class="text-4xl mb-4" />
 					<p class="font-bold">Loading leaderboard...</p>
 				</div>
 			{:else if leaderboard.length === 0}
 				<Card class="max-w-2xl mx-auto">
 					<div class="text-center py-12">
-						<div class="text-4xl mb-4">😿</div>
+						<Icon name="faceSad" class="text-4xl mb-4" />
 						<p class="font-bold">No one has played today :(</p>
 
 						<Button variant="cyan" size="md" href="/game" class="mt-6">
@@ -98,7 +116,7 @@
 					{#if leaderboard[1]}
 						<div class="flex-1 text-center">
 							<Card class="pb-10">
-								<div class="text-4xl mb-4">&#x1F948;</div>
+								<Icon name="medal" class="text-4xl mb-4" style="color: {medalColors.silver};" />
 								<div class="font-black text-lg">
 									{leaderboard[1].displayName || leaderboard[1].username}
 								</div>
@@ -118,7 +136,7 @@
 					{#if leaderboard[0]}
 						<div class="flex-1 text-center">
 							<Card variant="lime" class="pb-14 mb-12">
-								<div class="text-5xl mb-4">&#x1F947;</div>
+								<Icon name="medal" class="text-5xl mb-4" style="color: {medalColors.gold};" />
 								<div class="font-black text-xl">
 									{leaderboard[0].displayName || leaderboard[0].username}
 								</div>
@@ -138,7 +156,7 @@
 					{#if leaderboard[2]}
 						<div class="flex-1 text-center">
 							<Card class="pb-6">
-								<div class="text-4xl mb-4">&#x1F949;</div>
+								<Icon name="medal" class="text-4xl mb-4" style="color: {medalColors.bronze};" />
 								<div class="font-black text-lg">
 									{leaderboard[2].displayName || leaderboard[2].username}
 								</div>
@@ -158,24 +176,16 @@
 				<!-- Full Leaderboard -->
 				<Card class="max-w-2xl mx-auto">
 					<div class="divide-y-4 divide-black">
-						{#each leaderboard.slice(0, 25) as entry, i}
+						{#each listEntries as entry}
 							<div class="relative flex items-center gap-6 py-5 first:pt-0 last:pb-0">
 								{#if entry.username === currentUsername}
 									<div class="absolute inset-y-0 -inset-x-8 bg-cyan/20"></div>
 								{/if}
 								<!-- Rank -->
 								<div class="relative w-14 text-center">
-									{#if i === 0}
-										<span class="text-3xl">&#x1F947;</span>
-									{:else if i === 1}
-										<span class="text-3xl">&#x1F948;</span>
-									{:else if i === 2}
-										<span class="text-3xl">&#x1F949;</span>
-									{:else}
-										<span class="text-2xl font-black opacity-40">
-											{entry.rank}
-										</span>
-									{/if}
+									<span class="text-2xl font-black opacity-40">
+										{entry.rank}
+									</span>
 								</div>
 
 								<!-- User Info -->
@@ -212,8 +222,42 @@
 					</div>
 				</Card>
 
-				<!-- Your Position (if not in top 25) -->
-				{#if myStats && userRank > 25}
+				<!-- Your Position -->
+				{#if isDaily}
+					{#if myStats?.playedToday}
+						{#if !dailyUserEntry}
+							<Card class="max-w-2xl mx-auto mt-6 bg-cyan/20">
+								<div class="flex items-center gap-6">
+									<div class="w-14 text-center text-2xl font-black">-</div>
+									<div class="grow">
+										<div class="font-bold text-cyan text-lg">
+											{myStats.displayName || myStats.username}
+										</div>
+										<div class="text-xs opacity-60">Outside top list</div>
+									</div>
+									<div class="text-right">
+										<div class="text-2xl font-black">
+											{(myStats.todayPoints ?? 0).toLocaleString()}
+										</div>
+										<div class="text-xs opacity-60">points today</div>
+									</div>
+								</div>
+							</Card>
+						{/if}
+					{:else if myStats}
+						<Card class="max-w-2xl mx-auto mt-6 bg-cyan/20">
+							<div class="flex items-center justify-between gap-6">
+								<div>
+									<div class="font-bold text-cyan text-lg">
+										{myStats.displayName || myStats.username}
+									</div>
+									<div class="text-xs opacity-60">You haven't played today</div>
+								</div>
+								<Button variant="cyan" size="sm" href="/game">Play Daily</Button>
+							</div>
+						</Card>
+					{/if}
+				{:else if myStats && userRank > 25}
 					<Card class="max-w-2xl mx-auto mt-6 bg-cyan/20">
 						<div class="flex items-center gap-6">
 							<div class="w-14 text-center text-2xl font-black">

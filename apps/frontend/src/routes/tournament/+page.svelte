@@ -4,8 +4,10 @@
 	import Button from '$lib/components/Button.svelte';
 	import Card from '$lib/components/Card.svelte';
 	import Header from '$lib/components/Header.svelte';
+	import Icon from '$lib/components/Icon.svelte';
 	import { listTournaments, joinTournament, type Tournament } from '$lib/api/tournament';
 	import { userStore } from '$lib/stores/user.svelte';
+	import type { IconName } from '$lib/components/icons';
 
 	let tournaments = $state<Tournament[]>([]);
 	let loading = $state(true);
@@ -25,10 +27,10 @@
 		tournamentName: string;
 	} | null>(null);
 
-	const statusConfig: Record<string, { color: string; label: string; icon: string }> = {
-		open: { color: 'bg-white text-black', label: 'OPEN', icon: '📋' },
-		in_progress: { color: 'bg-orange text-white', label: 'LIVE', icon: '🔥' },
-		completed: { color: 'bg-lime text-white', label: 'COMPLETED', icon: '🏆' }
+	const statusConfig: Record<string, { color: string; label: string; icon: IconName }> = {
+		open: { color: 'bg-white text-black', label: 'OPEN', icon: 'clipboard' },
+		in_progress: { color: 'bg-orange text-white', label: 'LIVE', icon: 'flame' },
+		completed: { color: 'bg-lime text-white', label: 'COMPLETED', icon: 'trophy' }
 	};
 
 	onMount(async () => {
@@ -94,7 +96,7 @@
 		<div class="container-brutal max-w-4xl mx-auto">
 			<!-- Header -->
 			<div class="text-center mb-10">
-				<div class="text-5xl mb-4">🏆</div>
+				<Icon name="trophy" class="text-5xl mb-4" />
 				<h1 class="text-4xl font-black mb-2">Tournaments</h1>
 				<p class="text-black/60">Compete in bracket-style double elimination tournaments</p>
 			</div>
@@ -104,7 +106,7 @@
 				<Card variant="orange" class="mb-8 py-6">
 					<div class="flex flex-col md:flex-row items-center justify-between gap-4">
 						<div class="flex items-center gap-4">
-							<span class="text-4xl">⚔️</span>
+							<Icon name="swords" class="text-4xl" />
 							<div>
 								<div class="font-black text-lg">Your Match is Ready!</div>
 								<div class="text-sm opacity-80">
@@ -124,12 +126,12 @@
 
 			{#if loading}
 				<div class="text-center py-12">
-					<div class="text-4xl mb-4">🐯</div>
+					<Icon name="paw" class="text-4xl mb-4" />
 					<p class="font-bold">Loading tournaments...</p>
 				</div>
 			{:else if tournaments.length === 0}
 				<Card class="text-center py-16">
-					<div class="text-6xl mb-6">🏆</div>
+					<Icon name="trophy" class="text-6xl mb-6" />
 					<h2 class="text-2xl font-black mb-4">No Tournaments Yet</h2>
 					<p class="text-black/60 mb-8">Check back soon for upcoming tournaments!</p>
 				</Card>
@@ -145,7 +147,7 @@
 								<div class="flex flex-col md:flex-row md:items-start justify-between gap-4">
 									<div class="flex-1">
 										<div class="flex items-center gap-3 mb-2 flex-wrap">
-											<span class="text-2xl">{status.icon}</span>
+											<Icon name={status.icon} class="text-2xl" />
 											<h2 class="text-xl font-black">{tournament.name}</h2>
 											<span
 												class="brutal-border px-2 py-0.5 text-xs font-bold uppercase {status.color}"
@@ -204,7 +206,7 @@
 							{#if tournament.status === 'completed' && tournament.winner}
 								<div class="border-t-4 border-black px-6 py-4 bg-lime/20">
 									<div class="flex items-center gap-3">
-										<span class="text-2xl">👑</span>
+										<Icon name="crown" class="text-2xl" />
 										<div>
 											<div class="text-xs font-bold uppercase text-black/50">Winner</div>
 											<div class="font-black">{tournament.winner}</div>
@@ -230,7 +232,7 @@
 	<div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
 		<Card class="w-full max-w-md">
 			<div class="text-center mb-6">
-				<div class="text-4xl mb-2">🔐</div>
+				<Icon name="lock" class="text-4xl mb-2" />
 				<h2 class="text-2xl font-black">Enter Join Code</h2>
 				<p class="text-black/60 mt-2">
 					Enter the code to join <span class="font-bold">{selectedTournament.name}</span>

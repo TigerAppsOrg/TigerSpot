@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import Button from '$lib/components/Button.svelte';
+	import Icon from '$lib/components/Icon.svelte';
 	import Header from '$lib/components/Header.svelte';
 	import GameModeCard from '$lib/components/GameModeCard.svelte';
 	import StatCard from '$lib/components/StatCard.svelte';
@@ -57,10 +58,25 @@
 		<div class="container-brutal">
 			<!-- Quick Links -->
 			<div class="flex flex-wrap gap-6 mb-8">
-				<Button variant="white" href="/leaderboard">📊 Leaderboard</Button>
-				<Button variant="white" href="/settings">👤 Profile & Settings</Button>
+				<Button variant="white" href="/leaderboard">
+					<span class="inline-flex items-center gap-2">
+						<Icon name="chart" class="text-lg" />
+						Leaderboard
+					</span>
+				</Button>
+				<Button variant="white" href="/settings">
+					<span class="inline-flex items-center gap-2">
+						<Icon name="user" class="text-lg" />
+						Profile & Settings
+					</span>
+				</Button>
 				{#if userStore.isAdmin}
-					<Button variant="orange" href="/admin">⚙️ Admin Dashboard</Button>
+					<Button variant="orange" href="/admin">
+						<span class="inline-flex items-center gap-2">
+							<Icon name="settings" class="text-lg" />
+							Admin Dashboard
+						</span>
+					</Button>
 				{/if}
 			</div>
 
@@ -71,7 +87,7 @@
 				<GameModeCard
 					href="/game"
 					variant="cyan"
-					emoji="📅"
+					icon="calendar"
 					title="Daily Challenge"
 					description="One new location every day. How close can you get?"
 					stat="{stats?.currentStreak ?? 0} day streak"
@@ -81,7 +97,7 @@
 				<GameModeCard
 					href="/versus"
 					variant="magenta"
-					emoji="⚔️"
+					icon="swords"
 					title="Versus Mode"
 					description="Challenge your friends to 5-round battles!"
 					stat="{pendingChallenges} pending"
@@ -91,7 +107,7 @@
 				<GameModeCard
 					href="/tournament"
 					variant="lime"
-					emoji="🏆"
+					icon="trophy"
 					title="Tournament"
 					description="Bracket-style competition!"
 					stat="{activeTournaments} active"

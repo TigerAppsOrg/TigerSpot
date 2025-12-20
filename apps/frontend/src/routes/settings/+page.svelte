@@ -4,6 +4,7 @@
 	import Button from '$lib/components/Button.svelte';
 	import Card from '$lib/components/Card.svelte';
 	import Header from '$lib/components/Header.svelte';
+	import Icon from '$lib/components/Icon.svelte';
 	import { userStore } from '$lib/stores/user.svelte';
 	import { getMyStats, type UserStats } from '$lib/api/leaderboard';
 	import { currentTheme, type ThemeName } from '$lib/stores/theme';
@@ -58,13 +59,16 @@
 			<div class="grid md:grid-cols-2 gap-8">
 				<!-- Profile Section -->
 				<Card>
-					<h2 class="text-2xl font-black mb-8">&#x1F464; Profile</h2>
+					<h2 class="text-2xl font-black mb-8 flex items-center gap-2">
+						<Icon name="user" class="text-2xl" />
+						Profile
+					</h2>
 
 					<div class="text-center mb-8">
 						<div
 							class="w-28 h-28 bg-primary brutal-border brutal-shadow mx-auto flex items-center justify-center mb-6"
 						>
-							<span class="text-5xl">&#x1F42F;</span>
+							<Icon name="paw" class="text-5xl" />
 						</div>
 						<h3 class="text-2xl font-bold">{userStore.displayName}</h3>
 						<p class="text-sm opacity-60 mt-2">
@@ -104,7 +108,10 @@
 				<!-- Settings Section -->
 				<div class="space-y-8">
 					<Card>
-						<h2 class="text-2xl font-black mb-8">&#x1F3A8; Theme</h2>
+						<h2 class="text-2xl font-black mb-8 flex items-center gap-2">
+							<Icon name="palette" class="text-2xl" />
+							Theme
+						</h2>
 
 						<div class="grid grid-cols-4 gap-4">
 							{#each themeOptions as theme}
@@ -131,7 +138,12 @@
 					<Card variant="magenta">
 						<div class="text-center">
 							<h3 class="text-xl font-bold mb-4">Sign Out</h3>
-							<Button variant="white" onclick={handleLogout}>&#x1F6AA; Logout</Button>
+							<Button variant="white" onclick={handleLogout}>
+								<span class="inline-flex items-center gap-2">
+									<Icon name="logOut" class="text-lg" />
+									Logout
+								</span>
+							</Button>
 						</div>
 					</Card>
 				</div>

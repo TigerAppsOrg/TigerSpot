@@ -1,11 +1,14 @@
 <script lang="ts">
 	import Card from './Card.svelte';
+	import Icon from './Icon.svelte';
+	import type { IconName } from './icons';
 
 	type CardVariant = 'cyan' | 'magenta' | 'lime' | 'orange';
 
 	let {
 		href,
 		variant,
+		icon,
 		emoji,
 		title,
 		description,
@@ -16,7 +19,8 @@
 	}: {
 		href: string;
 		variant: CardVariant;
-		emoji: string;
+		icon?: IconName;
+		emoji?: string;
 		title: string;
 		description: string;
 		stat: string;
@@ -36,7 +40,11 @@
 					<span>Done</span>
 				</div>
 			{/if}
-			<div class="text-5xl mb-6">{emoji}</div>
+			{#if icon}
+				<Icon name={icon} class="text-5xl mb-6" />
+			{:else if emoji}
+				<div class="text-5xl mb-6">{emoji}</div>
+			{/if}
 			<h3 class="text-2xl font-black mb-4">{title}</h3>
 			<p class="opacity-80 mb-6 grow leading-relaxed">
 				{description}

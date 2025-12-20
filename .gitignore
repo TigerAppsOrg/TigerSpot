@@ -8,3 +8,4 @@ picturedata.txt
 node_modules/
 dist/
 .codex/
+*package-lock.json

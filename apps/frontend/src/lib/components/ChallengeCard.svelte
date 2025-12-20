@@ -2,6 +2,7 @@
 	import Button from './Button.svelte';
 	import StatusBadge from './StatusBadge.svelte';
 	import { formatTimeAgo } from '$lib/utils/time';
+	import Icon from './Icon.svelte';
 
 	type ChallengeStatus = 'pending' | 'sent' | 'active';
 
@@ -59,7 +60,7 @@
 	{:else if status === 'active' && onStart}
 		<div class="flex items-center justify-between gap-4 mt-0 flex-wrap">
 			<div class="flex items-center gap-3">
-				<span class="text-2xl">⚔️</span>
+				<Icon name="swords" class="text-2xl" />
 				<div class="text-xs opacity-60">5 rounds • 30s each</div>
 			</div>
 			<div class="flex items-center gap-2">
