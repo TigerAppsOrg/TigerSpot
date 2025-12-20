@@ -1,17 +1,2 @@
--- AlterTable
-ALTER TABLE "Challenge" ADD COLUMN     "forfeitedBy" VARCHAR(255);
-
--- AlterTable
-ALTER TABLE "ChallengeRound" ADD COLUMN     "startedAt" TIMESTAMP(3);
-
--- AlterTable
-ALTER TABLE "Picture" ADD COLUMN     "usedInDaily" BOOLEAN NOT NULL DEFAULT false;
-
--- AlterTable
-ALTER TABLE "Tournament" ALTER COLUMN "timeLimit" SET DEFAULT 30;
-
--- AlterTable
-ALTER TABLE "User" ADD COLUMN     "lastSeenVersus" TIMESTAMP(3);
-
--- AlterTable
-ALTER TABLE "UserDaily" ADD COLUMN     "startedAt" TIMESTAMP(3);
+-- Deprecated migration (superseded by 20251220011500_add_daily_and_versus_tracking).
+-- Intentionally left as a no-op to preserve migration history.
