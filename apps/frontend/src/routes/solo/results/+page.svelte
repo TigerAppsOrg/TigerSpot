@@ -103,7 +103,9 @@
 							<div class="flex justify-between items-center px-5 py-4 border-t-4 border-black">
 								<div>
 									<div class="text-xs font-bold uppercase opacity-60">Distance</div>
-									<div class="text-lg font-black">{formatDistance(currentRound.distance)}</div>
+									<div class="text-lg font-black">
+										{currentRound.timedOut ? '—' : formatDistance(currentRound.distance)}
+									</div>
 								</div>
 								<div class="text-right">
 									<div class="text-xs font-bold uppercase opacity-60">Points</div>
