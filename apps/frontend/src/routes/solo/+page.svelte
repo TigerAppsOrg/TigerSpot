@@ -24,6 +24,7 @@
 	let roundReady = $state(false);
 	let showRoundReview = $state(false);
 	let reviewResult = $state<SoloRoundResult | null>(null);
+	let submitting = $state(false);
 	let timerComponent: Timer;
 	let mapComponent: Map;
 
@@ -78,7 +79,12 @@
 	}
 
 	async function submitRound(forceNoGuess = false) {
+		if (submitting) return;
 		if (!currentPicture) return;
+		submitting = true;
+		if (timerComponent) {
+			timerComponent.stop();
+		}
 
 		const hasGuess = !forceNoGuess && !!guessCoords;
 		const guessLat = hasGuess ? guessCoords!.lat : 0;
@@ -87,6 +93,7 @@
 		const result = await submitSoloGuess(currentPicture.id, guessLat, guessLng);
 		if (!result) {
 			alert('Failed to submit guess. Please try again.');
+			submitting = false;
 			return;
 		}
 
@@ -105,14 +112,13 @@
 		const updatedResults = [...roundResults, roundResult];
 		roundResults = updatedResults;
 
-		if (timerComponent) {
-			timerComponent.stop();
-		}
 		reviewResult = roundResult;
 		showRoundReview = true;
+		submitting = false;
 	}
 
 	function handleTimeUp() {
+		if (submitting || showRoundReview) return;
 		if (guessCoords) {
 			submitRound();
 		} else {
@@ -121,6 +127,7 @@
 	}
 
 	function continueAfterReview() {
+		if (submitting) return;
 		if (!reviewResult) return;
 		showRoundReview = false;
 
@@ -389,7 +396,12 @@
 						<span class="text-sm opacity-60">Click on the map to place your guess</span>
 					{/if}
 				</div>
-				<Button variant="black" size="lg" disabled={!guessCoords} onclick={() => submitRound()}>
+				<Button
+					variant="black"
+					size="lg"
+					disabled={!guessCoords || submitting}
+					onclick={() => submitRound()}
+				>
 					{currentRound < totalRounds ? 'Next Round' : 'Finish'}
 				</Button>
 			</div>
