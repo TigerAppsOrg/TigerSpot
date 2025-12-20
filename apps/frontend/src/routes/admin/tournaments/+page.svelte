@@ -4,6 +4,7 @@
 	import { dev } from '$app/environment';
 	import Button from '$lib/components/Button.svelte';
 	import Card from '$lib/components/Card.svelte';
+	import Icon from '$lib/components/Icon.svelte';
 	import { listTournaments, type Tournament } from '$lib/api/tournament';
 	import {
 		createTournament,
@@ -122,7 +123,7 @@
 	<!-- Success Message -->
 	{#if showSuccess}
 		<div class="brutal-border bg-lime text-white p-4 mb-6 font-bold flex items-center gap-3">
-			<span class="text-2xl">✅</span>
+			<Icon name="checkCircle" class="text-2xl" />
 			Tournament created successfully!
 		</div>
 	{/if}
@@ -249,12 +250,12 @@
 
 	{#if loading}
 		<div class="text-center py-12">
-			<div class="text-4xl mb-4">🐯</div>
+			<Icon name="paw" class="text-4xl mb-4" />
 			<p class="font-bold">Loading tournaments...</p>
 		</div>
 	{:else if tournaments.length === 0}
 		<Card class="text-center py-10">
-			<div class="text-4xl mb-4">🏆</div>
+			<Icon name="trophy" class="text-4xl mb-4" />
 			<p class="text-black/60">No tournaments yet. Create one above!</p>
 		</Card>
 	{:else}

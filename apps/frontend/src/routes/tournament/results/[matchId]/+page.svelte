@@ -6,8 +6,10 @@
 	import Button from '$lib/components/Button.svelte';
 	import Card from '$lib/components/Card.svelte';
 	import Header from '$lib/components/Header.svelte';
+	import Icon from '$lib/components/Icon.svelte';
 	import Map from '$lib/components/Map.svelte';
 	import { getMatchResults, type MatchResults } from '$lib/api/tournament';
+	import type { IconName } from '$lib/components/icons';
 
 	const matchId = parseInt($page.params.matchId);
 
@@ -79,10 +81,10 @@
 		return results.bracketType === 'LOSERS' || results.bracketType === 'GRAND_FINAL';
 	});
 
-	const resultEmoji = $derived.by(() => {
-		if (isChampion) return '👑';
-		if (isWinner) return '🎉';
-		return isEliminated ? '💀' : '😔';
+	const resultIcon = $derived.by<IconName>(() => {
+		if (isChampion) return 'crown';
+		if (isWinner) return 'sparkles';
+		return isEliminated ? 'skull' : 'faceSad';
 	});
 
 	const resultText = $derived.by(() => {
@@ -216,8 +218,10 @@
 
 						<!-- Trophy and crown -->
 						<div class="champion-trophy relative inline-block mb-6">
-							<div class="text-8xl md:text-9xl">🏆</div>
-							<div class="absolute -top-4 left-1/2 -translate-x-1/2 text-5xl md:text-6xl">👑</div>
+							<Icon name="trophy" class="text-8xl md:text-9xl" />
+							<div class="absolute -top-4 left-1/2 -translate-x-1/2">
+								<Icon name="crown" class="text-5xl md:text-6xl" />
+							</div>
 						</div>
 
 						<!-- GAME OVER text -->
@@ -241,7 +245,7 @@
 				{:else}
 					<!-- Regular Result Header -->
 					<div class="text-center mb-10">
-						<div class="text-6xl mb-4">{resultEmoji}</div>
+						<Icon name={resultIcon} class="text-6xl mb-4" />
 						<h1
 							class="text-4xl md:text-5xl font-black mb-2"
 							style="color: var(--color-{resultColor})"
@@ -522,7 +526,7 @@
 				<!-- What's Next -->
 				{#if isChampion}
 					<Card variant="lime" class="text-center py-10 mb-10">
-						<div class="text-5xl mb-4">🎊</div>
+						<Icon name="sparkles" class="text-5xl mb-4" />
 						<h3 class="text-2xl font-black mb-3">Tournament Complete!</h3>
 						<p class="opacity-80 mb-2 text-lg">
 							You've proven yourself as the ultimate TigerSpot champion.
@@ -533,11 +537,20 @@
 					<Card variant={isWinner ? 'lime' : 'magenta'} class="text-center py-8 mb-10">
 						<h3 class="text-xl font-black mb-2">
 							{#if isWinner}
-								🚀 What's Next
+								<span class="inline-flex items-center justify-center gap-2">
+									<Icon name="arrowUpRight" class="text-xl" />
+									What's Next
+								</span>
 							{:else if isEliminated}
-								🏁 Tournament Over
+								<span class="inline-flex items-center justify-center gap-2">
+									<Icon name="flag" class="text-xl" />
+									Tournament Over
+								</span>
 							{:else}
-								💪 Keep Fighting
+								<span class="inline-flex items-center justify-center gap-2">
+									<Icon name="shield" class="text-xl" />
+									Keep Fighting
+								</span>
 							{/if}
 						</h3>
 						<p class="opacity-80 mb-4">

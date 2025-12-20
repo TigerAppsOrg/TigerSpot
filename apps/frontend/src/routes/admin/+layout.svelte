@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { page } from '$app/stores';
 	import type { Snippet } from 'svelte';
+	import Icon from '$lib/components/Icon.svelte';
+	import type { IconName } from '$lib/components/icons';
 
 	interface Props {
 		children: Snippet;
@@ -8,10 +10,10 @@
 
 	let { children }: Props = $props();
 
-	const navItems = [
-		{ href: '/admin', label: 'Dashboard', icon: '🏠' },
-		{ href: '/admin/tournaments', label: 'Tournaments', icon: '🏆' },
-		{ href: '/admin/images', label: 'Images', icon: '🖼️' }
+	const navItems: { href: string; label: string; icon: IconName }[] = [
+		{ href: '/admin', label: 'Dashboard', icon: 'home' },
+		{ href: '/admin/tournaments', label: 'Tournaments', icon: 'trophy' },
+		{ href: '/admin/images', label: 'Images', icon: 'image' }
 	];
 
 	const isActive = (href: string) => {
@@ -43,11 +45,13 @@
 				{#each navItems as item}
 					<a
 						href={item.href}
-						class="px-4 py-2 font-bold text-sm uppercase transition-all {isActive(item.href)
+						class="px-4 py-2 font-bold text-sm uppercase transition-all inline-flex items-center gap-2 {isActive(
+							item.href
+						)
 							? 'bg-white text-orange brutal-border'
 							: 'text-white hover:bg-white/20'}"
 					>
-						{item.icon}
+						<Icon name={item.icon} class="text-base" />
 						{item.label}
 					</a>
 				{/each}
@@ -67,7 +71,7 @@
 						? 'bg-orange text-white'
 						: 'text-black hover:bg-orange/10'}"
 				>
-					<span class="block text-lg mb-1">{item.icon}</span>
+					<Icon name={item.icon} class="text-lg mb-1 block mx-auto" />
 					{item.label}
 				</a>
 			{/each}

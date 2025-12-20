@@ -7,6 +7,7 @@ import { config } from './config/index.js';
 // Import routes
 import authRoutes from './routes/auth.routes.js';
 import gameRoutes from './routes/game.routes.js';
+import soloRoutes from './routes/solo.routes.js';
 import versusRoutes from './routes/versus.routes.js';
 import tournamentRoutes from './routes/tournament.routes.js';
 import leaderboardRoutes from './routes/leaderboard.routes.js';
@@ -57,6 +58,7 @@ app.get('/api/health', (_req, res) => {
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/game', gameRoutes);
+app.use('/api/solo', soloRoutes);
 app.use('/api/versus', versusRoutes);
 app.use('/api/tournament', tournamentRoutes);
 app.use('/api/leaderboard', leaderboardRoutes);

@@ -5,6 +5,7 @@
 	import Button from '$lib/components/Button.svelte';
 	import Card from '$lib/components/Card.svelte';
 	import Header from '$lib/components/Header.svelte';
+	import Icon from '$lib/components/Icon.svelte';
 	import Bracket from '$lib/components/Bracket.svelte';
 	import {
 		getTournament,
@@ -235,12 +236,12 @@
 
 			{#if loading}
 				<div class="text-center py-16">
-					<div class="text-4xl mb-4">🏆</div>
+					<Icon name="trophy" class="text-4xl mb-4" />
 					<p class="font-bold">Loading tournament...</p>
 				</div>
 			{:else if error}
 				<Card class="text-center py-16">
-					<div class="text-4xl mb-4">❌</div>
+					<Icon name="xCircle" class="text-4xl mb-4" />
 					<p class="font-bold text-magenta mb-4">{error}</p>
 					<Button variant="white" href="/tournament">Back to Tournaments</Button>
 				</Card>
@@ -266,7 +267,10 @@
 
 						{#if userActiveMatch}
 							<Button variant="orange" onclick={() => handlePlayMatch(userActiveMatch.id)}>
-								⚔️ Play Your Match
+								<span class="inline-flex items-center gap-2">
+									<Icon name="swords" class="text-lg" />
+									Play Your Match
+								</span>
 							</Button>
 						{/if}
 					</div>
@@ -277,7 +281,7 @@
 					<Card variant="orange" class="mb-8 py-4">
 						<div class="flex flex-col md:flex-row items-center justify-between gap-4">
 							<div class="flex items-center gap-4">
-								<span class="text-3xl">⚔️</span>
+								<Icon name="swords" class="text-3xl" />
 								<div>
 									<div class="font-black">Your Match is Ready!</div>
 									<div class="text-sm opacity-80">
@@ -296,7 +300,7 @@
 				{#if isCurrentUserEliminated && tournament.status === 'in_progress'}
 					<Card variant="magenta" class="mb-8">
 						<div class="flex items-center gap-4">
-							<span class="text-3xl">💀</span>
+							<Icon name="skull" class="text-3xl" />
 							<div>
 								<div class="font-black">You've Been Eliminated</div>
 							</div>
@@ -326,7 +330,7 @@
 						<div class="flex items-end justify-center gap-4 md:gap-8">
 							<!-- 2nd Place -->
 							<div class="flex flex-col items-center">
-								<span class="text-3xl mb-2">🥈</span>
+								<Icon name="medal" class="text-3xl mb-2 text-magenta" />
 								<div
 									class="brutal-border bg-gray w-24 md:w-32 h-20 flex items-center justify-center"
 								>
@@ -341,7 +345,7 @@
 
 							<!-- 1st Place -->
 							<div class="flex flex-col items-center">
-								<span class="text-4xl mb-2">👑</span>
+								<Icon name="crown" class="text-4xl mb-2 text-lime" />
 								<div
 									class="brutal-border bg-lime w-28 md:w-36 h-28 flex items-center justify-center"
 								>
@@ -350,14 +354,14 @@
 										<div class="font-black text-base md:text-lg truncate max-w-full">
 											{podium.first?.displayName || podium.first?.username || '—'}
 										</div>
-										<span class="text-2xl">🏆</span>
+										<Icon name="trophy" class="text-2xl mt-1" />
 									</div>
 								</div>
 							</div>
 
 							<!-- 3rd Place -->
 							<div class="flex flex-col items-center">
-								<span class="text-2xl mb-2">🥉</span>
+								<Icon name="medal" class="text-2xl mb-2 text-orange" />
 								<div
 									class="brutal-border bg-orange w-24 md:w-32 h-16 flex items-center justify-center"
 								>

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { processImagePreview } from '$lib/api/admin';
+	import Icon from '$lib/components/Icon.svelte';
 
 	interface Props {
 		onSelect?: (
@@ -247,7 +248,7 @@
 	{:else if processing}
 		<!-- Processing image -->
 		<div class="brutal-border border-dashed border-4 p-8 text-center bg-cyan/10 border-cyan">
-			<div class="text-5xl mb-4 animate-pulse">🔄</div>
+			<Icon name="refresh" class="text-5xl mb-4 animate-pulse" />
 			<p class="font-bold text-lg mb-2">Processing image...</p>
 			<p class="text-black/60 text-sm">Extracting GPS data and generating preview</p>
 		</div>
@@ -265,7 +266,7 @@
 			onclick={openFilePicker}
 			onkeydown={(e) => e.key === 'Enter' && openFilePicker()}
 		>
-			<div class="text-5xl mb-4">📸</div>
+			<Icon name="camera" class="text-5xl mb-4" />
 			<p class="font-bold text-lg mb-2">Drop an image here</p>
 			<p class="text-black/60 text-sm mb-4">or click to browse (HEIC supported)</p>
 			<span class="brutal-border brutal-shadow-sm bg-cyan text-white px-4 py-2 font-bold text-sm">

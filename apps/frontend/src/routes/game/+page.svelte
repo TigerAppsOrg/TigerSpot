@@ -3,6 +3,7 @@
 	import { goto } from '$app/navigation';
 	import Button from '$lib/components/Button.svelte';
 	import Card from '$lib/components/Card.svelte';
+	import Icon from '$lib/components/Icon.svelte';
 	import Timer from '$lib/components/Timer.svelte';
 	import Map from '$lib/components/Map.svelte';
 	import {
@@ -152,14 +153,14 @@
 {#if loading || !challengeReady}
 	<div class="min-h-screen bg-primary flex items-center justify-center">
 		<div class="text-center">
-			<div class="text-4xl mb-4">🐯</div>
+			<Icon name="paw" class="text-4xl mb-4" />
 			<p class="font-bold">Loading today's challenge...</p>
 		</div>
 	</div>
 {:else if !challenge}
 	<div class="min-h-screen bg-primary flex items-center justify-center">
 		<Card class="text-center max-w-md">
-			<div class="text-4xl mb-4">😿</div>
+			<Icon name="faceSad" class="text-4xl mb-4" />
 			<h2 class="text-xl font-bold mb-4">No Challenge Available</h2>
 			<p class="mb-6">There's no daily challenge available right now. Check back later!</p>
 			<Button href="/menu">Back to Menu</Button>

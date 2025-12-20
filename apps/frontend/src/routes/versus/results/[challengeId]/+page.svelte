@@ -5,9 +5,11 @@
 	import Button from '$lib/components/Button.svelte';
 	import Card from '$lib/components/Card.svelte';
 	import Header from '$lib/components/Header.svelte';
+	import Icon from '$lib/components/Icon.svelte';
 	import Map from '$lib/components/Map.svelte';
 	import { getChallengeResults, type ChallengeResults } from '$lib/api/versus';
 	import { userStore } from '$lib/stores/user.svelte';
+	import type { IconName } from '$lib/components/icons';
 
 	const challengeId = $derived(parseInt($page.params.challengeId));
 
@@ -50,10 +52,10 @@
 	const youForfeited = $derived(results?.youForfeited ?? false);
 	const opponentForfeited = $derived(results?.opponentForfeited ?? false);
 
-	const resultEmoji = $derived.by(() => {
-		if (youForfeited) return '🏳️';
-		if (opponentForfeited) return '🏆';
-		return isWinner ? '🏆' : '💔';
+	const resultIcon = $derived.by<IconName>(() => {
+		if (youForfeited) return 'flag';
+		if (opponentForfeited) return 'trophy';
+		return isWinner ? 'trophy' : 'heartBroken';
 	});
 	const resultText = $derived.by(() => {
 		if (youForfeited) return 'YOU FORFEITED';
@@ -122,7 +124,7 @@
 			{#if results && !loading}
 				<!-- Result Header -->
 				<div class="text-center mb-10">
-					<div class="text-6xl mb-4">{resultEmoji}</div>
+					<Icon name={resultIcon} class="text-6xl mb-4" />
 					<h1
 						class="text-4xl md:text-5xl font-black mb-2"
 						style="color: var(--color-{resultColor})"

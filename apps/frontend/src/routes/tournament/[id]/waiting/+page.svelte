@@ -5,6 +5,7 @@
 	import Button from '$lib/components/Button.svelte';
 	import Card from '$lib/components/Card.svelte';
 	import Header from '$lib/components/Header.svelte';
+	import Icon from '$lib/components/Icon.svelte';
 	import { getTournament, leaveTournament, type TournamentDetails } from '$lib/api/tournament';
 	import { userStore } from '$lib/stores/user.svelte';
 
@@ -98,19 +99,19 @@
 		<div class="container-brutal max-w-2xl mx-auto">
 			{#if loading}
 				<div class="text-center py-16">
-					<div class="text-4xl mb-4">🏆</div>
+					<Icon name="trophy" class="text-4xl mb-4" />
 					<p class="font-bold">Loading...</p>
 				</div>
 			{:else if error}
 				<Card class="text-center py-16">
-					<div class="text-4xl mb-4">❌</div>
+					<Icon name="xCircle" class="text-4xl mb-4" />
 					<p class="font-bold text-magenta mb-4">{error}</p>
 					<Button variant="white" href="/tournament">Back to Tournaments</Button>
 				</Card>
 			{:else if tournament}
 				<!-- Waiting Room Header -->
 				<div class="text-center mb-8">
-					<div class="text-6xl mb-4">⏳</div>
+					<Icon name="clock" class="text-6xl mb-4" />
 					<h1 class="text-3xl font-black mb-2">{tournament.name}</h1>
 					<p class="text-black/60">Waiting for the tournament to start...</p>
 				</div>
