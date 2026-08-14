@@ -45,7 +45,9 @@
 	);
 
 	onMount(async () => {
-		await userStore.load();
+		if (userStore.loading) {
+			await userStore.load();
+		}
 		if (!userStore.isAuthenticated) {
 			await goto('/');
 			return;
