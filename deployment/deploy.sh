@@ -30,7 +30,7 @@ cd apps/server
 pnpm i
 cd ../../
 pnpm db:generate
-pnpm db:migrate
+pnpm --filter tigerspot-server exec prisma migrate deploy
 
 # Backend: Build TypeScript
 echo ">>> Building backend..."
