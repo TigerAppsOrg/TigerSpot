@@ -13,11 +13,11 @@
 	let { variant = 'default', hoverable = false, class: className = '', children }: Props = $props();
 
 	const variantStyles: Record<CardVariant, { bg: string; text: string }> = {
-		default: { bg: '#FFFFFF', text: '#000000' },
-		cyan: { bg: '#4A8A9A', text: '#FFFFFF' },
-		magenta: { bg: '#A0527D', text: '#FFFFFF' },
-		lime: { bg: '#6B9E50', text: '#FFFFFF' },
-		orange: { bg: '#FF6600', text: '#FFFFFF' }
+		default: { bg: 'var(--color-white)', text: 'var(--color-black)' },
+		cyan: { bg: 'var(--color-cyan)', text: 'var(--color-black)' },
+		magenta: { bg: 'var(--color-magenta)', text: 'var(--color-white)' },
+		lime: { bg: 'var(--color-lime)', text: 'var(--color-black)' },
+		orange: { bg: 'var(--color-orange)', text: 'var(--color-black)' }
 	};
 
 	const style = $derived(variantStyles[variant]);

@@ -132,13 +132,13 @@ export async function getAvailablePlayers(): Promise<Player[]> {
 /**
  * Get user's challenges
  */
-export async function getChallenges(): Promise<ChallengesResponse> {
+export async function getChallenges(): Promise<ChallengesResponse | null> {
 	const { data, error } = await api.get<ChallengesResponse>('/api/versus/challenges');
 	if (error) {
 		console.error('Failed to get challenges:', error);
-		return { received: [], sent: [], active: [], completed: [] };
+		return null;
 	}
-	return data ?? { received: [], sent: [], active: [], completed: [] };
+	return data ?? null;
 }
 
 /**

@@ -21,7 +21,7 @@
 			return;
 		}
 		const [tournamentsData, imagesData] = await Promise.all([listTournaments(), listImages()]);
-		tournaments = tournamentsData;
+		tournaments = tournamentsData ?? [];
 		images = imagesData;
 		loading = false;
 	});

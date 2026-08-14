@@ -54,13 +54,13 @@ export interface TournamentDetails extends Omit<Tournament, 'participants'> {
 /**
  * List all tournaments
  */
-export async function listTournaments(): Promise<Tournament[]> {
+export async function listTournaments(): Promise<Tournament[] | null> {
 	const { data, error } = await api.get<Tournament[]>('/api/tournament');
 	if (error) {
 		console.error('Failed to list tournaments:', error);
-		return [];
+		return null;
 	}
-	return data ?? [];
+	return data ?? null;
 }
 
 /**

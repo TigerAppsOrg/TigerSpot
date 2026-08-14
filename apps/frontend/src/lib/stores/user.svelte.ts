@@ -5,6 +5,7 @@ class UserStore {
 	user = $state<User | null>(null);
 	loading = $state(true);
 	error = $state<string | null>(null);
+	private loadPromise: Promise<void> | null = null;
 
 	get isAuthenticated() {
 		return this.user !== null;
@@ -25,7 +26,20 @@ class UserStore {
 	/**
 	 * Load user from API (checks auth cookie)
 	 */
-	async load() {
+	async load(): Promise<void> {
+		if (this.loadPromise) {
+			return this.loadPromise;
+		}
+
+		this.loadPromise = this.loadCurrentUser();
+		try {
+			await this.loadPromise;
+		} finally {
+			this.loadPromise = null;
+		}
+	}
+
+	private async loadCurrentUser(): Promise<void> {
 		this.loading = true;
 		this.error = null;
 

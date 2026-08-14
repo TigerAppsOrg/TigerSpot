@@ -35,7 +35,7 @@
 		<div class="flex flex-col h-full relative">
 			{#if completed}
 				<div
-					class="absolute -top-2 -right-2 bg-lime brutal-border px-3 py-1 text-xs font-black uppercase flex items-center gap-1"
+					class="absolute -top-2 -right-2 bg-lime text-black brutal-border px-3 py-1 text-xs font-black uppercase flex items-center gap-1"
 				>
 					<span>Done</span>
 				</div>
@@ -46,16 +46,18 @@
 				<div class="text-5xl mb-6">{emoji}</div>
 			{/if}
 			<h3 class="text-2xl font-black mb-4">{title}</h3>
-			<p class="opacity-80 mb-6 grow leading-relaxed">
+			<p class="mb-6 grow leading-relaxed">
 				{description}
 			</p>
-			<div class="flex items-center justify-between">
+			<div class="flex flex-wrap items-center gap-3">
 				<span
-					class="brutal-border brutal-shadow-sm bg-white text-black px-4 py-2 text-sm font-bold"
+					class="brutal-border brutal-shadow-sm bg-white text-black max-w-full px-4 py-2 text-sm font-bold break-words"
 				>
 					{stat}
 				</span>
-				<span class="font-bold uppercase text-sm group-hover:translate-x-2 transition-transform">
+				<span
+					class="font-bold uppercase text-sm whitespace-nowrap group-hover:translate-x-2 transition-transform"
+				>
 					{completed ? 'View Results' : cta} →
 				</span>
 			</div>

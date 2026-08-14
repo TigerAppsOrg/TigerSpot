@@ -42,7 +42,7 @@
 			goto('/menu');
 			return;
 		}
-		tournaments = await listTournaments();
+		tournaments = (await listTournaments()) ?? [];
 		loading = false;
 	});
 
@@ -65,7 +65,7 @@
 
 		if (result) {
 			// Reload tournaments
-			tournaments = await listTournaments();
+			tournaments = (await listTournaments()) ?? [];
 
 			// Reset form
 			name = '';
@@ -108,7 +108,7 @@
 		const result = await addTestPlayers(tournamentId, testPlayerCount);
 		if (result?.success) {
 			// Reload tournaments to update participant count
-			tournaments = await listTournaments();
+			tournaments = (await listTournaments()) ?? [];
 			alert(`Added ${result.addedPlayers.length} test players!`);
 		} else {
 			alert('Failed to add test players');

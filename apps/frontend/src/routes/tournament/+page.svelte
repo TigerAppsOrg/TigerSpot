@@ -44,7 +44,7 @@
 
 	async function loadTournaments() {
 		loading = true;
-		tournaments = await listTournaments();
+		tournaments = (await listTournaments()) ?? [];
 		loading = false;
 	}
 
