@@ -1,4 +1,4 @@
-type IconDefinition = {
+export type IconDefinition = {
 	viewBox?: string;
 	paths?: string[];
 	circles?: { cx: number; cy: number; r: number }[];

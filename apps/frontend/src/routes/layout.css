@@ -10,6 +10,7 @@
 	--color-magenta: #a0527d;
 	--color-lime: #6b9e50;
 	--color-orange: #ff6600;
+	--color-orange-ink: oklch(0.56 0.18 38);
 
 	/* Neutrals */
 	--color-black: #000000;
@@ -94,7 +95,7 @@ body {
 /* Button Colors */
 .btn-cyan {
 	background-color: var(--color-cyan);
-	color: var(--color-white);
+	color: var(--color-black);
 }
 
 .btn-magenta {
@@ -104,12 +105,12 @@ body {
 
 .btn-lime {
 	background-color: var(--color-lime);
-	color: var(--color-white);
+	color: var(--color-black);
 }
 
 .btn-orange {
 	background-color: var(--color-orange);
-	color: var(--color-white);
+	color: var(--color-black);
 }
 
 .btn-white {
@@ -428,6 +429,16 @@ h6,
 :focus-visible {
 	outline: 3px solid var(--color-black);
 	outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	*,
+	*::before,
+	*::after {
+		animation-duration: 0.01ms !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: 0.01ms !important;
+	}
 }
 
 /* Scrollbar styling */

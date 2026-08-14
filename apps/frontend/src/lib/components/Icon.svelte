@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { icons, type IconName } from './icons';
+	import { icons, type IconDefinition, type IconName } from './icons';
 
 	let {
 		name,
@@ -15,7 +15,7 @@
 		style?: string;
 	} = $props();
 
-	const icon = $derived(icons[name]);
+	const icon: IconDefinition = $derived(icons[name]);
 	const svgClass = $derived(`inline-block align-middle ${className}`);
 	const resolvedStrokeWidth = $derived(icon?.strokeWidth ?? strokeWidth);
 </script>

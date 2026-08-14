@@ -13,34 +13,83 @@
 	import { getDailyStatus } from '$lib/api/game';
 
 	let stats = $state<UserStats | null>(null);
-	let pendingChallenges = $state(0);
-	let activeTournaments = $state(0);
-	let dailyCompleted = $state(false);
+	let pendingChallenges = $state<number | null>(null);
+	let activeTournaments = $state<number | null>(null);
+	let dailyCompleted = $state<boolean | null>(null);
+	let loading = $state(true);
+	let loadError = $state(false);
+
+	const dailyStat = $derived(
+		stats
+			? `${stats.currentStreak} day${stats.currentStreak === 1 ? '' : 's'} streak`
+			: loading
+				? 'Loading'
+				: 'Unavailable'
+	);
+	const pendingStat = $derived(
+		pendingChallenges !== null
+			? `${pendingChallenges} pending`
+			: loading
+				? 'Loading'
+				: 'Unavailable'
+	);
+	const tournamentStat = $derived(
+		activeTournaments !== null ? `${activeTournaments} active` : loading ? 'Loading' : 'Unavailable'
+	);
+	const loadStatus = $derived(
+		loading
+			? 'Loading your game status'
+			: loadError
+				? 'Some stats could not be loaded'
+				: 'Game status loaded'
+	);
 
 	onMount(async () => {
-		// Redirect to login if not authenticated
-		if (!userStore.isAuthenticated && !userStore.loading) {
-			goto('/');
+		if (userStore.loading) {
+			await userStore.load();
+		}
+		if (!userStore.isAuthenticated) {
+			await goto('/');
 			return;
 		}
 
-		// Load user stats
-		stats = await getMyStats();
-
-		// Load pending challenges count
-		const challenges = await getChallenges();
-		pendingChallenges = challenges.received.length + challenges.active.length;
-
-		// Load active tournaments count
-		const tournaments = await listTournaments();
-		activeTournaments = tournaments.filter(
-			(t) => t.status === 'open' || t.status === 'in_progress'
-		).length;
-
-		// Check if daily challenge is completed
-		const dailyStatus = await getDailyStatus();
-		dailyCompleted = dailyStatus?.hasPlayed ?? false;
+		await loadMenuData();
 	});
+
+	async function loadMenuData() {
+		loading = true;
+		loadError = false;
+
+		const [statsResult, challengesResult, tournamentsResult, dailyResult] =
+			await Promise.allSettled([
+				getMyStats(),
+				getChallenges(),
+				listTournaments(),
+				getDailyStatus()
+			]);
+
+		const statsData = statsResult.status === 'fulfilled' ? statsResult.value : null;
+		const challengesData = challengesResult.status === 'fulfilled' ? challengesResult.value : null;
+		const tournamentsData =
+			tournamentsResult.status === 'fulfilled' ? tournamentsResult.value : null;
+		const dailyData = dailyResult.status === 'fulfilled' ? dailyResult.value : null;
+
+		if (statsData) stats = statsData;
+		if (challengesData) {
+			pendingChallenges = challengesData.received.length + challengesData.active.length;
+		}
+		if (tournamentsData) {
+			activeTournaments = tournamentsData.filter(
+				(t) => t.status === 'open' || t.status === 'in_progress'
+			).length;
+		}
+		if (dailyData) dailyCompleted = dailyData.hasPlayed;
+
+		loadError = [statsData, challengesData, tournamentsData, dailyData].some(
+			(value) => value === null
+		);
+		loading = false;
+	}
 </script>
 
 <svelte:head>
@@ -55,7 +104,9 @@
 
 	<!-- Main content with padding for fixed header -->
 	<main class="relative pt-24 pb-12 px-4">
-		<div class="container-brutal">
+		<div class="container-brutal" aria-busy={loading}>
+			<p class="sr-only" aria-live="polite">{loadStatus}</p>
+
 			<!-- Quick Links -->
 			<div class="flex flex-wrap gap-6 mb-8">
 				<Button variant="white" href="/leaderboard">
@@ -80,8 +131,17 @@
 				{/if}
 			</div>
 
+			{#if loadError}
+				<div
+					class="brutal-border bg-white mb-8 flex flex-col items-start gap-4 p-4 sm:flex-row sm:items-center sm:justify-between"
+				>
+					<p class="font-bold">Some stats couldn't load.</p>
+					<Button variant="black" size="sm" onclick={loadMenuData} disabled={loading}>Retry</Button>
+				</div>
+			{/if}
+
 			<!-- Game Modes -->
-			<h2 class="text-3xl font-black mb-8">Choose Your Mode</h2>
+			<h1 class="text-3xl font-black mb-8">Choose Your Mode</h1>
 
 			<div class="grid md:grid-cols-2 xl:grid-cols-4 gap-8 mb-16">
 				<GameModeCard
@@ -90,8 +150,8 @@
 					icon="calendar"
 					title="Daily Challenge"
 					description="One new location every day. How close can you get?"
-					stat="{stats?.currentStreak ?? 0} day streak"
-					completed={dailyCompleted}
+					stat={dailyStat}
+					completed={dailyCompleted === true}
 				/>
 
 				<GameModeCard
@@ -100,7 +160,7 @@
 					icon="swords"
 					title="Versus Mode"
 					description="Challenge your friends to 5-round battles!"
-					stat="{pendingChallenges} pending"
+					stat={pendingStat}
 					cta="Battle"
 				/>
 
@@ -120,17 +180,29 @@
 					icon="trophy"
 					title="Tournament"
 					description="Bracket-style competition!"
-					stat="{activeTournaments} active"
+					stat={tournamentStat}
 					cta="Compete"
 				/>
 			</div>
 
 			<!-- Stats Bar -->
 			<div class="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-				<StatCard value={stats?.totalPoints ?? 0} label="Total Points" valueColor="text-orange" />
-				<StatCard value={stats?.currentStreak ?? 0} label="Day Streak" valueColor="text-magenta" />
-				<StatCard value="#{stats?.rank ?? '-'}" label="Rank" valueColor="text-cyan" />
-				<StatCard value={stats?.maxStreak ?? 0} label="Best Streak" valueColor="text-lime" />
+				<StatCard
+					value={stats?.totalPoints ?? '—'}
+					label="Total Points"
+					valueClass="text-orange-ink"
+				/>
+				<StatCard
+					value={stats?.currentStreak ?? '—'}
+					label="Day Streak"
+					valueClass="text-magenta"
+				/>
+				<StatCard
+					value={stats ? `#${stats.rank ?? '-'}` : '—'}
+					label="Rank"
+					valueClass="text-cyan"
+				/>
+				<StatCard value={stats?.maxStreak ?? '—'} label="Best Streak" valueClass="text-lime" />
 			</div>
 		</div>
 	</main>

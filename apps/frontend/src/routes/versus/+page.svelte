@@ -18,7 +18,8 @@
 		cancelChallenge as apiCancelChallenge,
 		forfeitMatch as apiForfeitMatch,
 		type Player,
-		type Challenge
+		type Challenge,
+		type ChallengesResponse
 	} from '$lib/api/versus';
 	import { userStore } from '$lib/stores/user.svelte';
 
@@ -28,6 +29,12 @@
 	let activeMatches = $state<Challenge[]>([]);
 	let completedMatches = $state<Challenge[]>([]);
 	let loading = $state(true);
+	const emptyChallenges: ChallengesResponse = {
+		received: [],
+		sent: [],
+		active: [],
+		completed: []
+	};
 
 	let pollInterval: ReturnType<typeof setInterval> | null = null;
 	const POLL_INTERVAL_MS = 5000; // Poll every 5 seconds
@@ -63,11 +70,12 @@
 			getAvailablePlayers(),
 			getChallenges()
 		]);
+		const challenges = challengesData ?? emptyChallenges;
 		players = playersData;
-		receivedChallenges = challengesData.received;
-		sentChallenges = challengesData.sent;
-		activeMatches = challengesData.active;
-		completedMatches = challengesData.completed;
+		receivedChallenges = challenges.received;
+		sentChallenges = challenges.sent;
+		activeMatches = challenges.active;
+		completedMatches = challenges.completed;
 		loading = false;
 	}
 
@@ -79,11 +87,12 @@
 			getAvailablePlayers(),
 			getChallenges()
 		]);
+		const challenges = challengesData ?? emptyChallenges;
 		players = playersData;
-		receivedChallenges = challengesData.received;
-		sentChallenges = challengesData.sent;
-		activeMatches = challengesData.active;
-		completedMatches = challengesData.completed;
+		receivedChallenges = challenges.received;
+		sentChallenges = challenges.sent;
+		activeMatches = challenges.active;
+		completedMatches = challenges.completed;
 	}
 
 	async function challengePlayer(username: string) {
